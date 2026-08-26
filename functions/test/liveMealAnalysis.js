@@ -5,9 +5,10 @@ const { buildMealRequest, normalizeMealAnalysis } = require("../mealAnalysisCore
 
 async function main() {
   const imagePath = process.argv[2];
+  const context = process.argv[3] || "Test fixture: standard dinner plate";
   if (!imagePath || !process.env.OPENAI_API_KEY) throw new Error("Usage: node test/liveMealAnalysis.js <image>; OPENAI_API_KEY must be configured");
   const imageBase64 = fs.readFileSync(imagePath).toString("base64");
-  const response = await fetch("https://api.openai.com/v1/responses", { method: "POST", headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify(buildMealRequest(imageBase64, "Test fixture: standard dinner plate")) });
+  const response = await fetch("https://api.openai.com/v1/responses", { method: "POST", headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify(buildMealRequest(imageBase64, context)) });
   if (!response.ok) throw new Error(`OpenAI ${response.status}: ${(await response.text()).slice(0, 300)}`);
   const payload = await response.json();
   if (payload.status !== "completed") throw new Error(`Incomplete response: ${JSON.stringify(payload.incomplete_details)}`);
