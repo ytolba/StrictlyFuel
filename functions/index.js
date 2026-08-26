@@ -45,3 +45,4 @@ exports.verifyPayment = functions.https.onRequest(async (req, res) => {
 // Knowledge-base ingestion and provenance-aware curation queue.
 Object.assign(exports, require('./knowledgeBase'));
 Object.assign(exports, require('./webAlternatives'));
+Object.assign(exports, require('./mealAnalysis'));
