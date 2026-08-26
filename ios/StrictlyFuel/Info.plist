@@ -29,14 +29,14 @@
 		<dict>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>strictlybased</string>
-				<string>com.strictlybased.StrictlyBased</string>
+				<string>strictlyfuel</string>
+				<string>com.strictlyfuel.app</string>
 			</array>
 		</dict>
 		<dict>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>exp+strictlybased</string>
+				<string>exp+strictlyfuel</string>
 			</array>
 		</dict>
 	</array>

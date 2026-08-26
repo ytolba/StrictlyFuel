@@ -146,7 +146,7 @@ const PostDetail: React.FC = () => {
 
   const handleLinkPress = (url: string) => {
     // Check if it's a deep link
-    if (url.startsWith('strictlybased://')) {
+    if (url.startsWith('strictlyfuel://')) {
       // Extract scan ID from deep link
       const scanId = url.split('/').pop();
       if (scanId) {
@@ -172,7 +172,7 @@ const PostDetail: React.FC = () => {
 
     return parts.map((part, index) => {
       if (part.match(linkRegex)) {
-        const displayText = part.startsWith('strictlybased://')
+        const displayText = part.startsWith('strictlyfuel://')
           ? '👉 View Scan Details'
           : part;
         

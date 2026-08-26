@@ -124,7 +124,7 @@ const handleShareScan = async () => {
     });
 
     // Step 2: Generate a Universal Link
-    const universalLink = `strictlybased://scan/${selectedScan.id}`;
+    const universalLink = `strictlyfuel://scan/${selectedScan.id}`;
     const sharedScore = scoreIngredients({
       ingredients: selectedScan.ingredients,
       details: selectedScan.stringDetails,
@@ -247,7 +247,7 @@ Download Strictly: https://apps.apple.com/us/app/strictlybased/id6739453393`,
       : `${scanScore.score}/100 · ${scanScore.label}`;
 
     // Generate universal link for the scan
-    const universalLink = `strictlybased://scan/${selectedScan.id}`;
+    const universalLink = `strictlyfuel://scan/${selectedScan.id}`;
 
     // Simple, clean content template
     const reviewTemplate = `Check it out here: ${universalLink}`;

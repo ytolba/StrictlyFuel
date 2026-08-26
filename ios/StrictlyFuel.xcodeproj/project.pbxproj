@@ -11,7 +11,7 @@
 		1AA74218D323BFD26071714C /* StrictlyOCR.m in Sources */ = {isa = PBXBuildFile; fileRef = DFCE9B4B0C3B65F4F69FD87C /* StrictlyOCR.m */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
 		739AED208FF066CC71AF3995 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C99ABB3703DB7458BE49DAFE /* PrivacyInfo.xcprivacy */; };
-		8C61E3E50407DF2B1CAE9291 /* libPods-StrictlyBased.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 59D24E8B7BE55C1773C9892D /* libPods-StrictlyBased.a */; };
+		8C61E3E50407DF2B1CAE9291 /* libPods-StrictlyFuel.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 59D24E8B7BE55C1773C9892D /* libPods-StrictlyFuel.a */; };
 		B1C7C235E8BDC55C886C0A40 /* StrictlyOCR.swift in Sources */ = {isa = PBXBuildFile; fileRef = 273E912CEC09F0D485C35F3C /* StrictlyOCR.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		BC769406978668FA1CB60CE2 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7D7A56848B8CBBD327C580F /* ExpoModulesProvider.swift */; };
@@ -19,21 +19,21 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		13B07F961A680F5B00A75B9A /* StrictlyBased.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = StrictlyBased.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = StrictlyBased/Images.xcassets; sourceTree = "<group>"; };
-		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = StrictlyBased/Info.plist; sourceTree = "<group>"; };
-		273E912CEC09F0D485C35F3C /* StrictlyOCR.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StrictlyBased/StrictlyOCR.swift; sourceTree = "<group>"; };
-		59D24E8B7BE55C1773C9892D /* libPods-StrictlyBased.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-StrictlyBased.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		62F08070CFBE799AB9C3C389 /* Pods-StrictlyBased.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-StrictlyBased.release.xcconfig"; path = "Target Support Files/Pods-StrictlyBased/Pods-StrictlyBased.release.xcconfig"; sourceTree = "<group>"; };
-		A98C032CE0B8465599B52CD4 /* Pods-StrictlyBased.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-StrictlyBased.debug.xcconfig"; path = "Target Support Files/Pods-StrictlyBased/Pods-StrictlyBased.debug.xcconfig"; sourceTree = "<group>"; };
-		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = StrictlyBased/SplashScreen.storyboard; sourceTree = "<group>"; };
+		13B07F961A680F5B00A75B9A /* StrictlyFuel.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = StrictlyFuel.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = StrictlyFuel/Images.xcassets; sourceTree = "<group>"; };
+		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = StrictlyFuel/Info.plist; sourceTree = "<group>"; };
+		273E912CEC09F0D485C35F3C /* StrictlyOCR.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StrictlyFuel/StrictlyOCR.swift; sourceTree = "<group>"; };
+		59D24E8B7BE55C1773C9892D /* libPods-StrictlyFuel.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-StrictlyFuel.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		62F08070CFBE799AB9C3C389 /* Pods-StrictlyFuel.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-StrictlyFuel.release.xcconfig"; path = "Target Support Files/Pods-StrictlyFuel/Pods-StrictlyFuel.release.xcconfig"; sourceTree = "<group>"; };
+		A98C032CE0B8465599B52CD4 /* Pods-StrictlyFuel.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-StrictlyFuel.debug.xcconfig"; path = "Target Support Files/Pods-StrictlyFuel/Pods-StrictlyFuel.debug.xcconfig"; sourceTree = "<group>"; };
+		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = StrictlyFuel/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
-		C7D7A56848B8CBBD327C580F /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-StrictlyBased/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
-		C99ABB3703DB7458BE49DAFE /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = StrictlyBased/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		DFCE9B4B0C3B65F4F69FD87C /* StrictlyOCR.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = StrictlyBased/StrictlyOCR.m; sourceTree = "<group>"; };
+		C7D7A56848B8CBBD327C580F /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-StrictlyFuel/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		C99ABB3703DB7458BE49DAFE /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = StrictlyFuel/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		DFCE9B4B0C3B65F4F69FD87C /* StrictlyOCR.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = StrictlyFuel/StrictlyOCR.m; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
-		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = StrictlyBased/AppDelegate.swift; sourceTree = "<group>"; };
-		F11748442D0722820044C1D9 /* StrictlyBased-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "StrictlyBased-Bridging-Header.h"; path = "StrictlyBased/StrictlyBased-Bridging-Header.h"; sourceTree = "<group>"; };
+		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = StrictlyFuel/AppDelegate.swift; sourceTree = "<group>"; };
+		F11748442D0722820044C1D9 /* StrictlyFuel-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "StrictlyFuel-Bridging-Header.h"; path = "StrictlyFuel/StrictlyFuel-Bridging-Header.h"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -41,18 +41,18 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8C61E3E50407DF2B1CAE9291 /* libPods-StrictlyBased.a in Frameworks */,
+				8C61E3E50407DF2B1CAE9291 /* libPods-StrictlyFuel.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		13B07FAE1A68108700A75B9A /* StrictlyBased */ = {
+		13B07FAE1A68108700A75B9A /* StrictlyFuel */ = {
 			isa = PBXGroup;
 			children = (
 				F11748412D0307B40044C1D9 /* AppDelegate.swift */,
-				F11748442D0722820044C1D9 /* StrictlyBased-Bridging-Header.h */,
+				F11748442D0722820044C1D9 /* StrictlyFuel-Bridging-Header.h */,
 				BB2F792B24A3F905000567C9 /* Supporting */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
@@ -61,24 +61,24 @@
 				273E912CEC09F0D485C35F3C /* StrictlyOCR.swift */,
 				DFCE9B4B0C3B65F4F69FD87C /* StrictlyOCR.m */,
 			);
-			name = StrictlyBased;
+			name = StrictlyFuel;
 			sourceTree = "<group>";
 		};
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				59D24E8B7BE55C1773C9892D /* libPods-StrictlyBased.a */,
+				59D24E8B7BE55C1773C9892D /* libPods-StrictlyFuel.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		3E3BA8F84A87E98305F10B8E /* StrictlyBased */ = {
+		3E3BA8F84A87E98305F10B8E /* StrictlyFuel */ = {
 			isa = PBXGroup;
 			children = (
 				C7D7A56848B8CBBD327C580F /* ExpoModulesProvider.swift */,
 			);
-			name = StrictlyBased;
+			name = StrictlyFuel;
 			sourceTree = "<group>";
 		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
@@ -91,7 +91,7 @@
 		83CBB9F61A601CBA00E9B192 = {
 			isa = PBXGroup;
 			children = (
-				13B07FAE1A68108700A75B9A /* StrictlyBased */,
+				13B07FAE1A68108700A75B9A /* StrictlyFuel */,
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
@@ -106,7 +106,7 @@
 		83CBBA001A601CBA00E9B192 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				13B07F961A680F5B00A75B9A /* StrictlyBased.app */,
+				13B07F961A680F5B00A75B9A /* StrictlyFuel.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -117,14 +117,14 @@
 				BB2F792C24A3F905000567C9 /* Expo.plist */,
 			);
 			name = Supporting;
-			path = StrictlyBased/Supporting;
+			path = StrictlyFuel/Supporting;
 			sourceTree = "<group>";
 		};
 		C153CCDCDFB182C7483E5F7B /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				A98C032CE0B8465599B52CD4 /* Pods-StrictlyBased.debug.xcconfig */,
-				62F08070CFBE799AB9C3C389 /* Pods-StrictlyBased.release.xcconfig */,
+				A98C032CE0B8465599B52CD4 /* Pods-StrictlyFuel.debug.xcconfig */,
+				62F08070CFBE799AB9C3C389 /* Pods-StrictlyFuel.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -132,7 +132,7 @@
 		F2FA3265155634FF9672A39E /* ExpoModulesProviders */ = {
 			isa = PBXGroup;
 			children = (
-				3E3BA8F84A87E98305F10B8E /* StrictlyBased */,
+				3E3BA8F84A87E98305F10B8E /* StrictlyFuel */,
 			);
 			name = ExpoModulesProviders;
 			sourceTree = "<group>";
@@ -140,9 +140,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		13B07F861A680F5B00A75B9A /* StrictlyBased */ = {
+		13B07F861A680F5B00A75B9A /* StrictlyFuel */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "StrictlyBased" */;
+			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "StrictlyFuel" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
 				EA65DF980A07F2174DC0C4A7 /* [Expo] Configure project */,
@@ -157,9 +157,9 @@
 			);
 			dependencies = (
 			);
-			name = StrictlyBased;
-			productName = StrictlyBased;
-			productReference = 13B07F961A680F5B00A75B9A /* StrictlyBased.app */;
+			name = StrictlyFuel;
+			productName = StrictlyFuel;
+			productReference = 13B07F961A680F5B00A75B9A /* StrictlyFuel.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -175,7 +175,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "StrictlyBased" */;
+			buildConfigurationList = 83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "StrictlyFuel" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -188,7 +188,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				13B07F861A680F5B00A75B9A /* StrictlyBased */,
+				13B07F861A680F5B00A75B9A /* StrictlyFuel */,
 			);
 		};
 /* End PBXProject section */
@@ -240,7 +240,7 @@
 			outputFileListPaths = (
 			);
 			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-StrictlyBased-checkManifestLockResult.txt",
+				"$(DERIVED_FILE_DIR)/Pods-StrictlyFuel-checkManifestLockResult.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -253,7 +253,7 @@
 			files = (
 			);
 			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-StrictlyBased/Pods-StrictlyBased-frameworks.sh",
+				"${PODS_ROOT}/Target Support Files/Pods-StrictlyFuel/Pods-StrictlyFuel-frameworks.sh",
 				"${PODS_XCFRAMEWORKS_BUILD_DIR}/React-Core-prebuilt/React.framework/React",
 				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ReactNativeDependencies/ReactNativeDependencies.framework/ReactNativeDependencies",
 				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
@@ -266,7 +266,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-StrictlyBased/Pods-StrictlyBased-frameworks.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-StrictlyFuel/Pods-StrictlyFuel-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */ = {
@@ -275,7 +275,7 @@
 			files = (
 			);
 			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-StrictlyBased/Pods-StrictlyBased-resources.sh",
+				"${PODS_ROOT}/Target Support Files/Pods-StrictlyFuel/Pods-StrictlyFuel-resources.sh",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXApplication/ExpoApplication_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/EXConstants.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/ExpoConstants_privacy.bundle",
@@ -348,7 +348,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-StrictlyBased/Pods-StrictlyBased-resources.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-StrictlyFuel/Pods-StrictlyFuel-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		EA65DF980A07F2174DC0C4A7 /* [Expo] Configure project */ = {
@@ -362,18 +362,18 @@
 			inputPaths = (
 				"$(SRCROOT)/.xcode.env",
 				"$(SRCROOT)/.xcode.env.local",
-				"$(SRCROOT)/StrictlyBased/StrictlyBased.entitlements",
-				"$(SRCROOT)/Pods/Target Support Files/Pods-StrictlyBased/expo-configure-project.sh",
+				"$(SRCROOT)/StrictlyFuel/StrictlyFuel.entitlements",
+				"$(SRCROOT)/Pods/Target Support Files/Pods-StrictlyFuel/expo-configure-project.sh",
 			);
 			name = "[Expo] Configure project";
 			outputFileListPaths = (
 			);
 			outputPaths = (
-				"$(SRCROOT)/Pods/Target Support Files/Pods-StrictlyBased/ExpoModulesProvider.swift",
+				"$(SRCROOT)/Pods/Target Support Files/Pods-StrictlyFuel/ExpoModulesProvider.swift",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-StrictlyBased/expo-configure-project.sh\"\n";
+			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-StrictlyFuel/expo-configure-project.sh\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -394,12 +394,12 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = A98C032CE0B8465599B52CD4 /* Pods-StrictlyBased.debug.xcconfig */;
+			baseConfigurationReference = A98C032CE0B8465599B52CD4 /* Pods-StrictlyFuel.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				"CODE_SIGNING_ALLOWED[sdk=iphonesimulator*]" = NO;
-				CODE_SIGN_ENTITLEMENTS = StrictlyBased/StrictlyBased.entitlements;
+				CODE_SIGN_ENTITLEMENTS = StrictlyFuel/StrictlyFuel.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -409,7 +409,7 @@
 					"$(inherited)",
 					"FB_SONARKIT_ENABLED=1",
 				);
-				INFOPLIST_FILE = StrictlyBased/Info.plist;
+				INFOPLIST_FILE = StrictlyFuel/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -422,9 +422,9 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
-				PRODUCT_BUNDLE_IDENTIFIER = com.strictlybased.StrictlyBased;
-				PRODUCT_NAME = StrictlyBased;
-				SWIFT_OBJC_BRIDGING_HEADER = "StrictlyBased/StrictlyBased-Bridging-Header.h";
+				PRODUCT_BUNDLE_IDENTIFIER = com.strictlyfuel.app;
+				PRODUCT_NAME = StrictlyFuel;
+				SWIFT_OBJC_BRIDGING_HEADER = "StrictlyFuel/StrictlyFuel-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
@@ -434,17 +434,17 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 62F08070CFBE799AB9C3C389 /* Pods-StrictlyBased.release.xcconfig */;
+			baseConfigurationReference = 62F08070CFBE799AB9C3C389 /* Pods-StrictlyFuel.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				"CODE_SIGNING_ALLOWED[sdk=iphonesimulator*]" = NO;
-				CODE_SIGN_ENTITLEMENTS = StrictlyBased/StrictlyBased.entitlements;
+				CODE_SIGN_ENTITLEMENTS = StrictlyFuel/StrictlyFuel.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = F5XRK2VMWD;
-				INFOPLIST_FILE = StrictlyBased/Info.plist;
+				INFOPLIST_FILE = StrictlyFuel/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -457,10 +457,10 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
-				PRODUCT_BUNDLE_IDENTIFIER = com.strictlybased.StrictlyBased;
-				PRODUCT_NAME = StrictlyBased;
+				PRODUCT_BUNDLE_IDENTIFIER = com.strictlyfuel.app;
+				PRODUCT_NAME = StrictlyFuel;
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				SWIFT_OBJC_BRIDGING_HEADER = "StrictlyBased/StrictlyBased-Bridging-Header.h";
+				SWIFT_OBJC_BRIDGING_HEADER = "StrictlyFuel/StrictlyFuel-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -588,7 +588,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "StrictlyBased" */ = {
+		13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "StrictlyFuel" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				13B07F941A680F5B00A75B9A /* Debug */,
@@ -597,7 +597,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "StrictlyBased" */ = {
+		83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "StrictlyFuel" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				83CBBA201A601CBA00E9B192 /* Debug */,

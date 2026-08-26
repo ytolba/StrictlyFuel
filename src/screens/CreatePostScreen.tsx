@@ -68,7 +68,7 @@ const CreatePostScreen: React.FC = () => {
               ? "Product review · score unavailable"
               : `${score.score}/100 · ${score.label}`;
 
-            const universalLink = `strictlybased://scan/${scanData.id}`;
+            const universalLink = `strictlyfuel://scan/${scanData.id}`;
 
             const reviewTemplate = `Strictly score: ${score.score === null ? "Unavailable" : `${score.score}/100`}
 ${score.label}

@@ -15,7 +15,7 @@ export default function AppNavigator() {
   const [isFirstLaunch, setIsFirstLaunch] = useState<boolean | null>(null);
   const linking = {
     prefixes: [
-      "strictlybased://", // Custom URL scheme for deep linking
+      "strictlyfuel://", // Custom URL scheme for deep linking
       Linking.createURL("/"), // Expo-managed linking
     ],
     config: {
