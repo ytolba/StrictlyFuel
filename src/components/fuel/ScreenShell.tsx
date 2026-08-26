@@ -1,15 +1,19 @@
-import React from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React, { useEffect, useRef } from "react";
+import { Animated, Easing, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { strictlyColors, strictlyType } from "../../theme/strictlyTheme";
 
 export function ScreenShell({ children, title, eyebrow, back, onBack, scroll = true }: { children: React.ReactNode; title?: string; eyebrow?: string; back?: boolean; onBack?: () => void; scroll?: boolean }) {
+  const entrance = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(entrance, { toValue: 1, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+  }, [entrance]);
   const header = (title || back) ? <View style={styles.header}>
-    {back ? <TouchableOpacity onPress={onBack} style={styles.back}><Ionicons name="arrow-back" size={20} color={strictlyColors.ink} /></TouchableOpacity> : null}
+    {back ? <TouchableOpacity activeOpacity={0.68} hitSlop={8} onPress={onBack} style={styles.back}><Ionicons name="arrow-back" size={20} color={strictlyColors.ink} /></TouchableOpacity> : null}
     <View style={styles.heading}>{eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}{title ? <Text style={styles.title}>{title}</Text> : null}</View>
   </View> : null;
-  const content = <>{header}{children}</>;
+  const content = <Animated.View style={{ opacity: entrance, transform: [{ translateY: entrance.interpolate({ inputRange: [0, 1], outputRange: [7, 0] }) }] }}>{header}{children}</Animated.View>;
   return <SafeAreaView style={styles.safe} edges={["top"]}>{scroll ? <ScrollView style={styles.safe} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>{content}</ScrollView> : <View style={[styles.safe, styles.content]}>{content}</View>}</SafeAreaView>;
 }
 
@@ -22,4 +26,3 @@ const styles = StyleSheet.create({
   eyebrow: { fontFamily: strictlyType.mono, fontSize: 9, letterSpacing: 1.5, color: strictlyColors.textSoft, textTransform: "uppercase", marginBottom: 4 },
   title: { fontFamily: strictlyType.sansMedium, fontWeight: "700", fontSize: 25, letterSpacing: -0.7, color: strictlyColors.ink },
 });
-

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
@@ -11,6 +11,7 @@ import { saveMeal } from "../../services/fuelService";
 import type { FuelFood, MealIngredient } from "../../types/fuel";
 import type { MealAnalysis } from "../../types/mealAnalysis";
 import { ScreenShell } from "../../components/fuel/ScreenShell";
+import { LoadingState } from "../../components/fuel/LoadingState";
 import { strictlyColors, strictlyRadius, strictlyType } from "../../theme/strictlyTheme";
 
 function detectedIngredients(analysis: MealAnalysis): MealIngredient[] {
@@ -104,7 +105,7 @@ export default function MealScanScreen({ navigation }: any) {
       <View style={styles.truth}><Ionicons name="shield-checkmark-outline" size={19} color={strictlyColors.ink} /><Text style={styles.truthText}><Text style={styles.truthStrong}>You stay in control.</Text> Photo values are estimates. You can change portions, remove mistakes, and add missing foods before anything is logged.</Text></View>
     </> : <>
       <Image source={{ uri: photoUri }} style={styles.photo} />
-      {loading ? <View style={styles.loading}><ActivityIndicator size="large" color={strictlyColors.ink} /><Text style={styles.loadingTitle}>Reading your plate</Text><Text style={styles.loadingText}>Estimating visible foods and portions.</Text></View> : analysis ? <>
+      {loading ? <View style={styles.loadingCard}><LoadingState title={analysis ? "Refining your meal" : "Reading your plate"} messages={["Finding visible foods", "Estimating portions", "Checking the nutrition estimate"]} /></View> : analysis ? <>
         <View style={styles.estimateHead}><View><Text style={styles.estimateLabel}>CAMERA ESTIMATE · {analysis.confidence}% CONFIDENCE</Text><Text style={styles.estimateName}>{analysis.mealName}</Text></View><Text style={styles.estimateCarbs}>~{Math.round(estimatedCarbs)}g<Text style={styles.estimateUnit}> carbs</Text></Text></View>
         <Text style={styles.range}>Likely range: {Math.round(analysis.ranges.carbs[0])}–{Math.round(analysis.ranges.carbs[1])} g carbs. Correct the foods below before scoring.</Text>
         <View style={styles.items}>{items.map((item) => <View key={item.id} style={styles.item}><View style={styles.itemCopy}><Text style={styles.itemName}>{item.food.name}</Text><Text style={styles.itemMeta}>{item.food.servingLabel} · {item.confidence}% confidence</Text></View><TextInput value={String(Math.round(item.grams))} onChangeText={(value) => setItems((current) => current.map((row) => row.id === item.id ? { ...row, grams: Math.max(1, Number(value) || 1) } : row))} keyboardType="number-pad" style={styles.grams} /><Text style={styles.g}>g</Text><TouchableOpacity onPress={() => setItems((current) => current.filter((row) => row.id !== item.id))}><Ionicons name="close-circle" size={21} color={strictlyColors.textSoft} /></TouchableOpacity></View>)}</View>
@@ -130,9 +131,7 @@ const styles = StyleSheet.create({
   truthText: { flex: 1, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 17 },
   truthStrong: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.ink },
   photo: { width: "100%", height: 260, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surfaceMuted },
-  loading: { alignItems: "center", paddingVertical: 38 },
-  loadingTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.ink, fontSize: 20, marginTop: 14 },
-  loadingText: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 12, marginTop: 4 },
+  loadingCard: { marginTop: 12, backgroundColor: strictlyColors.cream, borderRadius: strictlyRadius.large },
   estimateHead: { flexDirection: "row", justifyContent: "space-between", gap: 10, alignItems: "flex-end", marginTop: 18 },
   estimateLabel: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 8, letterSpacing: 0.8 },
   estimateName: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.ink, fontSize: 21, marginTop: 6, maxWidth: 210 },

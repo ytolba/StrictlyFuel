@@ -1,5 +1,5 @@
 import React from "react";
-import { createStackNavigator } from "@react-navigation/stack";
+import { createStackNavigator, TransitionPresets } from "@react-navigation/stack";
 import AppTabNavigator from "./AppTabNavigator";
 import FuelTargetScreen from "../screens/fuel/FuelTargetScreen";
 import MealBuilderScreen from "../screens/fuel/MealBuilderScreen";
@@ -29,14 +29,20 @@ export type AppStackParamList = {
 const Stack = createStackNavigator<AppStackParamList>();
 
 export default function AppStackNavigator() {
-  return <Stack.Navigator screenOptions={{ headerShown: false, cardStyle: { backgroundColor: strictlyColors.background } }}>
+  return <Stack.Navigator screenOptions={{
+    headerShown: false,
+    cardStyle: { backgroundColor: strictlyColors.background },
+    gestureEnabled: true,
+    gestureResponseDistance: 44,
+    ...TransitionPresets.SlideFromRightIOS,
+  }}>
     <Stack.Screen name="Main" component={AppTabNavigator} />
     <Stack.Screen name="FuelTarget" component={FuelTargetScreen} />
     <Stack.Screen name="BuildMeal" component={MealBuilderScreen} />
     <Stack.Screen name="MealAnalysis" component={MealAnalysisScreen} />
     <Stack.Screen name="FixMeal" component={FixMealScreen} />
     <Stack.Screen name="ShareFuel" component={ShareFuelScreen} />
-    <Stack.Screen name="CommunityFilters" component={CommunityFiltersScreen} options={{ presentation: "modal" }} />
+    <Stack.Screen name="CommunityFilters" component={CommunityFiltersScreen} options={{ presentation: "modal", ...TransitionPresets.ModalSlideFromBottomIOS }} />
     <Stack.Screen name="FuelPostDetail" component={FuelPostDetailScreen} />
     <Stack.Screen name="SavedMeals" component={SavedMealsScreen} />
     <Stack.Screen name="AccountLegacy" component={AccountScreen} />

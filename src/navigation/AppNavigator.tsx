@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { ActivityIndicator, View, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { NavigationContainer } from "@react-navigation/native";
 import * as Linking from "expo-linking";
 import { useAuth } from "../contexts/AuthContext";
 import AuthStackNavigator from "./AuthStackNavigator";
 import AppStackNavigator from "./AppStackNavigator";
-import AppTabNavigator from "./AppTabNavigator";
 import OnboardingStackNavigator from "./OnboardingStackNavigator";
+import { LoadingState } from "../components/fuel/LoadingState";
+import { strictlyColors } from "../theme/strictlyTheme";
 
 export default function AppNavigator() {
   const { user } = useAuth();
@@ -39,7 +40,7 @@ export default function AppNavigator() {
   if (isFirstLaunch === null || user === undefined) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#00FF00" />
+        <LoadingState title="StrictlyFuel" messages={["Preparing your fuel plan", "Loading your latest workouts"]} />
       </View>
     );
   }
@@ -92,5 +93,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: strictlyColors.background,
   },
 });

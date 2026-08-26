@@ -7,6 +7,7 @@ import { publishFuelPost } from "../../services/fuelService";
 import type { FuelPost, PostVisibility } from "../../types/fuel";
 import { ScreenShell } from "../../components/fuel/ScreenShell";
 import { CarbSpeedBar } from "../../components/fuel/CarbSpeedBar";
+import { LoadingState } from "../../components/fuel/LoadingState";
 import { strictlyColors, strictlyRadius, strictlyType } from "../../theme/strictlyTheme";
 
 export default function ShareFuelScreen({ navigation, route }: any) {
@@ -58,7 +59,7 @@ export default function ShareFuelScreen({ navigation, route }: any) {
       ["ingredients", "Meal ingredients", "Foods and serving quantities"],
     ] as [keyof PostVisibility, string, string][]).map(([key, label, detail]) => <View key={key} style={styles.control}><View style={styles.controlCopy}><Text style={styles.controlTitle}>{label}</Text><Text style={styles.controlText}>{detail}</Text></View><Switch value={visibility[key]} onValueChange={(value) => setVisibility((current) => ({ ...current, [key]: value }))} trackColor={{ false: strictlyColors.borderStrong, true: strictlyColors.sage }} thumbColor={visibility[key] ? strictlyColors.lime : strictlyColors.white} /></View>)}</View>
     <View style={styles.privacy}><Ionicons name="lock-closed-outline" size={18} color={strictlyColors.ink} /><Text style={styles.privacyText}>Your meal log remains private. Publishing creates a separate community post that you can delete later. Precise location is never attached.</Text></View>
-    <TouchableOpacity disabled={publishing} style={[styles.publish, publishing && styles.disabled]} onPress={publish}><Ionicons name="paper-plane-outline" size={18} color={strictlyColors.ink} /><Text style={styles.publishText}>{publishing ? "Publishing…" : "Publish to community"}</Text></TouchableOpacity>
+    <TouchableOpacity activeOpacity={0.78} disabled={publishing} style={[styles.publish, publishing && styles.disabled]} onPress={publish}>{publishing ? <LoadingState compact title="Publishing your fuel" /> : <><Ionicons name="paper-plane-outline" size={18} color={strictlyColors.ink} /><Text style={styles.publishText}>Publish to community</Text></>}</TouchableOpacity>
   </ScreenShell>;
 }
 
@@ -89,4 +90,3 @@ const styles = StyleSheet.create({
   publishText: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.ink },
   disabled: { opacity: 0.45 },
 });
-

@@ -34,6 +34,7 @@ export default function AppTabNavigator() {
     tabBarActiveTintColor: strictlyColors.ink,
     tabBarInactiveTintColor: strictlyColors.textSoft,
     tabBarHideOnKeyboard: true,
+    animation: "fade",
     tabBarLabel: ({ focused }) => <Text style={[styles.label, focused && styles.labelActive]}>{route.name === "MyFuel" ? "my fuel" : route.name.toLowerCase()}</Text>,
     tabBarIcon: ({ focused, color }) => route.name === "Scan"
       ? <View style={styles.scan}><Ionicons name="camera" size={23} color={strictlyColors.ink} /></View>
