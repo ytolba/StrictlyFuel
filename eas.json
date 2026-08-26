@@ -1,0 +1,53 @@
+{
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "FIREBASE_API_KEY": "@FIREBASE_API_KEY_DEV",
+        "FIREBASE_AUTH_DOMAIN": "@FIREBASE_AUTH_DOMAIN_DEV",
+        "FIREBASE_PROJECT_ID": "@FIREBASE_PROJECT_ID_DEV",
+        "FIREBASE_STORAGE_BUCKET": "@FIREBASE_STORAGE_BUCKET_DEV",
+        "FIREBASE_MESSAGING_SENDER_ID": "@FIREBASE_MESSAGING_SENDER_ID_DEV",
+        "FIREBASE_APP_ID": "@FIREBASE_APP_ID_DEV",
+        "OPENAI_API_KEY": "@OPENAI_API_KEY_DEV"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "FIREBASE_API_KEY": "@FIREBASE_API_KEY_PREVIEW",
+        "FIREBASE_AUTH_DOMAIN": "@FIREBASE_AUTH_DOMAIN_PREVIEW",
+        "FIREBASE_PROJECT_ID": "@FIREBASE_PROJECT_ID_PREVIEW",
+        "FIREBASE_STORAGE_BUCKET": "@FIREBASE_STORAGE_BUCKET_PREVIEW",
+        "FIREBASE_MESSAGING_SENDER_ID": "@FIREBASE_MESSAGING_SENDER_ID_PREVIEW",
+        "FIREBASE_APP_ID": "@FIREBASE_APP_ID_PREVIEW",
+        "OPENAI_API_KEY": "@OPENAI_API_KEY_PREVIEW"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "FIREBASE_API_KEY": "@FIREBASE_API_KEY",
+        "FIREBASE_AUTH_DOMAIN": "@FIREBASE_AUTH_DOMAIN",
+        "FIREBASE_PROJECT_ID": "@FIREBASE_PROJECT_ID",
+        "FIREBASE_STORAGE_BUCKET": "@FIREBASE_STORAGE_BUCKET",
+        "FIREBASE_MESSAGING_SENDER_ID": "@FIREBASE_MESSAGING_SENDER_ID",
+        "FIREBASE_APP_ID": "@FIREBASE_APP_ID",
+        "OPENAI_API_KEY": "@OPENAI_API_KEY"
+      }
+    }
+  },
+  "cli": {
+    "appVersionSource": "local"
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "ascAppId": "6739453393",
+        "appleId": "yaseen.o.tolba@gmail.com",
+        "appleTeamId": "F5XRK2VMWD"
+      }
+    }
+  }
+}

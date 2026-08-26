@@ -1,0 +1,27 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "esnext",
+    "jsx": "react-native",
+    "strict": true,
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true, // Skips type checks for libraries
+    "baseUrl": ".",
+    "paths": {
+      "@env": ["node_modules/@types/react-native-dotenv"],
+      "@firebase/auth": ["./node_modules/@firebase/auth/dist/index.rn.d.ts"],
+      "openai-react-native": ["./node_modules/openai-react-native/dist"]
+    },
+    "types": ["react"],
+    
+  },
+  "exclude": [
+    "node_modules", // Excludes node_modules from type checking
+    "babel.config.js",
+    "metro.config.js",
+    "jest.config.js"
+  ]
+}

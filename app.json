@@ -1,0 +1,58 @@
+{
+  "expo": {
+    "name": "strictly",
+    "slug": "strictlyfuel",
+    "version": "1.0.1",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "strictlyfuel",
+    "newArchEnabled": true,
+    "android": {
+      "package": "com.strictlyfuel.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#1D3B2A"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.strictlyfuel.app",
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true,
+          "NSExceptionDomains": {
+            "api.openai.com": {
+              "NSIncludesSubdomains": true,
+              "NSExceptionAllowsInsecureHTTPLoads": true,
+              "NSExceptionRequiresForwardSecrecy": false,
+              "NSExceptionMinimumTLSVersion": "TLSv1.2"
+            }
+          }
+        }
+      },
+      "buildNumber": "10"
+    },
+    "web": {
+      "favicon": "./assets/icon.png"
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "bundleShortVersion": "1.0.1"
+          }
+        }
+      ]
+    ],
+    "assetBundlePatterns": ["**/*"],
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "extra": {
+      "eas": {
+        "projectId": "4f83705d-fda6-48c9-80ae-201f5646bf31"
+      }
+    },
+    "owner": "sulahmad"
+  }
+}
