@@ -10,8 +10,8 @@ const MEAL_SCHEMA = {
   properties: {
     mealName: { type: "string" },
     items: { type: "array", items: { type: "object", additionalProperties: false, properties: {
-      id: { type: "string" }, name: { type: "string" }, portionDescription: { type: "string" }, estimatedGrams: { type: "number" }, calories: { type: "number" }, carbs: { type: "number" }, protein: { type: "number" }, fat: { type: "number" }, confidence: { type: "integer", minimum: 0, maximum: 100 }, visualEvidence: { type: "string" },
-    }, required: ["id", "name", "portionDescription", "estimatedGrams", "calories", "carbs", "protein", "fat", "confidence", "visualEvidence"] } },
+      id: { type: "string" }, name: { type: "string" }, portionDescription: { type: "string" }, estimatedGrams: { type: "number" }, calories: { type: "number" }, carbs: { type: "number" }, protein: { type: "number" }, fat: { type: "number" }, fiber: { type: "number" }, confidence: { type: "integer", minimum: 0, maximum: 100 }, visualEvidence: { type: "string" },
+    }, required: ["id", "name", "portionDescription", "estimatedGrams", "calories", "carbs", "protein", "fat", "fiber", "confidence", "visualEvidence"] } },
     confidence: { type: "integer", minimum: 0, maximum: 100 }, uncertaintyPercent: { type: "number", minimum: 10, maximum: 60 }, hasReliableScaleReference: { type: "boolean" }, needsUserInput: { type: "boolean" }, followUpQuestion: { type: "string" }, assumptions: { type: "array", items: { type: "string" } }, warnings: { type: "array", items: { type: "string" } },
   },
   required: ["mealName", "items", "confidence", "uncertaintyPercent", "hasReliableScaleReference", "needsUserInput", "followUpQuestion", "assumptions", "warnings"],
@@ -20,7 +20,7 @@ const MEAL_SCHEMA = {
 function buildMealRequest(imageBase64, context = "", model = "gpt-5.6-sol") {
   return {
     model, store: false, reasoning: { effort: "high" }, max_output_tokens: 6000,
-    instructions: "You are a conservative sports-nutrition image analyst. Identify only visible foods. Estimate portions from reliable visual scale cues, perspective, depth, preparation method, and likely hidden oils or sauces. Calibrate against realistic cooked serving weights and do not mistake spread-out food or plate coverage for dense volume. Never claim precision the photo cannot support. Split mixed meals into components. Calories must be consistent with 4 kcal/g carbohydrate, 4 kcal/g protein, and 9 kcal/g fat. Confidence fields are integer percentages from 0 to 100: output 65 for 65%, never 0.65 or 1. Set hasReliableScaleReference false unless a known-size object, package label, or user-provided plate size makes scale trustworthy. If scale is not reliable, set needsUserInput true and ask about the one or two portions with the greatest calorie impact. Return no medical advice.",
+    instructions: "You are a conservative sports-nutrition image analyst. Identify only visible foods. Estimate portions from reliable visual scale cues, perspective, depth, preparation method, and likely hidden oils or sauces. Calibrate against realistic cooked serving weights and do not mistake spread-out food or plate coverage for dense volume. Never claim precision the photo cannot support. Split mixed meals into components. Estimate dietary fiber when the food identity supports it. Calories must be consistent with 4 kcal/g carbohydrate, 4 kcal/g protein, and 9 kcal/g fat. Confidence fields are integer percentages from 0 to 100: output 65 for 65%, never 0.65 or 1. Set hasReliableScaleReference false unless a known-size object, package label, or user-provided plate size makes scale trustworthy. If scale is not reliable, set needsUserInput true and ask about the one or two portions with the greatest calorie impact. Return no medical advice.",
     input: [{ role: "user", content: [
       { type: "input_text", text: `Estimate this meal for an athlete. User context: ${String(context || "No additional context.").slice(0, 500)} Include every visible food, realistic uncertainty, assumptions, and one high-value follow-up question when needed.` },
       { type: "input_image", image_url: `data:image/jpeg;base64,${imageBase64}`, detail: "high" },
@@ -39,6 +39,7 @@ function normalizeMealAnalysis(raw) {
     carbs: round(clamp(item.carbs, 0, 1000), 1),
     protein: round(clamp(item.protein, 0, 1000), 1),
     fat: round(clamp(item.fat, 0, 1000), 1),
+    fiber: round(clamp(item.fiber, 0, 500), 1),
     confidence: round(clamp(item.confidence, 0, 100)),
     visualEvidence: String(item.visualEvidence || "").slice(0, 180),
   })) : [];
@@ -48,7 +49,8 @@ function normalizeMealAnalysis(raw) {
     carbs: total.carbs + item.carbs,
     protein: total.protein + item.protein,
     fat: total.fat + item.fat,
-  }), { calories: 0, carbs: 0, protein: 0, fat: 0 });
+    fiber: total.fiber + item.fiber,
+  }), { calories: 0, carbs: 0, protein: 0, fat: 0, fiber: 0 });
 
   const macroCalories = summed.carbs * 4 + summed.protein * 4 + summed.fat * 9;
   const reportedCalories = summed.calories;
@@ -69,12 +71,14 @@ function normalizeMealAnalysis(raw) {
       carbs: round(summed.carbs, 1),
       protein: round(summed.protein, 1),
       fat: round(summed.fat, 1),
+      fiber: round(summed.fiber, 1),
     },
     ranges: {
       calories: [round(correctedCalories * (1 - uncertainty)), round(correctedCalories * (1 + uncertainty))],
       carbs: [round(summed.carbs * (1 - uncertainty), 1), round(summed.carbs * (1 + uncertainty), 1)],
       protein: [round(summed.protein * (1 - uncertainty), 1), round(summed.protein * (1 + uncertainty), 1)],
       fat: [round(summed.fat * (1 - uncertainty), 1), round(summed.fat * (1 + uncertainty), 1)],
+      fiber: [round(summed.fiber * (1 - uncertainty), 1), round(summed.fiber * (1 + uncertainty), 1)],
     },
     confidence: round(calibratedConfidence),
     needsUserInput,

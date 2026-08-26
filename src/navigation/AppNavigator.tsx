@@ -8,7 +8,6 @@ import AuthStackNavigator from "./AuthStackNavigator";
 import AppStackNavigator from "./AppStackNavigator";
 import AppTabNavigator from "./AppTabNavigator";
 import OnboardingStackNavigator from "./OnboardingStackNavigator";
-import ScanHistoryScreen from "src/screens/ScanHistoryScreen";
 
 export default function AppNavigator() {
   const { user } = useAuth();
@@ -20,7 +19,9 @@ export default function AppNavigator() {
     ],
     config: {
       screens: {
-        ScanHistoryScreen: "scan/:scanObject", // Route for passing the scan object
+        Main: "",
+        FuelTarget: "fuel-target",
+        BuildMeal: "build-meal",
         NotFound: "*", // Catch-all for unknown deep links
       },
     },

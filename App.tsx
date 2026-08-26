@@ -5,6 +5,7 @@ import * as SplashScreen from "expo-splash-screen";
 import Constants from "expo-constants";
 import AppNavigator from "./src/navigation/AppNavigator";
 import { AuthProvider } from "./src/contexts/AuthContext";
+import { FuelProvider } from "./src/contexts/FuelContext";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { NavigationContainer } from "@react-navigation/native";
@@ -93,7 +94,9 @@ const App: React.FC = () => {
           <SafeAreaProvider>
             <GestureHandlerRootView style={styles.gestureHandler}>
               <AuthProvider>
-                <AppNavigator />
+                <FuelProvider>
+                  <AppNavigator />
+                </FuelProvider>
               </AuthProvider>
             </GestureHandlerRootView>
           </SafeAreaProvider>
@@ -113,7 +116,7 @@ const App: React.FC = () => {
           ]}
         >
           <StrictlyBrand size={64} />
-          <Text style={styles.splashTagline}>SHOP WITH STANDARDS.</Text>
+          <Text style={styles.splashTagline}>FUEL THE WORK.</Text>
         </Animated.View>
       )}
     </View>

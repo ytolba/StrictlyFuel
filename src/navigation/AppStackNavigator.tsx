@@ -1,91 +1,44 @@
 import React from "react";
 import { createStackNavigator } from "@react-navigation/stack";
 import AppTabNavigator from "./AppTabNavigator";
-import FlaggedIngredientsScreen from "../screens/FlaggedIngredientsScreen";
-import ScanDetailScreen from "src/screens/ScanDetailScreen";
-import IngredientScreen from "../screens/IngredientScreen";
-import CreatePostScreen from "src/screens/CreatePostScreen";
-import CategoryDetailScreen from "src/screens/CategoryDetailScreen";
-import { strictlyColors, strictlyType } from "../theme/strictlyTheme";
+import FuelTargetScreen from "../screens/fuel/FuelTargetScreen";
+import MealBuilderScreen from "../screens/fuel/MealBuilderScreen";
+import MealAnalysisScreen from "../screens/fuel/MealAnalysisScreen";
+import FixMealScreen from "../screens/fuel/FixMealScreen";
+import ShareFuelScreen from "../screens/fuel/ShareFuelScreen";
+import CommunityFiltersScreen from "../screens/fuel/CommunityFiltersScreen";
+import FuelPostDetailScreen from "../screens/fuel/FuelPostDetailScreen";
+import SavedMealsScreen from "../screens/fuel/SavedMealsScreen";
+import AccountScreen from "../screens/AccountScreen";
+import type { CommunityFilters, FuelPost } from "../types/fuel";
+import { strictlyColors } from "../theme/strictlyTheme";
+
 export type AppStackParamList = {
-  Main: undefined;
-  Scan: undefined;
-  Catalog: undefined;
-  History: { scanObject: string };
-  Account: undefined;
-  Payment: undefined;
-  FlaggedIngredientsScreen: { ingredients: string[] };
-  ScanHistoryScreen: { scanObject: string };
-  CreatePost: {
-    scanObject?: string;
-    productInfo: {
-      title: string;
-      initialContent: string;
-      isReview: boolean;
-      scanId: string;
-      imageUrl?: string;
-    };
-  };
-  CategoryDetail: {
-    categoryId: string;
-    products: Product[];
-  };
+  Main: { screen?: string; params?: unknown } | undefined;
+  FuelTarget: undefined;
+  BuildMeal: undefined;
+  MealAnalysis: { mealId: string };
+  FixMeal: { mealId: string };
+  ShareFuel: { mealId: string };
+  CommunityFilters: { filters?: CommunityFilters } | undefined;
+  FuelPostDetail: { post?: FuelPost; postId?: string };
+  SavedMeals: undefined;
+  AccountLegacy: undefined;
 };
 
 const Stack = createStackNavigator<AppStackParamList>();
 
 export default function AppStackNavigator() {
-  return (
-    <Stack.Navigator
-      initialRouteName="Main"
-      screenOptions={{
-        headerStyle: {
-          backgroundColor: strictlyColors.background,
-        },
-        headerTintColor: strictlyColors.ink,
-        headerTitleStyle: {
-          fontFamily: strictlyType.sansMedium,
-          fontWeight: "600",
-          fontSize: 15,
-        },
-        cardStyle: {
-          backgroundColor: strictlyColors.background,
-        },
-      }}
-    >
-      <Stack.Screen
-        name="Main"
-        component={AppTabNavigator}
-        options={{
-          headerShown: false,
-          headerTitleStyle: { fontWeight: undefined },
-        }}
-      />
-      <Stack.Screen
-        name="FlaggedIngredientsScreen"
-        component={FlaggedIngredientsScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="ScanHistoryScreen"
-        component={ScanDetailScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="IngredientScreen"
-        component={IngredientScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="CreatePost"
-        component={CreatePostScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="CategoryDetail"
-        component={CategoryDetailScreen}
-        options={{ headerShown: false }}
-      />
-    </Stack.Navigator>
-  );
+  return <Stack.Navigator screenOptions={{ headerShown: false, cardStyle: { backgroundColor: strictlyColors.background } }}>
+    <Stack.Screen name="Main" component={AppTabNavigator} />
+    <Stack.Screen name="FuelTarget" component={FuelTargetScreen} />
+    <Stack.Screen name="BuildMeal" component={MealBuilderScreen} />
+    <Stack.Screen name="MealAnalysis" component={MealAnalysisScreen} />
+    <Stack.Screen name="FixMeal" component={FixMealScreen} />
+    <Stack.Screen name="ShareFuel" component={ShareFuelScreen} />
+    <Stack.Screen name="CommunityFilters" component={CommunityFiltersScreen} options={{ presentation: "modal" }} />
+    <Stack.Screen name="FuelPostDetail" component={FuelPostDetailScreen} />
+    <Stack.Screen name="SavedMeals" component={SavedMealsScreen} />
+    <Stack.Screen name="AccountLegacy" component={AccountScreen} />
+  </Stack.Navigator>;
 }

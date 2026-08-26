@@ -1,0 +1,32 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function ownsIncoming() { return signedIn() && request.resource.data.userId == request.auth.uid; }
+    function ownsExisting() { return signedIn() && resource.data.userId == request.auth.uid; }
+
+    match /users/{userId} {
+      allow read, create, update, delete: if signedIn() && request.auth.uid == userId;
+      match /savedMeals/{postId} {
+        allow read, write: if signedIn() && request.auth.uid == userId;
+      }
+    }
+
+    match /workouts/{workoutId} {
+      allow create: if ownsIncoming() && request.resource.data.visibility == "private";
+      allow read, update, delete: if ownsExisting();
+    }
+
+    match /meals/{mealId} {
+      allow create: if ownsIncoming() && request.resource.data.visibility == "private";
+      allow read, update, delete: if ownsExisting();
+    }
+
+    match /fuelPosts/{postId} {
+      allow read: if resource.data.isPublic == true;
+      allow create: if ownsIncoming() && request.resource.data.isPublic == true;
+      allow update, delete: if ownsExisting();
+    }
+  }
+}
+
