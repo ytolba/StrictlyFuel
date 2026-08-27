@@ -463,7 +463,10 @@ language sql stable set search_path = '' as $$
   order by
     f.is_verified desc,
     f.data_quality_score desc,
-    greatest(similarity(lower(f.name), lower(search_text)), similarity(lower(coalesce(f.brand, '')), lower(search_text))) desc
+    greatest(
+      extensions.similarity(lower(f.name), lower(search_text)),
+      extensions.similarity(lower(coalesce(f.brand, '')), lower(search_text))
+    ) desc
   limit least(greatest(result_limit, 1), 50);
 $$;
 

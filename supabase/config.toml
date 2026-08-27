@@ -21,4 +21,4 @@ enabled = true
 file_size_limit = "12MiB"
 
 [functions.search-foods]
-verify_jwt = false
+verify_jwt = true
