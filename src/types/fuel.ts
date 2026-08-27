@@ -15,7 +15,7 @@ export type ActivityType =
 
 export type WorkoutIntensity = "easy" | "moderate" | "hard";
 export type CarbSpeed = "fast" | "medium" | "slow";
-export type DataSource = "usda" | "label" | "open_food_facts" | "ai_estimate";
+export type DataSource = "strictly" | "usda" | "label" | "open_food_facts" | "ai_estimate";
 
 export type WorkoutDraft = {
   id: string;
@@ -148,4 +148,3 @@ export type CommunityFilters = {
   carbBand?: "under30" | "30to60" | "60to90" | "90to120" | "over120";
   highScoreOnly?: boolean;
 };
-

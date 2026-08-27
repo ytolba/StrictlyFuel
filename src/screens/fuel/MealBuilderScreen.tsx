@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { searchFuelFoods } from "../../data/fuelFoods";
+import { searchFoodCatalog } from "../../services/foodCatalogService";
 import { useFuel } from "../../contexts/FuelContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { calculateMealMacros } from "../../logic/nutritionEngine";
@@ -9,14 +10,27 @@ import { saveMeal } from "../../services/fuelService";
 import { ScreenShell } from "../../components/fuel/ScreenShell";
 import { CarbSpeedBar } from "../../components/fuel/CarbSpeedBar";
 import { strictlyColors, strictlyRadius, strictlyType } from "../../theme/strictlyTheme";
+import type { FuelFood } from "../../types/fuel";
 
 export default function MealBuilderScreen({ navigation }: any) {
   const { user } = useAuth();
   const { workout, target, ingredients, addIngredient, updateIngredient, removeIngredient, buildMeal } = useFuel();
   const [query, setQuery] = useState("");
   const [name, setName] = useState("My pre-workout meal");
+  const [results, setResults] = useState<FuelFood[]>(searchFuelFoods(""));
+  const [searching, setSearching] = useState(false);
   const macros = useMemo(() => calculateMealMacros(ingredients), [ingredients]);
-  const results = useMemo(() => searchFuelFoods(query), [query]);
+
+  useEffect(() => {
+    let active = true;
+    setResults(searchFuelFoods(query));
+    if (query.trim().length < 2) { setSearching(false); return () => { active = false; }; }
+    setSearching(true);
+    const timer = setTimeout(() => {
+      searchFoodCatalog(query).then((foods) => { if (active) setResults(foods); }).finally(() => { if (active) setSearching(false); });
+    }, 320);
+    return () => { active = false; clearTimeout(timer); };
+  }, [query]);
 
   const analyze = () => {
     if (!ingredients.length) return Alert.alert("Add a food first", "Build the meal you plan to eat, then Strictly can score it.");
@@ -31,7 +45,7 @@ export default function MealBuilderScreen({ navigation }: any) {
     <View style={styles.targetMini}><View><Text style={styles.targetLabel}>TARGET</Text><Text style={styles.targetValue}>{target.carbTarget}g</Text></View><View style={styles.targetProgress}><View style={[styles.targetFill, { width: `${Math.min(100, macros.carbs / Math.max(1, target.carbTarget) * 100)}%` }]} /></View><Text style={styles.actual}>{Math.round(macros.carbs)}g</Text></View>
 
     <TextInput value={name} onChangeText={setName} style={styles.nameInput} placeholder="Meal name" placeholderTextColor={strictlyColors.textSoft} />
-    <View style={styles.search}><Ionicons name="search" size={18} color={strictlyColors.textSoft} /><TextInput value={query} onChangeText={setQuery} style={styles.searchInput} placeholder="Search banana, rice, honey…" placeholderTextColor={strictlyColors.textSoft} /></View>
+    <View style={styles.search}><Ionicons name="search" size={18} color={strictlyColors.textSoft} /><TextInput value={query} onChangeText={setQuery} style={styles.searchInput} placeholder="Search any food or product…" placeholderTextColor={strictlyColors.textSoft} />{searching ? <View style={styles.searchPulse} /> : null}</View>
     {query ? <View style={styles.results}>{results.map((food) => <TouchableOpacity key={food.id} onPress={() => { addIngredient({ food, grams: food.defaultGrams }); setQuery(""); }} style={styles.result}><Text style={styles.foodEmoji}>{food.emoji}</Text><View style={styles.foodCopy}><Text style={styles.foodName}>{food.name}</Text><Text style={styles.foodMeta}>{food.servingLabel} · {food.carbSpeed} digesting</Text></View><View style={styles.add}><Ionicons name="add" size={19} color={strictlyColors.ink} /></View></TouchableOpacity>)}</View> : null}
 
     <View style={styles.sectionHead}><Text style={styles.sectionTitle}>Meal</Text><Text style={styles.count}>{ingredients.length} items</Text></View>
@@ -50,7 +64,7 @@ export default function MealBuilderScreen({ navigation }: any) {
 
     <View style={styles.macros}>{[["Calories", `${Math.round(macros.calories)}`], ["Protein", `${Math.round(macros.protein)}g`], ["Fat", `${Math.round(macros.fat)}g`], ["Fiber", `${Math.round(macros.fiber)}g`]].map(([label, value]) => <View key={label} style={styles.macro}><Text style={styles.macroValue}>{value}</Text><Text style={styles.macroLabel}>{label}</Text></View>)}</View>
     <TouchableOpacity style={[styles.primary, !ingredients.length && styles.disabled]} disabled={!ingredients.length} onPress={analyze}><Text style={styles.primaryText}>Score this meal</Text><Ionicons name="arrow-forward" size={18} color={strictlyColors.ink} /></TouchableOpacity>
-    <Text style={styles.source}>Generic food values use a curated USDA-based starter catalog. A package label should replace generic data for branded products.</Text>
+    <Text style={styles.source}>Results combine Strictly’s curated catalog with USDA FoodData Central and Open Food Facts. Package labels take priority for branded products.</Text>
   </ScreenShell>;
 }
 
@@ -65,6 +79,7 @@ const styles = StyleSheet.create({
   nameInput: { height: 50, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, borderRadius: strictlyRadius.medium, paddingHorizontal: 14, color: strictlyColors.ink, fontFamily: strictlyType.sansMedium, marginTop: 12 },
   search: { height: 52, flexDirection: "row", alignItems: "center", gap: 9, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, borderRadius: strictlyRadius.medium, paddingHorizontal: 14, marginTop: 9 },
   searchInput: { flex: 1, color: strictlyColors.ink, fontFamily: strictlyType.sans },
+  searchPulse: { width: 8, height: 8, borderRadius: 4, backgroundColor: strictlyColors.lime, borderWidth: 1, borderColor: strictlyColors.ink },
   results: { backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, borderRadius: strictlyRadius.medium, marginTop: 6, overflow: "hidden" },
   result: { flexDirection: "row", alignItems: "center", gap: 10, padding: 13, borderBottomWidth: 1, borderBottomColor: strictlyColors.border },
   foodEmoji: { fontSize: 20, width: 28, textAlign: "center" },
@@ -102,4 +117,3 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.4 },
   source: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 9, lineHeight: 14, marginTop: 11 },
 });
-
