@@ -80,6 +80,13 @@ Deno.serve(async (request) => {
       const { data, error } = await admin.from("foods").upsert(row, { onConflict: "source_id,source_product_id" }).select().single();
       if (error) throw error;
       await admin.from("food_portions").upsert({ food_id: data.id, label: String(food.servingLabel || "1 serving"), amount: 1, unit: "serving", gram_weight: grams, is_default: true, source_description: "User-submitted package label" }, { onConflict: "food_id,label,amount,unit" });
+      const barcode = String(food.barcode || "").replace(/\D/g, "");
+      if (barcode.length >= 8) {
+        const aliases = new Set([barcode]);
+        if (barcode.length === 12) aliases.add(`0${barcode}`);
+        if (barcode.length === 13 && barcode.startsWith("0")) aliases.add(barcode.slice(1));
+        await admin.from("food_barcode_aliases").upsert([...aliases].map((code) => ({ barcode: code, food_id: data.id, source: "label" })), { onConflict: "barcode" });
+      }
       return Response.json({ food: data, reviewStatus: "pending" }, { headers: corsHeaders });
     }
 

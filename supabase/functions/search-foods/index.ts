@@ -111,15 +111,17 @@ async function searchOpenFoodFacts(query: string): Promise<NormalizedFood[]> {
 }
 
 async function lookupOpenFoodFactsBarcode(barcode: string): Promise<NormalizedFood[]> {
-  const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(barcode)}.json?fields=code,product_name,brands,categories,image_front_small_url,nutriments`, {
-    headers: { "User-Agent": "StrictlyFuel/1.0 (food-catalog@strictlyinc.com)" },
-    signal: AbortSignal.timeout(8000),
-  });
-  if (!response.ok) return [];
-  const payload = await response.json();
-  const food = payload.product;
-  if (!food?.code || !food?.product_name) return [];
-  return [{
+  const hosts = ["world.openfoodfacts.org", "us.openfoodfacts.org", "openfoodfacts.org"];
+  for (const host of hosts) {
+    try {
+      const response = await fetch(`https://${host}/api/v2/product/${encodeURIComponent(barcode)}.json?fields=code,product_name,brands,categories,image_front_small_url,nutriments`, {
+        headers: { "User-Agent": "StrictlyFuel/1.0 (food-catalog@strictlyinc.com)" }, signal: AbortSignal.timeout(8000),
+      });
+      if (!response.ok) continue;
+      const payload = await response.json();
+      const food = payload.product;
+      if (!food?.code || !food?.product_name) continue;
+      return [{
     source_id: "open_food_facts", source_product_id: String(food.code), barcode: String(food.code),
     name: String(food.product_name), brand: food.brands || undefined, category: food.categories?.split(",")[0] || undefined,
     image_url: food.image_front_small_url || undefined, calories_per_100g: number(food.nutriments?.["energy-kcal_100g"]),
@@ -129,7 +131,20 @@ async function lookupOpenFoodFactsBarcode(barcode: string): Promise<NormalizedFo
     allulose_per_100g: number(food.nutriments?.allulose_100g),
     sugar_per_100g: number(food.nutriments?.sugars_100g), sodium_mg_per_100g: number(food.nutriments?.sodium_100g) * 1000,
     raw_source_data: food,
-  }];
+      }];
+    } catch { /* try the next regional mirror */ }
+  }
+  return [];
+}
+
+function barcodeCandidates(value: string) {
+  const normalized = value.replace(/\D/g, "").slice(0, 18);
+  const values = new Set<string>([normalized]);
+  // UPC-A is often represented as an EAN-13 with a leading zero, and some
+  // camera scanners return the opposite form. Query both before going online.
+  if (normalized.length === 12) values.add(`0${normalized}`);
+  if (normalized.length === 13 && normalized.startsWith("0")) values.add(normalized.slice(1));
+  return [...values].filter((candidate) => candidate.length >= 8);
 }
 
 Deno.serve(async (request) => {
@@ -145,9 +160,21 @@ Deno.serve(async (request) => {
     if (!supabaseUrl || !secretKey) throw new Error("Supabase server credentials are unavailable.");
     const admin = createClient(supabaseUrl, String(secretKey), { auth: { persistSession: false } });
     if (normalizedBarcode.length >= 8) {
-      const { data: saved } = await admin.from("foods").select(foodSelect).eq("barcode", normalizedBarcode).limit(1);
-      if (saved?.length) return Response.json({ foods: saved, source: "catalog", cached: true }, { headers: corsHeaders });
-      const external = await lookupOpenFoodFactsBarcode(normalizedBarcode);
+      const candidates = barcodeCandidates(normalizedBarcode);
+      for (const candidate of candidates) {
+        const { data: alias } = await admin.from("food_barcode_aliases").select("food_id").eq("barcode", candidate).limit(1);
+        if (alias?.[0]?.food_id) {
+          const { data: aliased } = await admin.from("foods").select(foodSelect).eq("id", alias[0].food_id).limit(1);
+          if (aliased?.length) return Response.json({ foods: aliased, source: "catalog", cached: true }, { headers: corsHeaders });
+        }
+        const { data: saved } = await admin.from("foods").select(foodSelect).eq("barcode", candidate).limit(1);
+        if (saved?.length) return Response.json({ foods: saved, source: "catalog", cached: true }, { headers: corsHeaders });
+      }
+      let external: NormalizedFood[] = [];
+      for (const candidate of candidates) {
+        external = await lookupOpenFoodFactsBarcode(candidate);
+        if (external.length) break;
+      }
       if (!external.length) return Response.json({ foods: [], source: "open_food_facts", cached: false }, { headers: corsHeaders });
       const rows = external.map((food) => {
         const classification = classify(food);
@@ -155,6 +182,9 @@ Deno.serve(async (request) => {
       });
       const { data: stored, error: storeError } = await admin.from("foods").upsert(rows, { onConflict: "source_id,source_product_id" }).select(foodSelect);
       if (storeError) throw storeError;
+      if (stored?.[0]?.id) {
+        await admin.from("food_barcode_aliases").upsert(candidates.map((candidate) => ({ barcode: candidate, food_id: stored[0].id, source: "open_food_facts" })), { onConflict: "barcode" });
+      }
       return Response.json({ foods: stored || [], source: "open_food_facts", cached: false }, { headers: corsHeaders });
     }
     if (normalizedQuery.length < 2) return Response.json({ error: "Enter at least two characters." }, { status: 400, headers: corsHeaders });

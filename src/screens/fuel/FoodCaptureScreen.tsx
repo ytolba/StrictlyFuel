@@ -8,8 +8,9 @@ import { ScreenShell } from "../../components/fuel/ScreenShell";
 import { LoadingState } from "../../components/fuel/LoadingState";
 import { ValueEditorSheet } from "../../components/fuel/ValueEditorSheet";
 import { lookupFoodBarcode } from "../../services/foodCatalogService";
-import { analyzeFoodLabel, saveFoodLabel } from "../../services/foodCaptureService";
-import { isAiLimitError } from "../../services/functionErrors";
+import { saveFoodLabel } from "../../services/foodCaptureService";
+import { extractTextFromImage } from "../../utils/AppleVisionOCR";
+import { parseNutritionLabelText } from "../../services/nutritionLabelParser";
 import { useFuel } from "../../contexts/FuelContext";
 import type { FoodLabelAnalysis } from "../../types/foodCapture";
 import { strictlyColors, strictlyRadius, strictlyType } from "../../theme/strictlyTheme";
@@ -63,16 +64,13 @@ export default function FoodCaptureScreen({ navigation }: any) {
     try {
       const prepared = await ImageManipulator.manipulateAsync(result.assets[0].uri, [{ resize: { width: 1800 } }], { compress: 0.86, format: ImageManipulator.SaveFormat.JPEG, base64: true });
       if (!prepared.base64) throw new Error("The label photo could not be prepared.");
-      setLabel(await analyzeFoodLabel(prepared.base64));
+      // Nutrition facts are printed data, so keep this path private, fast and
+      // deterministic: Apple's on-device Vision OCR reads the text and the
+      // parser maps only numbers that are actually visible on the label.
+      const text = await extractTextFromImage(result.assets[0].uri);
+      setLabel(parseNutritionLabelText(text));
     } catch (error) {
-      if (isAiLimitError(error)) {
-        Alert.alert("Weekly scans used up", error.message, [
-          { text: "Not now", style: "cancel" },
-          { text: "See Pro", onPress: () => navigation.getParent()?.navigate("Paywall") },
-        ]);
-      } else {
-        Alert.alert("Could not read this label", error instanceof Error ? error.message : "Try again in brighter light.");
-      }
+      Alert.alert("Could not read this label", error instanceof Error ? error.message : "Try again in brighter light with the nutrition panel flat and close to the camera.");
     }
     finally { setLoading(false); }
   };
@@ -103,7 +101,7 @@ export default function FoodCaptureScreen({ navigation }: any) {
 
     {mode === "label" ? <>
       {!photoUri ? <View style={styles.labelHero}><Ionicons name="document-text-outline" size={42} color={strictlyColors.text} /><Text style={styles.labelTitle}>Capture the useful side</Text><Text style={styles.labelText}>Keep the nutrition facts, serving size, ingredients, product name, and barcode as flat and readable as possible.</Text><TouchableOpacity style={styles.primary} onPress={captureLabel}><Ionicons name="camera" size={19} color={strictlyColors.onLime} /><Text style={styles.primaryText}>Take label photo</Text></TouchableOpacity></View> : <Image source={{ uri: photoUri }} style={styles.photo} />}
-      {loading ? <View style={styles.loadingCard}><LoadingState title={label ? "Saving this food" : "Reading the package"} messages={["Finding serving size", "Reading macros", "Checking ingredients and carb speed"]} /></View> : null}
+      {loading ? <View style={styles.loadingCard}><LoadingState title={label ? "Saving this food" : "Reading on device"} messages={["Finding serving size", "Reading printed macros", "Preparing an editable label"]} /></View> : null}
       {label && !loading ? <View style={styles.form}>
         <View style={styles.review}><Ionicons name={label.needsCorrection ? "alert-circle-outline" : "checkmark-circle-outline"} size={20} color={strictlyColors.text} /><Text style={styles.reviewText}>{label.needsCorrection ? "Review highlighted values before saving." : `${label.confidence}% read confidence. Confirm everything below.`}</Text></View>
         <Text style={styles.fieldLabel}>PRODUCT</Text><TextInput value={label.productName} onChangeText={(productName) => setLabel({ ...label, productName })} style={styles.textField} placeholder="Product name" placeholderTextColor={strictlyColors.textSoft} />
