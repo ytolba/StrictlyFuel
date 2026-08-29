@@ -31,7 +31,7 @@ Everything below has to match the constants in `src/config/monetization.ts`.
 | --- | --- |
 | Entitlement identifier | `strictlyfuel_pro` |
 | Package identifiers in the offering | `monthly`, `yearly` |
-| App Store product ids | `strictlyfuel_pro_monthly`, `strictlyfuel_pro_yearly` |
+| App Store product ids | `StrictlyFuel_Yearly` (live yearly product; add monthly when it exists) |
 | Offering | whichever is marked **Current** |
 
 1. **Product catalog → Products** — import the two subscriptions from App Store
@@ -47,6 +47,13 @@ Everything below has to match the constants in `src/config/monetization.ts`.
    management options and survey copy.
 
 ## 3. API keys
+
+RevenueCat uses two different Apple credentials. The **In-App Purchase key**
+(`SubscriptionKey_XXXXXXXXXX.p8`) is used to connect the app configuration.
+To import subscription products automatically, RevenueCat also needs the
+separate **App Store Connect API key** (`AuthKey_XXXXXXXXXX.p8`) in the App
+Store Connect API section. Never paste either private key into chat or commit
+it to the repository.
 
 Keys are read from the environment. There is intentionally no hard-coded
 fallback, so a key from another RevenueCat project cannot silently ship:
