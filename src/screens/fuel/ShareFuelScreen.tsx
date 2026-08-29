@@ -58,8 +58,8 @@ export default function ShareFuelScreen({ navigation, route }: any) {
       ["macros", "Nutrition", "Calories, macros, and carb composition"],
       ["ingredients", "Meal ingredients", "Foods and serving quantities"],
     ] as [keyof PostVisibility, string, string][]).map(([key, label, detail]) => <View key={key} style={styles.control}><View style={styles.controlCopy}><Text style={styles.controlTitle}>{label}</Text><Text style={styles.controlText}>{detail}</Text></View><Switch value={visibility[key]} onValueChange={(value) => setVisibility((current) => ({ ...current, [key]: value }))} trackColor={{ false: strictlyColors.borderStrong, true: strictlyColors.sage }} thumbColor={visibility[key] ? strictlyColors.lime : strictlyColors.white} /></View>)}</View>
-    <View style={styles.privacy}><Ionicons name="lock-closed-outline" size={18} color={strictlyColors.ink} /><Text style={styles.privacyText}>Your meal log remains private. Publishing creates a separate community post that you can delete later. Precise location is never attached.</Text></View>
-    <TouchableOpacity activeOpacity={0.78} disabled={publishing} style={[styles.publish, publishing && styles.disabled]} onPress={publish}>{publishing ? <LoadingState compact title="Publishing your fuel" /> : <><Ionicons name="paper-plane-outline" size={18} color={strictlyColors.ink} /><Text style={styles.publishText}>Publish to community</Text></>}</TouchableOpacity>
+    <View style={styles.privacy}><Ionicons name="lock-closed-outline" size={18} color={strictlyColors.text} /><Text style={styles.privacyText}>Your meal log remains private. Publishing creates a separate community post that you can delete later. Precise location is never attached.</Text></View>
+    <TouchableOpacity activeOpacity={0.78} disabled={publishing} style={[styles.publish, publishing && styles.disabled]} onPress={publish}>{publishing ? <LoadingState compact title="Publishing your fuel" /> : <><Ionicons name="paper-plane-outline" size={18} color={strictlyColors.onLime} /><Text style={styles.publishText}>Publish to community</Text></>}</TouchableOpacity>
   </ScreenShell>;
 }
 
@@ -70,23 +70,23 @@ const styles = StyleSheet.create({
   emoji: { fontSize: 30, letterSpacing: 6 },
   previewBody: { padding: 16 },
   workout: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 8, textTransform: "uppercase", letterSpacing: 1 },
-  name: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.ink, fontSize: 21, marginTop: 7 },
+  name: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 21, marginTop: 7 },
   scoreRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 7, marginBottom: 10 },
-  carbs: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.ink, fontSize: 28 },
+  carbs: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 28 },
   carbsUnit: { fontFamily: strictlyType.sans, fontWeight: "400", color: strictlyColors.textSoft, fontSize: 10 },
   score: { width: 43, height: 43, borderRadius: 22, backgroundColor: strictlyColors.lime, alignItems: "center", justifyContent: "center" },
-  scoreValue: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.ink, fontSize: 15, lineHeight: 16 },
-  scoreLabel: { fontFamily: strictlyType.mono, color: strictlyColors.ink, fontSize: 5 },
-  sectionTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.ink, fontSize: 16, marginTop: 22, marginBottom: 9 },
-  caption: { minHeight: 94, textAlignVertical: "top", padding: 14, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, borderRadius: strictlyRadius.medium, fontFamily: strictlyType.sans, color: strictlyColors.ink, fontSize: 13, lineHeight: 19 },
+  scoreValue: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.onLime, fontSize: 15, lineHeight: 16 },
+  scoreLabel: { fontFamily: strictlyType.mono, color: strictlyColors.onLime, fontSize: 5 },
+  sectionTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 16, marginTop: 22, marginBottom: 9 },
+  caption: { minHeight: 94, textAlignVertical: "top", padding: 14, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, borderRadius: strictlyRadius.medium, fontFamily: strictlyType.sans, color: strictlyColors.text, fontSize: 13, lineHeight: 19 },
   controls: { backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, borderRadius: strictlyRadius.large, overflow: "hidden" },
   control: { flexDirection: "row", alignItems: "center", gap: 10, padding: 14, borderBottomWidth: 1, borderBottomColor: strictlyColors.border },
   controlCopy: { flex: 1 },
-  controlTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.ink, fontSize: 12 },
+  controlTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 12 },
   controlText: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 9, marginTop: 3 },
   privacy: { flexDirection: "row", gap: 9, padding: 14, backgroundColor: strictlyColors.cream, borderRadius: strictlyRadius.medium, marginTop: 13 },
-  privacyText: { flex: 1, fontFamily: strictlyType.sans, color: strictlyColors.ink, fontSize: 10, lineHeight: 15 },
+  privacyText: { flex: 1, fontFamily: strictlyType.sans, color: strictlyColors.text, fontSize: 10, lineHeight: 15 },
   publish: { height: 56, backgroundColor: strictlyColors.lime, borderRadius: strictlyRadius.medium, flexDirection: "row", gap: 8, alignItems: "center", justifyContent: "center", marginTop: 14 },
-  publishText: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.ink },
+  publishText: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.onLime },
   disabled: { opacity: 0.45 },
 });

@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
   },
   header: {
     fontSize: 22,
-    color: strictlyColors.ink,
+    color: strictlyColors.text,
     fontWeight: "bold",
     textAlign: "center",
     fontFamily: "System",
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
   },
   closeButtonText: {
     fontWeight: "bold",
-    color: strictlyColors.ink,
+    color: strictlyColors.text,
     fontSize: 16,
     fontFamily: "System",
   },
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
   },
   ingredientTitle: {
     fontSize: 16,
-    color: strictlyColors.ink,
+    color: strictlyColors.text,
     fontWeight: "bold",
     marginLeft: 8, // Space between the icon and text
     fontFamily: "System",

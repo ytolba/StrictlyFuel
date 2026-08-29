@@ -5,6 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+const foodSelect = "id,source_id,source_product_id,barcode,name,brand,category,image_url,carb_speed_tier_id,carb_speed_reason,calories_per_100g,carbs_per_100g,protein_per_100g,fat_per_100g,fiber_per_100g,sugar_per_100g,sodium_mg_per_100g,data_quality_score,is_verified";
 
 type NormalizedFood = {
   source_id: "usda" | "open_food_facts";
@@ -103,19 +104,52 @@ async function searchOpenFoodFacts(query: string): Promise<NormalizedFood[]> {
   }));
 }
 
+async function lookupOpenFoodFactsBarcode(barcode: string): Promise<NormalizedFood[]> {
+  const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(barcode)}.json?fields=code,product_name,brands,categories,image_front_small_url,nutriments`, {
+    headers: { "User-Agent": "StrictlyFuel/1.0 (food-catalog@strictlyinc.com)" },
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!response.ok) return [];
+  const payload = await response.json();
+  const food = payload.product;
+  if (!food?.code || !food?.product_name) return [];
+  return [{
+    source_id: "open_food_facts", source_product_id: String(food.code), barcode: String(food.code),
+    name: String(food.product_name), brand: food.brands || undefined, category: food.categories?.split(",")[0] || undefined,
+    image_url: food.image_front_small_url || undefined, calories_per_100g: number(food.nutriments?.["energy-kcal_100g"]),
+    carbs_per_100g: number(food.nutriments?.carbohydrates_100g), protein_per_100g: number(food.nutriments?.proteins_100g),
+    fat_per_100g: number(food.nutriments?.fat_100g), fiber_per_100g: number(food.nutriments?.fiber_100g),
+    sugar_per_100g: number(food.nutriments?.sugars_100g), sodium_mg_per_100g: number(food.nutriments?.sodium_100g) * 1000,
+    raw_source_data: food,
+  }];
+}
+
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const startedAt = Date.now();
   try {
-    const { query, limit = 25 } = await request.json();
+    const { query, barcode, limit = 25 } = await request.json();
+    const normalizedBarcode = String(barcode || "").replace(/\D/g, "").slice(0, 18);
     const normalizedQuery = normalizeQuery(query);
-    if (normalizedQuery.length < 2) return Response.json({ error: "Enter at least two characters." }, { status: 400, headers: corsHeaders });
-
     const secretDictionary = JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS") || "{}");
     const secretKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Object.values(secretDictionary)[0];
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     if (!supabaseUrl || !secretKey) throw new Error("Supabase server credentials are unavailable.");
     const admin = createClient(supabaseUrl, String(secretKey), { auth: { persistSession: false } });
+    if (normalizedBarcode.length >= 8) {
+      const { data: saved } = await admin.from("foods").select(foodSelect).eq("barcode", normalizedBarcode).limit(1);
+      if (saved?.length) return Response.json({ foods: saved, source: "catalog", cached: true }, { headers: corsHeaders });
+      const external = await lookupOpenFoodFactsBarcode(normalizedBarcode);
+      if (!external.length) return Response.json({ foods: [], source: "open_food_facts", cached: false }, { headers: corsHeaders });
+      const rows = external.map((food) => {
+        const classification = classify(food);
+        return { ...food, carb_speed_tier_id: classification.tier, carb_speed_confidence: classification.confidence, carb_speed_reason: classification.reason, data_quality_score: 68, is_verified: false };
+      });
+      const { data: stored, error: storeError } = await admin.from("foods").upsert(rows, { onConflict: "source_id,source_product_id" }).select(foodSelect);
+      if (storeError) throw storeError;
+      return Response.json({ foods: stored || [], source: "open_food_facts", cached: false }, { headers: corsHeaders });
+    }
+    if (normalizedQuery.length < 2) return Response.json({ error: "Enter at least two characters." }, { status: 400, headers: corsHeaders });
 
     const { data: local, error: localError } = await admin.rpc("search_food_catalog", { search_text: normalizedQuery, result_limit: Math.min(number(limit) || 25, 50) });
     if (localError) throw localError;
@@ -126,7 +160,7 @@ Deno.serve(async (request) => {
 
     const { data: cached } = await admin.from("food_search_cache").select("result_food_ids,provider,expires_at,hit_count").eq("query_key", normalizedQuery).gt("expires_at", new Date().toISOString()).maybeSingle();
     if (cached?.result_food_ids?.length) {
-      const { data: cachedFoods } = await admin.from("foods").select("*").in("id", cached.result_food_ids).limit(Math.min(number(limit) || 25, 50));
+      const { data: cachedFoods } = await admin.from("foods").select(foodSelect).in("id", cached.result_food_ids).limit(Math.min(number(limit) || 25, 50));
       await admin.from("food_search_cache").update({ hit_count: (cached.hit_count || 0) + 1 }).eq("query_key", normalizedQuery);
       await admin.from("food_api_events").insert({ normalized_query: normalizedQuery, provider: cached.provider, result_count: cachedFoods?.length || 0, cache_hit: true, latency_ms: Date.now() - startedAt });
       return Response.json({ foods: cachedFoods || local || [], source: cached.provider, cached: true }, { headers: { ...corsHeaders, "Cache-Control": "public, max-age=120" } });

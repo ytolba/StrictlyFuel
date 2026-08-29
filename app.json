@@ -4,7 +4,12 @@
     "slug": "strictlyfuel",
     "version": "1.0.1",
     "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
     "icon": "./assets/icon.png",
+    "splash": {
+      "backgroundColor": "#F2EAD7",
+      "resizeMode": "contain"
+    },
     "scheme": "strictlyfuel",
     "newArchEnabled": true,
     "android": {
@@ -12,24 +17,25 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#1D3B2A"
-      }
+      },
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "ios": {
       "bundleIdentifier": "com.strictlyfuel.app",
+      "buildNumber": "10",
+      "supportsTablet": false,
       "infoPlist": {
-        "NSAppTransportSecurity": {
-          "NSAllowsArbitraryLoads": true,
-          "NSExceptionDomains": {
-            "api.openai.com": {
-              "NSIncludesSubdomains": true,
-              "NSExceptionAllowsInsecureHTTPLoads": true,
-              "NSExceptionRequiresForwardSecrecy": false,
-              "NSExceptionMinimumTLSVersion": "TLSv1.2"
-            }
-          }
-        }
+        "NSCameraUsageDescription": "StrictlyFuel uses the camera to photograph your meal or a product label so it can estimate the nutrition.",
+        "NSPhotoLibraryUsageDescription": "StrictlyFuel needs access to your photos so you can pick an existing meal photo to analyse.",
+        "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "10"
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "web": {
       "favicon": "./assets/icon.png"
@@ -42,9 +48,25 @@
             "bundleShortVersion": "1.0.1"
           }
         }
+      ],
+      "expo-font",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "StrictlyFuel uses the camera to photograph your meal or a product label so it can estimate the nutrition."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "StrictlyFuel needs access to your photos so you can pick an existing meal photo to analyse.",
+          "cameraPermission": "StrictlyFuel uses the camera to photograph your meal or a product label so it can estimate the nutrition."
+        }
       ]
     ],
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "updates": {
       "fallbackToCacheTimeout": 0
     },

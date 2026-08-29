@@ -15,5 +15,5 @@ export default function SavedMealsScreen({ navigation }: any) {
   </ScreenShell>;
 }
 
-const styles = StyleSheet.create({ empty: { padding: 30, alignItems: "center" }, title: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.ink, fontSize: 17 }, text: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 17, textAlign: "center", marginTop: 6 } });
+const styles = StyleSheet.create({ empty: { padding: 30, alignItems: "center" }, title: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 17 }, text: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 17, textAlign: "center", marginTop: 6 } });
 

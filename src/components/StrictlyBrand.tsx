@@ -6,13 +6,14 @@ import { strictlyColors, strictlyType } from "../theme/strictlyTheme";
 type BrandMarkProps = {
   size?: number;
   dark?: boolean;
+  onCream?: boolean;
 };
 
-export const StrictlyMark = ({ size = 38, dark = true }: BrandMarkProps) => (
+export const StrictlyMark = ({ size = 38, dark = true, onCream = false }: BrandMarkProps) => (
   <Svg width={size * 0.88} height={size} viewBox="0 0 100 113.2">
     <Polygon
       points="61.4,0 100,0 82.6,16.4 68.5,16.5 25.1,55.5 25,63 33.1,63.3 65.7,34.4 93.2,34.2 93.3,63.7 38.6,113.2 0,113.2 17.4,96.8 31.5,96.7 74.9,57.7 75,50.2 66.9,49.9 34.3,78.8 6.8,79 6.7,49.5"
-      fill={dark ? strictlyColors.paper : strictlyColors.ink}
+      fill={onCream ? strictlyColors.ink : dark ? strictlyColors.paper : strictlyColors.ink}
     />
   </Svg>
 );
@@ -25,14 +26,15 @@ type BrandLockupProps = BrandMarkProps & {
 export const StrictlyBrand = ({
   size = 38,
   dark = true,
+  onCream = false,
   compact = false,
   style,
 }: BrandLockupProps) => (
   <View style={[styles.lockup, style]}>
-    <StrictlyMark size={size} dark={dark} />
+    <StrictlyMark size={size} dark={dark} onCream={onCream} />
     {!compact && (
       <View style={styles.wordmark}>
-        <Text style={[styles.strictly, !dark && styles.strictlyLight]}>
+        <Text style={[styles.strictly, (!dark || onCream) && styles.strictlyLight, onCream && styles.strictlyOnCream]}>
           STRICTLY
         </Text>
       </View>
@@ -58,6 +60,9 @@ const styles = StyleSheet.create({
     letterSpacing: 2.4,
   },
   strictlyLight: {
+    color: strictlyColors.text,
+  },
+  strictlyOnCream: {
     color: strictlyColors.ink,
   },
 });

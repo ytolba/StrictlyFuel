@@ -22,26 +22,26 @@ type Props = {
 const sectionContent: Record<ProfileKey, { eyebrow: string; title: string; description: string; options: ProfileOption[] }> = {
   sensitivities: {
     eyebrow: "SENSITIVITIES",
-    title: "What should we watch for?",
-    description: "Choose any ingredients that you avoid. This is optional.",
+    title: "What doesn’t sit well?",
+    description: "Choose allergies, intolerances, or foods that tend to feel rough around training. This is optional.",
     options: SENSITIVITY_OPTIONS,
   },
   conditions: {
     eyebrow: "DIET-RELATED CONDITIONS",
-    title: "Anything that shapes how you eat?",
-    description: "These selections tune your fit score; they do not provide medical guidance.",
+    title: "Anything that shapes your fuel choices?",
+    description: "These selections help flag meal ideas that may not fit you. They do not replace medical guidance.",
     options: CONDITION_OPTIONS,
   },
   dietaryPatterns: {
     eyebrow: "VALUES",
     title: "How do you prefer to eat?",
-    description: "Select a pattern only when it matters to your product choices.",
+    description: "We’ll keep meal ideas aligned with the way you prefer to eat.",
     options: DIETARY_PATTERN_OPTIONS,
   },
   priorities: {
     eyebrow: "PRIORITIES",
     title: "What matters most?",
-    description: "We’ll give your priorities more weight in the final score.",
+    description: "Tell us what makes a pre-workout meal practical for your life and stomach.",
     options: PRIORITY_OPTIONS,
   },
 };

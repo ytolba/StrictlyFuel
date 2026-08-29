@@ -51,7 +51,7 @@ const ShopScreen: React.FC = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={strictlyColors.ink} />
+        <ActivityIndicator size="large" color={strictlyColors.text} />
         <Text style={styles.loadingText}>Loading products...</Text>
       </View>
     );
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   emptyTitle: {
-    color: strictlyColors.ink,
+    color: strictlyColors.text,
     fontFamily: strictlyType.sansBold,
     fontSize: 21,
     marginBottom: 7,

@@ -1,5 +1,4 @@
 import React, { useState, useRef } from "react";
-import { auth, db } from "../firebaseConfig";
 import {
   View,
   Text,
@@ -20,16 +19,6 @@ import {
 } from "react-native";
 import { useAuth } from "../contexts/AuthContext";
 import { NavigationProp } from "@react-navigation/native";
-import {
-  doc,
-  setDoc,
-  getDoc,
-  deleteDoc,
-  query,
-  collection,
-  getDocs,
-  where,
-} from "firebase/firestore";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { APPLE_SIGN_IN_ENABLED } from "../config/authFeatures";
 import { strictlyColors, strictlyRadius, strictlyType } from "../theme/strictlyTheme";
@@ -88,23 +77,14 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
 
     setIsLoading(true);
     try {
-      const usersRef = collection(db, "users");
-      const emailQuery = query(usersRef, where("email", "==", email));
-      const querySnapshot = await getDocs(emailQuery);
-      if (!querySnapshot.empty) {
-        setIsLoading(false);
-        Alert.alert(
-          "Hey There!",
-          "An account with this email already exists. Please try signing in.",
-          [{ text: "OK", onPress: () => navigation.navigate("SignIn") }]
-        );
-        return;
+      const result = await signUpWithEmail(email, password, firstName, lastName);
+      if (result.confirmationRequired) {
+        navigation.navigate("VerifyEmail", { email: email.trim().toLowerCase() });
       } else {
-        await signUpWithEmail(email, password, firstName, lastName);
         Alert.alert(
-          "Success",
-          "Account created successfully! Please verify your email to continue.",
-          [{ text: "OK", onPress: () => navigation.navigate("SignIn") }]
+          "You’re in",
+          "Your account is ready. Let’s fuel the work.",
+          [{ text: "Continue" }]
         );
       }
     } catch (error: any) {
@@ -159,7 +139,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
                 style={styles.logo}
               />
               <Text style={styles.title}>Create your account</Text>
-              <Text style={styles.subtitle}>Save scans, revisit results, and keep your standards in sync.</Text>
+              <Text style={styles.subtitle}>Save workouts, build repeatable meals, and learn what fuels your best sessions.</Text>
 
               <View style={styles.toggleContainer}>
                 <TouchableOpacity
@@ -269,10 +249,10 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
                   disabled={isLoading}
                 >
                   {isLoading ? (
-                    <ActivityIndicator color="#fff" />
+                    <ActivityIndicator color={strictlyColors.onLime} />
                   ) : (
                     <>
-                      <Ionicons name="arrow-forward" size={18} color={strictlyColors.white} />
+                      <Ionicons name="arrow-forward" size={18} color={strictlyColors.onLime} />
                       <Text style={[styles.buttonText, { marginLeft: 10 }]}>
                         Continue with email
                       </Text>
@@ -386,7 +366,7 @@ const styles = StyleSheet.create({
     width: "100%",
     flexDirection: "row",
     height: 48,
-    backgroundColor: strictlyColors.black,
+    backgroundColor: strictlyColors.lime,
     borderRadius: strictlyRadius.small,
     alignItems: "center",
     justifyContent: "center",
@@ -396,7 +376,7 @@ const styles = StyleSheet.create({
     opacity: 0.55,
   },
   buttonText: {
-    color: strictlyColors.white,
+    color: strictlyColors.onLime,
     fontSize: 14,
     fontWeight: "600",
     fontFamily: strictlyType.sansMedium,
@@ -411,12 +391,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   signInText: {
-    color: "#2c2d30",
+    color: strictlyColors.textSoft,
     fontSize: 16,
     fontFamily: "System",
   },
   signInLink: {
-    color: "#2c2d30",
+    color: strictlyColors.textSoft,
     fontWeight: "bold",
     fontFamily: "System",
     textDecorationLine: "underline",
@@ -427,7 +407,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: strictlyRadius.small,
     borderWidth: 1,
-    borderColor: "#FFD7D4",
+    borderColor: "#5C2E28",
   },
   errorText: {
     color: strictlyColors.danger,
@@ -490,7 +470,7 @@ const styles = StyleSheet.create({
     height: "100%",
     backgroundColor: "transparent",
     borderBottomWidth: 3,
-    borderBottomColor: "#2c2d30",
+    borderBottomColor: strictlyColors.borderStrong,
     bottom: 0,
     left: "30%",
   },

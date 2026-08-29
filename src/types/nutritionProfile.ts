@@ -3,6 +3,10 @@ export type NutritionProfile = {
   conditions: string[];
   dietaryPatterns: string[];
   priorities: string[];
+  measurementSystem: "imperial" | "metric";
+  bodyWeightKg: number | null;
+  heightCm: number | null;
+  healthInsightsEnabled: boolean;
   updatedAt: string;
 };
 
@@ -21,6 +25,13 @@ export const SENSITIVITY_OPTIONS: ProfileOption[] = [
   { id: "soy", label: "Soy", keywords: ["soy", "soya", "tofu", "edamame"] },
   { id: "shellfish", label: "Shellfish", keywords: ["shrimp", "prawn", "crab", "lobster", "shellfish"] },
   { id: "sesame", label: "Sesame", keywords: ["sesame", "tahini"] },
+  { id: "lactose", label: "Lactose", keywords: ["milk", "lactose", "whey", "cream"] },
+  { id: "fructose", label: "High-fructose foods", keywords: ["fructose", "high fructose", "agave"] },
+  { id: "sugar_alcohols", label: "Sugar alcohols", keywords: ["sorbitol", "xylitol", "maltitol", "erythritol"] },
+  { id: "high_fiber", label: "High fiber near training" },
+  { id: "high_fat", label: "High fat near training" },
+  { id: "spicy", label: "Spicy foods" },
+  { id: "caffeine", label: "Caffeine" },
 ];
 
 export const CONDITION_OPTIONS: ProfileOption[] = [
@@ -29,6 +40,10 @@ export const CONDITION_OPTIONS: ProfileOption[] = [
   { id: "hypertension", label: "High blood pressure" },
   { id: "ibs", label: "IBS / FODMAP sensitivity" },
   { id: "kidney", label: "Kidney-related limits" },
+  { id: "gerd", label: "Reflux / GERD" },
+  { id: "crohns_colitis", label: "Crohn’s / colitis" },
+  { id: "migraine_triggers", label: "Food-triggered migraines" },
+  { id: "none", label: "None of these" },
 ];
 
 export const DIETARY_PATTERN_OPTIONS: ProfileOption[] = [
@@ -47,6 +62,10 @@ export const PRIORITY_OPTIONS: ProfileOption[] = [
   { id: "no_artificial_colors", label: "No artificial colors" },
   { id: "no_artificial_sweeteners", label: "No artificial sweeteners" },
   { id: "higher_protein", label: "Higher protein" },
+  { id: "low_fiber_preworkout", label: "Low fiber before training" },
+  { id: "gentle_stomach", label: "Gentle on my stomach" },
+  { id: "portable", label: "Easy to carry" },
+  { id: "budget", label: "Budget-friendly" },
 ];
 
 export const EMPTY_NUTRITION_PROFILE: NutritionProfile = {
@@ -54,6 +73,10 @@ export const EMPTY_NUTRITION_PROFILE: NutritionProfile = {
   conditions: [],
   dietaryPatterns: [],
   priorities: [],
+  measurementSystem: "imperial",
+  bodyWeightKg: null,
+  heightCm: null,
+  healthInsightsEnabled: false,
   updatedAt: "",
 };
 

@@ -348,7 +348,7 @@ const styles = StyleSheet.create({
   },
   postTitle: {
     fontSize: 18,
-    color: strictlyColors.ink,
+    color: strictlyColors.text,
     marginBottom: 8,
     fontFamily: strictlyType.sansMedium,
     fontWeight: '600',
@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
   voteScore: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: strictlyColors.ink,
+    color: strictlyColors.text,
     fontFamily: strictlyType.sansMedium,
     minWidth: 30,
     textAlign: 'center',
@@ -417,7 +417,7 @@ const styles = StyleSheet.create({
   sortButtonText: {
     marginLeft: 4,
     fontSize: 14,
-    color: strictlyColors.ink,
+    color: strictlyColors.text,
     fontFamily: strictlyType.sans,
   },
   tabContainer: {
@@ -431,7 +431,7 @@ const styles = StyleSheet.create({
     backgroundColor: strictlyColors.cream,
   },
   activeTabText: {
-    color: strictlyColors.ink,
+    color: strictlyColors.text,
     fontWeight: 'bold',
     fontSize: 16,
     fontFamily: strictlyType.sansMedium,

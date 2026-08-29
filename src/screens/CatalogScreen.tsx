@@ -83,7 +83,7 @@ const CatalogScreen = () => {
       <Text style={styles.title}>Find your next staple.</Text>
       <Text style={styles.subtitle}>Explore products by category and check what’s inside.</Text>
       {loading && (
-        <ActivityIndicator size="large" color={strictlyColors.ink} style={styles.loader} />
+        <ActivityIndicator size="large" color={strictlyColors.text} style={styles.loader} />
       )}
       <FlatList
         data={categories}
@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
   },
   cardInner: { flex: 1, padding: 16, justifyContent: "space-between" },
   categoryIcon: { width: 38, height: 38, borderRadius: 19, backgroundColor: strictlyColors.lime, alignItems: "center", justifyContent: "center" },
-  categoryIconText: { color: strictlyColors.ink, fontFamily: strictlyType.sansBold, fontWeight: "700", fontSize: 15 },
+  categoryIconText: { color: strictlyColors.text, fontFamily: strictlyType.sansBold, fontWeight: "700", fontSize: 15 },
   categoryName: {
     color: strictlyColors.text,
     fontSize: 16,

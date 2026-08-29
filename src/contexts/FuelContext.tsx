@@ -4,10 +4,14 @@ import { calculateFuelTarget } from "../logic/fuelCalculator";
 import { calculateMealMacros } from "../logic/nutritionEngine";
 import { scoreMeal } from "../logic/mealScore";
 import { scaleMealToTarget } from "../logic/mealScaling";
-import type { FuelMeal, FuelPost, FuelTarget, MealIngredient, WorkoutDraft } from "../types/fuel";
+import { DEFAULT_ACTIVITIES } from "../data/activities";
+import type { ActivityType, FuelMeal, FuelPost, FuelTarget, MealIngredient, WorkoutDraft } from "../types/fuel";
 
 const STORAGE_KEY = "strictlyfuel:p0-state:v1";
-const makeId = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+const makeId = (_prefix: string) => "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (value) => {
+  const random = Math.floor(Math.random() * 16);
+  return (value === "x" ? random : (random & 0x3) | 0x8).toString(16);
+});
 
 type WorkoutInput = Omit<WorkoutDraft, "id" | "createdAt">;
 
@@ -19,6 +23,8 @@ type FuelContextValue = {
   meals: FuelMeal[];
   savedPostIds: string[];
   localPosts: FuelPost[];
+  recentActivities: ActivityType[];
+  favoriteActivities: ActivityType[];
   createWorkout: (input: WorkoutInput) => { workout: WorkoutDraft; target: FuelTarget };
   setIngredients: React.Dispatch<React.SetStateAction<MealIngredient[]>>;
   addIngredient: (ingredient: Omit<MealIngredient, "id">) => void;
@@ -29,6 +35,7 @@ type FuelContextValue = {
   importPostMeal: (post: FuelPost) => void;
   toggleSavedPost: (postId: string) => void;
   addLocalPost: (post: FuelPost) => void;
+  toggleFavoriteActivity: (activity: ActivityType) => void;
 };
 
 const FuelContext = createContext<FuelContextValue | undefined>(undefined);
@@ -41,6 +48,8 @@ export function FuelProvider({ children }: { children: React.ReactNode }) {
   const [meals, setMeals] = useState<FuelMeal[]>([]);
   const [savedPostIds, setSavedPostIds] = useState<string[]>([]);
   const [localPosts, setLocalPosts] = useState<FuelPost[]>([]);
+  const [recentActivities, setRecentActivities] = useState<ActivityType[]>([]);
+  const [favoriteActivities, setFavoriteActivities] = useState<ActivityType[]>(DEFAULT_ACTIVITIES);
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)
@@ -53,6 +62,8 @@ export function FuelProvider({ children }: { children: React.ReactNode }) {
         setMeals(state.meals || []);
         setSavedPostIds(state.savedPostIds || []);
         setLocalPosts(state.localPosts || []);
+        setRecentActivities(state.recentActivities || []);
+        setFavoriteActivities(state.favoriteActivities?.length ? state.favoriteActivities : DEFAULT_ACTIVITIES);
       })
       .catch(() => undefined)
       .finally(() => setHydrated(true));
@@ -60,8 +71,8 @@ export function FuelProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!hydrated) return;
-    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ workout, target, ingredients, meals, savedPostIds, localPosts })).catch(() => undefined);
-  }, [hydrated, workout, target, ingredients, meals, savedPostIds, localPosts]);
+    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ workout, target, ingredients, meals, savedPostIds, localPosts, recentActivities, favoriteActivities })).catch(() => undefined);
+  }, [hydrated, workout, target, ingredients, meals, savedPostIds, localPosts, recentActivities, favoriteActivities]);
 
   const createWorkout = useCallback((input: WorkoutInput) => {
     const nextWorkout: WorkoutDraft = { ...input, id: makeId("workout"), createdAt: new Date().toISOString() };
@@ -69,6 +80,7 @@ export function FuelProvider({ children }: { children: React.ReactNode }) {
     setWorkout(nextWorkout);
     setTarget(nextTarget);
     setIngredients([]);
+    setRecentActivities((current) => [input.activityType, ...current.filter((activity) => activity !== input.activityType)].slice(0, 8));
     return { workout: nextWorkout, target: nextTarget };
   }, []);
 
@@ -119,6 +131,8 @@ export function FuelProvider({ children }: { children: React.ReactNode }) {
     meals,
     savedPostIds,
     localPosts,
+    recentActivities,
+    favoriteActivities,
     createWorkout,
     setIngredients,
     addIngredient,
@@ -129,7 +143,8 @@ export function FuelProvider({ children }: { children: React.ReactNode }) {
     importPostMeal,
     toggleSavedPost: (postId) => setSavedPostIds((current) => current.includes(postId) ? current.filter((id) => id !== postId) : [...current, postId]),
     addLocalPost: (post) => setLocalPosts((current) => [post, ...current]),
-  }), [hydrated, workout, target, ingredients, meals, savedPostIds, localPosts, createWorkout, addIngredient, updateIngredient, removeIngredient, buildMeal, importPostMeal]);
+    toggleFavoriteActivity: (activity) => setFavoriteActivities((current) => current.includes(activity) ? current.filter((item) => item !== activity) : [...current, activity].slice(-8)),
+  }), [hydrated, workout, target, ingredients, meals, savedPostIds, localPosts, recentActivities, favoriteActivities, createWorkout, addIngredient, updateIngredient, removeIngredient, buildMeal, importPostMeal]);
 
   return <FuelContext.Provider value={value}>{children}</FuelContext.Provider>;
 }

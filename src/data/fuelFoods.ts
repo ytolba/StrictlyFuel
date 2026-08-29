@@ -1,4 +1,5 @@
 import type { FuelFood } from "../types/fuel";
+import { EXPANDED_CARB_FOODS } from "./expandedCarbFoods";
 
 const food = (
   id: string,
@@ -33,7 +34,7 @@ const food = (
 
 // Practical starter catalog. Nutrient values are per 100 g and should be
 // replaced by a package label when the user selects a branded product.
-export const FUEL_FOODS: FuelFood[] = [
+const CORE_FUEL_FOODS: FuelFood[] = [
   food("banana", "Banana", "🍌", "fruit", "fast", "30–120 min", 118, "1 medium", [89, 22.8, 1.1, 0.3, 2.6], ["fruit"]),
   food("applesauce", "Unsweetened applesauce", "🥄", "fruit", "fast", "30–90 min", 122, "½ cup", [42, 11.3, 0.2, 0.1, 1.8], ["apple pouch"]),
   food("grapes", "Grapes", "🍇", "fruit", "fast", "30–90 min", 151, "1 cup", [69, 18.1, 0.7, 0.2, 0.9]),
@@ -66,13 +67,21 @@ export const FUEL_FOODS: FuelFood[] = [
   food("peanut-butter", "Peanut butter", "🥜", "fat", "slow", "120–240 min", 16, "1 tbsp", [588, 20, 25, 50, 6]),
 ];
 
+const coreIds = new Set(CORE_FUEL_FOODS.map((item) => item.id));
+export const FUEL_FOODS: FuelFood[] = [...CORE_FUEL_FOODS, ...EXPANDED_CARB_FOODS.filter((item) => !coreIds.has(item.id))];
+
 export const foodById = (id: string) => FUEL_FOODS.find((item) => item.id === id);
 
 export const searchFuelFoods = (query: string) => {
   const normalized = query.trim().toLowerCase();
-  if (!normalized) return FUEL_FOODS.slice(0, 8);
-  return FUEL_FOODS.filter((item) =>
-    [item.name, ...item.aliases].some((value) => value.toLowerCase().includes(normalized))
-  ).slice(0, 12);
+  if (!normalized) return CORE_FUEL_FOODS.slice(0, 8);
+  const words = normalized.replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter(Boolean);
+  return FUEL_FOODS.map((item) => {
+    const name = item.name.toLowerCase();
+    const haystack = [item.name, ...item.aliases, item.category].join(" ").toLowerCase();
+    let score = name === normalized ? 100 : name.startsWith(normalized) ? 70 : name.includes(normalized) ? 45 : 0;
+    score += words.filter((word) => haystack.includes(word)).length * 18;
+    if (words.length && words.every((word) => haystack.includes(word))) score += 20;
+    return { item, score };
+  }).filter(({ score }) => score >= 18).sort((a, b) => b.score - a.score).map(({ item }) => item).slice(0, 16);
 };
-

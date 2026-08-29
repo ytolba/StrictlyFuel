@@ -9,9 +9,11 @@ import AppStackNavigator from "./AppStackNavigator";
 import OnboardingStackNavigator from "./OnboardingStackNavigator";
 import { LoadingState } from "../components/fuel/LoadingState";
 import { strictlyColors } from "../theme/strictlyTheme";
+import { useStrictlyAppearance } from "../contexts/AppearanceContext";
 
 export default function AppNavigator() {
-  const { user } = useAuth();
+  const { palette, resolvedMode } = useStrictlyAppearance();
+  const { user, loading: authLoading } = useAuth();
   const [isFirstLaunch, setIsFirstLaunch] = useState<boolean | null>(null);
   const linking = {
     prefixes: [
@@ -37,7 +39,7 @@ export default function AppNavigator() {
     checkIfFirstLaunch();
   }, []);
 
-  if (isFirstLaunch === null || user === undefined) {
+  if (isFirstLaunch === null || authLoading) {
     return (
       <View style={styles.loadingContainer}>
         <LoadingState title="StrictlyFuel" messages={["Preparing your fuel plan", "Loading your latest workouts"]} />
@@ -49,14 +51,14 @@ export default function AppNavigator() {
       linking={linking}
       theme={{
         colors: {
-          primary: "#2c2d30",
-          background: "#F4F3F2",
-          card: "#F4F3F2",
-          text: "#2c2d30",
-          border: "#F4F3F2",
-          notification: "#2c2d30",
+          primary: palette.ink,
+          background: palette.background,
+          card: palette.surface,
+          text: palette.text,
+          border: palette.border,
+          notification: palette.lime,
         },
-        dark: false,
+        dark: resolvedMode === "dark",
         fonts: {
           regular: {
             fontWeight: "normal",

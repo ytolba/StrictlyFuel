@@ -1,5 +1,4 @@
 import React, { useState, useRef } from "react";
-import { auth, db } from "../firebaseConfig";
 import {
   View,
   Text,
@@ -19,17 +18,6 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
-import {
-  doc,
-  setDoc,
-  getDoc,
-  deleteDoc,
-  query,
-  collection,
-  getDocs,
-  where,
-} from "firebase/firestore";
-import { signOut as firebaseSignOut } from "firebase/auth";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { APPLE_SIGN_IN_ENABLED } from "../config/authFeatures";
 import { strictlyColors, strictlyRadius, strictlyType } from "../theme/strictlyTheme";
@@ -89,31 +77,9 @@ const SignInScreen: React.FC = () => {
       ]);
       return;
     }
-    const usersRef = collection(db, "users");
-    const emailQuery = query(usersRef, where("email", "==", email));
-    const querySnapshot = await getDocs(emailQuery);
-    if (querySnapshot.empty) {
-      Alert.alert(
-        "Hey There!",
-        "It looks like you do not have an account registered. Why not create one?",
-        [{ text: "OK", onPress: () => navigation.navigate("SignUp") }]
-      );
-      return;
-    }
-
     setIsLoading(true);
     try {
       await signInWithEmail(email, password);
-
-      // Check if email is verified
-      const currentUser = auth.currentUser;
-      if (currentUser && !currentUser.emailVerified) {
-        await firebaseSignOut(auth);
-        setErrorMessage(
-          "Your email is not verified. Please check your inbox for a verification link before signing in."
-        );
-        return;
-      }
 
       // navigation.reset({
       //   index: 0,
@@ -221,7 +187,7 @@ const SignInScreen: React.FC = () => {
               style={styles.logo}
             />
             <Text style={styles.title}>Welcome back</Text>
-            <Text style={styles.subtitle}>Sign in to continue your ingredient history.</Text>
+            <Text style={styles.subtitle}>Your workouts, fuel targets, and meals stay together here.</Text>
             {errorMessage && (
               <View style={styles.errorContainer}>
                 <Text style={styles.errorText}>{errorMessage}</Text>
@@ -277,10 +243,10 @@ const SignInScreen: React.FC = () => {
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <ActivityIndicator color="#fff" />
+                  <ActivityIndicator color={strictlyColors.onLime} />
                 ) : (
                   <>
-                    <Ionicons name="arrow-forward" size={18} color={strictlyColors.white} />
+                    <Ionicons name="arrow-forward" size={18} color={strictlyColors.onLime} />
                     <Text style={[styles.buttonText, { marginLeft: 10 }]}>
                       Continue with email
                     </Text>
@@ -316,43 +282,9 @@ const SignInScreen: React.FC = () => {
                     // Wait for the alert response
                     await showAlert();
 
-                    // Proceed with anonymous sign-in
                     await continueWithoutAccount();
-
-                    // Wait for Firebase auth state to update
-                    const waitForAuthState = new Promise((resolve, reject) => {
-                      const unsubscribe = auth.onAuthStateChanged(
-                        (currentUser) => {
-                          if (currentUser) {
-                            resolve(currentUser);
-                            unsubscribe();
-                          } else {
-                            reject(
-                              new Error("Auth state did not update in time.")
-                            );
-                          }
-                        }
-                      );
-                    });
-
-                    // Ensure auth.currentUser is ready
-                    const user = await waitForAuthState;
-                    console.log("Authenticated user:", user);
-
-                    // Navigate to the desired screen
-                    //  navigation.reset({
-                    //    index: 0,
-                    //    routes: [{ name: "AppTabNavigator" }],
-                    //  });
                   } catch (error) {
-                    console.error(
-                      "Error with anonymous sign-in or navigation:",
-                      error
-                    );
-                    //  Alert.alert(
-                    //    "Sign-In Error",
-                    //    "Unable to continue without an account. Please try again."
-                    //  );
+                    setErrorMessage(error instanceof Error ? error.message : "Unable to continue without an account.");
                   }
                 }}
               >
@@ -372,7 +304,7 @@ const SignInScreen: React.FC = () => {
               disabled={isForgotLoading}
             >
               {isForgotLoading ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={strictlyColors.textSoft} />
               ) : (
                 <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
               )}
@@ -421,7 +353,7 @@ const styles = StyleSheet.create({
   },
   subtitle2: {
     fontSize: 25,
-    color: "#2c2d30",
+    color: strictlyColors.textSoft,
     textAlign: "center",
     fontWeight: "600",
     fontFamily: "System",
@@ -471,7 +403,7 @@ const styles = StyleSheet.create({
     width: "100%",
     flexDirection: "row",
     height: 48,
-    backgroundColor: strictlyColors.black,
+    backgroundColor: strictlyColors.lime,
     borderRadius: strictlyRadius.small,
     alignItems: "center",
     justifyContent: "center",
@@ -481,7 +413,7 @@ const styles = StyleSheet.create({
     opacity: 0.55,
   },
   buttonText: {
-    color: strictlyColors.white,
+    color: strictlyColors.onLime,
     fontSize: 14,
     fontWeight: "600",
     fontFamily: strictlyType.sansMedium,
@@ -501,12 +433,12 @@ const styles = StyleSheet.create({
     paddingVertical: 5, // Add vertical padding to the buttons
   },
   signUpText: {
-    color: "#2c2d30",
+    color: strictlyColors.textSoft,
     fontSize: 16,
     fontFamily: "System",
   },
   signUpLink: {
-    color: "#2c2d30",
+    color: strictlyColors.textSoft,
     fontWeight: "bold",
     fontFamily: "System",
     textDecorationLine: "underline",
@@ -517,7 +449,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: strictlyRadius.small,
     borderWidth: 1,
-    borderColor: "#FFD7D4",
+    borderColor: "#5C2E28",
   },
   errorText: {
     color: strictlyColors.danger,
@@ -596,7 +528,7 @@ const styles = StyleSheet.create({
     height: "100%",
     backgroundColor: "transparent",
     borderBottomWidth: 3,
-    borderBottomColor: "#2c2d30",
+    borderBottomColor: strictlyColors.borderStrong,
     bottom: 0,
     left: "27.5%",
   },

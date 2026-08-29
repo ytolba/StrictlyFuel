@@ -551,13 +551,13 @@ const styles = StyleSheet.create({
   detailsText: {
     fontSize: 16,
     lineHeight: 24,
-    color: strictlyColors.ink,
+    color: strictlyColors.text,
     marginBottom: 20,
     fontFamily: "System", // normal variant
   },
   boldText: {
     fontFamily: "System", // bold variant
-    color: strictlyColors.ink,
+    color: strictlyColors.text,
   },
   ingredient: {
     fontSize: 16,
@@ -600,7 +600,7 @@ const styles = StyleSheet.create({
     fontSize: 20, // Adjust font size as needed
     textAlign: "center",
     fontFamily: "System", // Use the desired font
-    color: strictlyColors.ink,
+    color: strictlyColors.text,
   },
   anonMessageContainer: {
     justifyContent: "center",
@@ -615,7 +615,7 @@ const styles = StyleSheet.create({
   anonMessageText: {
     fontSize: 18,
     fontWeight: "bold",
-    color: strictlyColors.ink,
+    color: strictlyColors.text,
     textAlign: "center",
     marginBottom: 20,
     lineHeight: 26,

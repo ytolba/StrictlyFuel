@@ -61,10 +61,10 @@ export default function DiscoverScreen({ navigation, route }: any) {
   };
 
   return <ScreenShell>
-    <View style={styles.header}><View><Text style={styles.eyebrow}>DISCOVER</Text><Text style={styles.title}>Fuel worth copying.</Text></View><TouchableOpacity style={styles.filter} onPress={() => navigation.getParent()?.navigate("CommunityFilters", { filters })}><Ionicons name="options-outline" size={19} color={strictlyColors.ink} /></TouchableOpacity></View>
+    <View style={styles.header}><View><Text style={styles.eyebrow}>DISCOVER</Text><Text style={styles.title}>Fuel worth copying.</Text></View><TouchableOpacity style={styles.filter} onPress={() => navigation.getParent()?.navigate("CommunityFilters", { filters })}><Ionicons name="options-outline" size={19} color={strictlyColors.text} /></TouchableOpacity></View>
     <Text style={styles.subtitle}>{workout ? `Prioritized for your ${workout.durationMinutes}-minute ${workout.activityType} session.` : "See what athletes eat before specific workouts."}</Text>
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>{ACTIVITIES.map((item) => <TouchableOpacity key={item} onPress={() => setActivity(item)} style={[styles.chip, activity === item && styles.chipActive]}><Text style={[styles.chipText, activity === item && styles.chipTextActive]}>{item === "all" ? "For you" : item}</Text></TouchableOpacity>)}</ScrollView>
-    <View style={styles.utility}><Ionicons name="sparkles-outline" size={17} color={strictlyColors.ink} /><Text style={styles.utilityText}><Text style={styles.utilityStrong}>Ranked for usefulness.</Text> Similar workout, timing, carb target, saves, and copies matter more than likes.</Text></View>
+    <View style={styles.utility}><Ionicons name="sparkles-outline" size={17} color={strictlyColors.text} /><Text style={styles.utilityText}><Text style={styles.utilityStrong}>Ranked for usefulness.</Text> Similar workout, timing, carb target, saves, and copies matter more than likes.</Text></View>
     <Text style={styles.resultCount}>{posts.length} MATCHING MEALS</Text>
     {posts.map((post) => <FuelPostCard key={post.id} post={post} saved={savedPostIds.includes(post.id)} onPress={() => navigation.getParent()?.navigate("FuelPostDetail", { post })} onSave={() => save(post)} onCopy={() => copy(post)} />)}
     {!posts.length ? <View style={styles.empty}><Text style={styles.emptyTitle}>No exact matches yet</Text><Text style={styles.emptyText}>Clear a filter or be the first to share fuel for this workout.</Text></View> : null}
@@ -74,20 +74,20 @@ export default function DiscoverScreen({ navigation, route }: any) {
 const styles = StyleSheet.create({
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 8 },
   eyebrow: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 9, letterSpacing: 1.5 },
-  title: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.ink, fontSize: 32, letterSpacing: -1.1, marginTop: 5 },
+  title: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 32, letterSpacing: -1.1, marginTop: 5 },
   filter: { width: 42, height: 42, borderRadius: 21, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, alignItems: "center", justifyContent: "center" },
   subtitle: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 13, lineHeight: 19, marginTop: 8 },
   chips: { gap: 7, paddingVertical: 17, paddingRight: 20 },
   chip: { height: 38, justifyContent: "center", paddingHorizontal: 14, borderRadius: strictlyRadius.pill, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
   chipActive: { backgroundColor: strictlyColors.ink, borderColor: strictlyColors.ink },
-  chipText: { fontFamily: strictlyType.sansMedium, fontWeight: "600", color: strictlyColors.ink, fontSize: 11, textTransform: "capitalize" },
+  chipText: { fontFamily: strictlyType.sansMedium, fontWeight: "600", color: strictlyColors.text, fontSize: 11, textTransform: "capitalize" },
   chipTextActive: { color: strictlyColors.white },
   utility: { flexDirection: "row", gap: 9, backgroundColor: strictlyColors.cream, borderRadius: strictlyRadius.medium, padding: 13, marginBottom: 18 },
   utilityText: { flex: 1, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 10, lineHeight: 15 },
-  utilityStrong: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.ink },
+  utilityStrong: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text },
   resultCount: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 8, letterSpacing: 1.2, marginBottom: 10 },
   empty: { alignItems: "center", padding: 30 },
-  emptyTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.ink, fontSize: 17 },
+  emptyTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 17 },
   emptyText: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11, marginTop: 5, textAlign: "center" },
 });
 

@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 16,
     flex: 1,
-    color: strictlyColors.ink,
+    color: strictlyColors.text,
     fontFamily: strictlyType.sans,
   },
   categoriesContainer: {
@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     fontSize: 16,
-    color: strictlyColors.ink,
+    color: strictlyColors.text,
     fontFamily: strictlyType.sansMedium,
     fontWeight: "600",
     textAlign: "center",
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   },
   productName: {
     fontSize: 18,
-    color: strictlyColors.ink,
+    color: strictlyColors.text,
     fontFamily: strictlyType.sansMedium,
     fontWeight: "600",
   },

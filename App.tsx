@@ -13,13 +13,14 @@ import { RevenueCatProvider } from "src/provider/RevenuCatProvider";
 import * as Linking from "expo-linking";
 import {
   Provider as PaperProvider,
-  DefaultTheme,
+  MD2LightTheme,
   configureFonts,
 } from "react-native-paper";
 import { StrictlyBrand } from "./src/components/StrictlyBrand";
 import { strictlyColors, strictlyRadius, strictlyType } from "./src/theme/strictlyTheme";
+import { StrictlyAppearanceProvider, useStrictlyAppearance } from "./src/contexts/AppearanceContext";
 
-const SPLASH_BG_COLOR = strictlyColors.ink;
+const SPLASH_BG_COLOR = "#F2EAD7";
 
 // Create a font configuration; note that we rely on our fonts and set the "medium" variant's fontWeight to undefined.
 const fontConfig: any = {
@@ -43,25 +44,26 @@ const fontConfig: any = {
   },
 };
 
-const theme = {
-  ...DefaultTheme,
-  roundness: strictlyRadius.small,
-  colors: {
-    ...DefaultTheme.colors,
-    primary: strictlyColors.ink,
-    accent: strictlyColors.ink,
-    background: strictlyColors.background,
-    surface: strictlyColors.surface,
-    text: strictlyColors.text,
-    placeholder: strictlyColors.textSoft,
-  },
-  fonts: configureFonts({ config: fontConfig, isV3: false }),
-};
-
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
+  const { palette } = useStrictlyAppearance();
   const [showOverlay, setShowOverlay] = useState(true);
   const [fadeAnim] = useState(new Animated.Value(1));
   const [warningShown, setWarningShown] = useState(false);
+
+  const theme: React.ComponentProps<typeof PaperProvider>["theme"] = {
+    ...MD2LightTheme,
+    roundness: strictlyRadius.small,
+    colors: {
+      ...MD2LightTheme.colors,
+      primary: palette.ink,
+      accent: palette.lime,
+      background: palette.background,
+      surface: palette.surface,
+      text: palette.text,
+      placeholder: palette.textSoft,
+    },
+    fonts: configureFonts({ config: fontConfig, isV3: false }),
+  };
 
   useEffect(() => {
     SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -115,13 +117,19 @@ const App: React.FC = () => {
             },
           ]}
         >
-          <StrictlyBrand size={64} />
+          <StrictlyBrand size={64} onCream />
           <Text style={styles.splashTagline}>FUEL THE WORK.</Text>
         </Animated.View>
       )}
     </View>
   );
 };
+
+const App: React.FC = () => (
+  <StrictlyAppearanceProvider>
+    <AppContent />
+  </StrictlyAppearanceProvider>
+);
 
 export default App;
 
@@ -140,14 +148,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   warningText: {
-    color: "white",
+    color: strictlyColors.white,
     fontSize: 16,
     textAlign: "center",
     fontWeight: "bold",
   },
   splashTagline: {
     marginTop: 18,
-    color: strictlyColors.sage,
+    color: "#486653",
     fontFamily: strictlyType.mono,
     fontWeight: "600",
     fontSize: 10,

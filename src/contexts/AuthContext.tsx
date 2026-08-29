@@ -1,36 +1,13 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { Alert } from "react-native";
-import { auth, db } from "../firebaseConfig";
-import {
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  onAuthStateChanged,
-  sendPasswordResetEmail,
-  sendEmailVerification,
-  signOut as firebaseSignOut,
-  reload,
-  deleteUser as firebaseDeleteUser,
-  User as FirebaseUser,
-  signInAnonymously,
-  signInWithCredential,
-  OAuthProvider,
-} from "firebase/auth";
-import {
-  doc,
-  setDoc,
-  getDoc,
-  deleteDoc,
-  query,
-  collection,
-  getDocs,
-  where,
-  updateDoc,
-} from "firebase/firestore";
 import * as AppleAuthentication from "expo-apple-authentication";
+import * as Linking from "expo-linking";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
+import { supabase } from "../lib/supabase";
 import { APPLE_SIGN_IN_ENABLED } from "../config/authFeatures";
+import { loadNutritionProfile } from "../services/nutritionProfileService";
 
-// Define User Interface
-interface User {
+export interface User {
   uid: string;
   email: string;
   firstName?: string;
@@ -38,22 +15,20 @@ interface User {
   picture?: string;
   createdAt: string;
   lastLogin: string;
+  isGuest?: boolean;
 }
 
-// Define Context Interface
 interface AuthContextType {
   user: User | null;
+  loading: boolean;
   errorMessage: string | null;
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
-  signUpWithEmail: (
-    email: string,
-    password: string,
-    firstName: string,
-    lastName: string
-  ) => Promise<void>;
+  signUpWithEmail: (email: string, password: string, firstName: string, lastName: string) => Promise<{ confirmationRequired: boolean }>;
+  verifySignUpCode: (email: string, token: string) => Promise<void>;
+  resendSignUpCode: (email: string) => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
-  clearError: () => void; // Clear error messages
+  clearError: () => void;
   deleteAccount: () => Promise<void>;
   continueWithoutAccount: () => Promise<void>;
   signInWithApple: () => Promise<User | null>;
@@ -61,316 +36,225 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AUTH_CALLBACK_URL = "strictlyfuel://auth/callback";
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+async function applyAuthCallback(url: string) {
+  if (!url.startsWith(AUTH_CALLBACK_URL) && !url.startsWith("strictlyfuel://reset-password")) return;
+  const payload = url.includes("#") ? url.split("#")[1] : url.split("?")[1] || "";
+  const params = new URLSearchParams(payload);
+  const code = params.get("code");
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) throw error;
+    return;
+  }
+  const accessToken = params.get("access_token");
+  const refreshToken = params.get("refresh_token");
+  if (accessToken && refreshToken) {
+    const { error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+    if (error) throw error;
+  }
+}
+
+const messageFor = (error: unknown) => {
+  const raw = error instanceof Error ? error.message : "Something went wrong. Please try again.";
+  if (/invalid login credentials/i.test(raw)) return "That email and password do not match.";
+  if (/email not confirmed/i.test(raw)) return "Check your inbox and confirm your email before signing in.";
+  if (/already registered|already been registered|user already exists/i.test(raw)) return "An account already exists for that email.";
+  if (/password/i.test(raw) && /6 characters/i.test(raw)) return "Use a password with at least 6 characters.";
+  if (/token has expired|invalid otp|token is invalid/i.test(raw)) return "That code is incorrect or has expired. Request a new one and try again.";
+  if (/for security purposes|rate limit/i.test(raw)) return "Please wait a moment before requesting another code.";
+  return raw;
+};
+
+const mapUser = (source: SupabaseUser): User => {
+  const metadata = source.user_metadata || {};
+  const fullName = String(metadata.full_name || metadata.name || "").trim().split(/\s+/);
+  return {
+    uid: source.id,
+    email: source.email || (source.is_anonymous ? "Guest athlete" : ""),
+    firstName: metadata.first_name || metadata.given_name || fullName[0] || (source.is_anonymous ? "Guest" : "Athlete"),
+    lastName: metadata.last_name || metadata.family_name || fullName.slice(1).join(" "),
+    picture: metadata.avatar_url || "",
+    createdAt: source.created_at || new Date().toISOString(),
+    lastLogin: source.last_sign_in_at || new Date().toISOString(),
+    isGuest: Boolean(source.is_anonymous),
+  };
+};
+
+async function syncFuelPreferences(userId: string) {
+  const profile = await loadNutritionProfile();
+  const { error } = await supabase.from("user_fuel_preferences").upsert({
+    user_id: userId,
+    sensitivities: profile.sensitivities,
+    allergies: profile.conditions,
+    dietary_patterns: profile.dietaryPatterns,
+    avoid_foods: profile.priorities,
+    body_weight_kg: profile.bodyWeightKg,
+    height_cm: profile.heightCm,
+    units: profile.measurementSystem,
+    health_insights_enabled: profile.healthInsightsEnabled,
+    updated_at: new Date().toISOString(),
+  });
+  if (error) console.warn("Fuel preference sync was skipped", error.message);
+}
+
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Utility function to set errors
-  const handleError = (error: any) => {
-    const message = error?.message || "An unexpected error occurred.";
-    setErrorMessage(message);
-  };
-
-  // Clear the error message
   const clearError = () => setErrorMessage(null);
+  const fail = (error: unknown): never => {
+    const message = messageFor(error);
+    setErrorMessage(message);
+    throw new Error(message);
+  };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        try {
-          // Ensure the user object is up-to-date
-          await reload(firebaseUser);
+    let mounted = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) return;
+      setUser(data.session?.user ? mapUser(data.session.user) : null);
+      setLoading(false);
+    }).catch(() => mounted && setLoading(false));
 
-          // Check if the user is anonymous
-          if (firebaseUser.isAnonymous) {
-            // Handle anonymous users
-            setUser({
-              uid: firebaseUser.uid,
-              email: "You are not Signed in!",
-              firstName: "Make and Account to sign in and use more",
-              lastName: "",
-              picture: "",
-              createdAt: new Date().toISOString(),
-              lastLogin: new Date().toISOString(),
-            });
-          } else {
-            // Handle authenticated users (email/password)
-            if (firebaseUser.emailVerified) {
-              const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
-              if (userDoc.exists()) {
-                const userData = userDoc.data();
-                setUser({
-                  uid: firebaseUser.uid,
-                  email: firebaseUser.email || "",
-                  firstName: userData?.firstName,
-                  lastName: userData?.lastName,
-                  picture: userData?.picture,
-                  createdAt: userData?.createdAt || new Date().toISOString(),
-                  lastLogin: userData?.lastLogin || new Date().toISOString(),
-                });
-              } else {
-                const newUser = {
-                  uid: firebaseUser.uid,
-                  email: firebaseUser.email || "",
-                  createdAt: new Date().toISOString(),
-                  lastLogin: new Date().toISOString(),
-                };
-                await setDoc(doc(db, "users", firebaseUser.uid), newUser);
-                setUser(newUser);
-              }
-            } else {
-              // Email not verified; sign out the user
-              await firebaseSignOut(auth);
-              setUser(null);
-              setErrorMessage("Please verify your email before signing in.");
-            }
-          }
-        } catch (error: any) {
-          handleError(error);
-        }
-      } else {
-        setUser(null);
-      }
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
+      const next = session?.user ? mapUser(session.user) : null;
+      setUser(next);
+      setLoading(false);
+      if (next && !next.isGuest) setTimeout(() => syncFuelPreferences(next.uid).catch(() => undefined), 0);
     });
-
-    return () => unsubscribe();
+    return () => {
+      mounted = false;
+      listener.subscription.unsubscribe();
+    };
   }, []);
 
-  const updateUserPremiumStatus = async () => {
-    if (user?.uid) {
-      const userRef = doc(db, "users", user.uid);
-      await updateDoc(userRef, {
-        premium: true,
-        subscriptionDate: new Date().toISOString(),
-      });
-    }
-  };
-
-  const continueWithoutAccount = async () => {
-    try {
-      await signInAnonymously(auth); // Wait for anonymous sign-in to complete
-      console.log("User signed in anonymously");
-    } catch (error) {
-      console.error("Error signing in anonymously:", error);
-      throw error; // Ensure the calling function can catch this error
-    }
-  };
+  useEffect(() => {
+    Linking.getInitialURL().then((url) => {
+      if (url) applyAuthCallback(url).catch((error) => setErrorMessage(messageFor(error)));
+    });
+    const subscription = Linking.addEventListener("url", ({ url }) => {
+      applyAuthCallback(url).catch((error) => setErrorMessage(messageFor(error)));
+    });
+    return () => subscription.remove();
+  }, []);
 
   const signInWithEmail = async (email: string, password: string) => {
     try {
       clearError();
-      console.log("trying to log in");
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-      const firebaseUser = userCredential.user;
-      // Check if the email is verified
-      if (!firebaseUser.emailVerified) {
-        await firebaseSignOut(auth);
-        throw new Error("Please verify your email before signing in.");
-      }
-    } catch (error: any) {
-      console.log(error);
-      if (error?.message == "Firebase: Error (auth/invalid-credential).") {
-        Alert.alert("Uh Oh", "Incorrect Password", [{ text: "OK" }]);
-      }
-
-      handleError(error);
-    }
+      const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+      if (error) throw error;
+    } catch (error) { fail(error); }
   };
 
-  const signOut = async () => {
+  const signUpWithEmail = async (email: string, password: string, firstName: string, lastName: string) => {
     try {
       clearError();
-      await firebaseSignOut(auth);
-      setUser(null);
-    } catch (error: any) {
-      handleError(error);
-    }
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim().toLowerCase(),
+        password,
+        options: {
+          emailRedirectTo: AUTH_CALLBACK_URL,
+          data: { first_name: firstName.trim(), last_name: lastName.trim(), display_name: `${firstName} ${lastName}`.trim() },
+        },
+      });
+      if (error) throw error;
+      if (!data.user) throw new Error("Your account could not be created.");
+      if (data.user.identities?.length === 0) throw new Error("An account already exists for that email.");
+      return { confirmationRequired: !data.session };
+    } catch (error) { return fail(error); }
   };
 
-  const signUpWithEmail = async (
-    email: string,
-    password: string,
-    firstName: string,
-    lastName: string
-  ) => {
+  const verifySignUpCode = async (email: string, token: string) => {
     try {
       clearError();
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-      const firebaseUser = userCredential.user;
+      const { error } = await supabase.auth.verifyOtp({ email: email.trim().toLowerCase(), token: token.trim(), type: "signup" });
+      if (error) throw error;
+    } catch (error) { fail(error); }
+  };
 
-      // Send email verification
-      await sendEmailVerification(firebaseUser);
-
-      const newUser: User = {
-        uid: firebaseUser.uid,
-        email: firebaseUser.email || "",
-        firstName,
-        lastName,
-        picture: "",
-        createdAt: new Date().toISOString(),
-        lastLogin: new Date().toISOString(),
-      };
-      await setDoc(doc(db, "users", firebaseUser.uid), newUser);
-      const isPremium = new Date().getFullYear() === 2024;
-      if (isPremium) {
-        const userRef = doc(db, "users", firebaseUser.uid);
-        await updateDoc(userRef, {
-          premium: true,
-          subscriptionDate: new Date().toISOString(),
-        });
-      }
-      // Sign out the user to prevent access before email verification
-      await firebaseSignOut(auth);
-
-      setErrorMessage(
-        "Account created successfully! Please verify your email before signing in."
-      );
-    } catch (error: any) {
-      handleError(error);
-    }
+  const resendSignUpCode = async (email: string) => {
+    try {
+      clearError();
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: email.trim().toLowerCase(),
+        options: { emailRedirectTo: AUTH_CALLBACK_URL },
+      });
+      if (error) throw error;
+    } catch (error) { fail(error); }
   };
 
   const resetPassword = async (email: string) => {
     try {
       clearError();
-      console.log(email);
-      await sendPasswordResetEmail(auth, email);
-      setErrorMessage("A password reset link has been sent to your email.");
-    } catch (error: any) {
-      handleError(error);
-    }
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo: "strictlyfuel://reset-password" });
+      if (error) throw error;
+    } catch (error) { fail(error); }
   };
-  const deleteAccount = async () => {
-    if (!user) {
-      Alert.alert("Error", "No user is currently signed in.");
-      return;
-    }
+
+  const signOut = async () => {
+    clearError();
+    const { error } = await supabase.auth.signOut();
+    if (error) fail(error);
+    setUser(null);
+  };
+
+  const continueWithoutAccount = async () => {
     try {
       clearError();
-      const userRef = doc(db, "users", user.uid);
-
-      // Delete Firestore document
-      await deleteDoc(userRef);
-
-      // Delete Firebase Authentication account
-      const firebaseUser = auth.currentUser;
-      if (firebaseUser) {
-        await firebaseDeleteUser(firebaseUser);
-      }
-
-      setUser(null);
-      //Alert.alert("Account Deleted", "Your account has been successfully deleted.");
-    } catch (error: any) {
-      handleError(error);
-      Alert.alert("Error", "Failed to delete your account. Please try again.");
+      const { error } = await supabase.auth.signInAnonymously({ options: { data: { first_name: "Guest" } } });
+      if (error) throw error;
+    } catch {
+      fail(new Error("Guest access is unavailable right now. Create a free account to continue."));
     }
   };
 
-  const signInWithApple = async (): Promise<User | null> => {
-    if (!APPLE_SIGN_IN_ENABLED) {
-      throw new Error("Apple Sign In is temporarily disabled.");
-    }
-
+  const signInWithApple = async () => {
+    if (!APPLE_SIGN_IN_ENABLED) throw new Error("Apple Sign In is temporarily disabled.");
     try {
       clearError();
       const credential = await AppleAuthentication.signInAsync({
-        requestedScopes: [
-          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-          AppleAuthentication.AppleAuthenticationScope.EMAIL,
-        ],
+        requestedScopes: [AppleAuthentication.AppleAuthenticationScope.FULL_NAME, AppleAuthentication.AppleAuthenticationScope.EMAIL],
       });
+      if (!credential.identityToken) throw new Error("Apple did not return a valid sign-in token.");
+      const { data, error } = await supabase.auth.signInWithIdToken({ provider: "apple", token: credential.identityToken });
+      if (error) throw error;
+      return data.user ? mapUser(data.user) : null;
+    } catch (error) { return fail(error); }
+  };
 
-      console.log("Apple credential:", credential);
-
-      // First create the Firebase credential
-      const { identityToken } = credential;
-      if (!identityToken) throw new Error("No identity token provided");
-
-      const provider = new OAuthProvider("apple.com");
-      const authCredential = provider.credential({
-        idToken: identityToken,
-        rawNonce: credential.state || undefined,
-      });
-
-      // Sign in with Firebase first
-      const userCredential = await signInWithCredential(auth, authCredential);
-      const firebaseUser = userCredential.user;
-
-      // Then create the user object
-      const newUser = {
-        uid: firebaseUser.uid, // Use Firebase UID instead of Apple user ID
-        email: credential.email || firebaseUser.email || "",
-        firstName: credential.fullName?.givenName || "",
-        lastName: credential.fullName?.familyName || "",
-        picture: "",
-        createdAt: new Date().toISOString(),
-        lastLogin: new Date().toISOString(),
-      };
-
-      // Save user data to Firestore
-      await setDoc(doc(db, "users", firebaseUser.uid), newUser);
-
-      // Initialize scan count in userScans collection
-      const userScanData = {
-        count: 0,
-        lastScanDate: new Date().toISOString(),
-        isPremium: false,
-        userId: firebaseUser.uid,
-      };
-
-      await setDoc(doc(db, "userScans", firebaseUser.uid), userScanData);
-
-      setUser(newUser);
-      return newUser;
-    } catch (error: any) {
-      console.error("Apple Sign In error:", error);
-      handleError(error);
-      Alert.alert("Error", "Apple Sign In failed. Please try again.");
-      throw error;
+  const deleteAccount = async () => {
+    if (!user) return;
+    // Handled server-side by the delete-account edge function, which resolves
+    // the caller from their own JWT and cascades the delete across their data.
+    const { data, error } = await supabase.functions.invoke("delete-account");
+    if (error || !data?.deleted) {
+      Alert.alert(
+        "We couldn’t delete the account",
+        error?.message || "Something went wrong on our side. Please try again, or contact support if it keeps happening."
+      );
+      return;
     }
+    await supabase.auth.signOut();
+    setUser(null);
+    Alert.alert("Account deleted", "Your account and its data have been removed.");
   };
 
-  const signUpWithApple = async () => {
-    // For now, we can use the same function for both sign in and sign up
-    return signInWithApple();
-  };
+  const value = useMemo<AuthContextType>(() => ({
+    user, loading, errorMessage, signInWithEmail, signOut, signUpWithEmail, verifySignUpCode, resendSignUpCode, resetPassword,
+    clearError, deleteAccount, continueWithoutAccount, signInWithApple,
+    signUpWithApple: async () => { await signInWithApple(); },
+  }), [user, loading, errorMessage]);
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        errorMessage,
-        signInWithEmail,
-        signOut,
-        signUpWithEmail,
-        resetPassword,
-        clearError,
-        deleteAccount,
-        continueWithoutAccount,
-        signInWithApple,
-        signUpWithApple,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-export const useAuth = (): AuthContextType => {
+export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 };

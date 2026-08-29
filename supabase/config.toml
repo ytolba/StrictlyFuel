@@ -22,3 +22,16 @@ file_size_limit = "12MiB"
 
 [functions.search-foods]
 verify_jwt = true
+
+[functions.analyze-meal]
+verify_jwt = true
+
+[functions.analyze-food-label]
+verify_jwt = true
+
+[functions.delete-account]
+verify_jwt = true
+
+# RevenueCat cannot present a Supabase JWT; the shared secret guards this one.
+[functions.revenuecat-webhook]
+verify_jwt = false

@@ -1,19 +1,71 @@
 export type ActivityType =
   | "running"
+  | "trail_running"
+  | "walking"
+  | "indoor_cycling"
+  | "mountain_biking"
   | "cycling"
   | "swimming"
+  | "rowing"
+  | "elliptical"
+  | "stair_climber"
   | "triathlon"
+  | "sprint_triathlon"
+  | "olympic_triathlon"
+  | "ironman_70_3"
+  | "ironman"
+  | "brick_workout"
+  | "swim_bike"
+  | "bike_run"
   | "strength"
+  | "bodybuilding"
+  | "powerlifting"
+  | "olympic_weightlifting"
+  | "strength_training"
+  | "calisthenics"
+  | "circuit_training"
   | "crossfit"
+  | "hiit"
+  | "bootcamp"
+  | "functional_fitness"
+  | "conditioning"
   | "soccer"
   | "basketball"
   | "football"
+  | "rugby"
+  | "hockey"
+  | "lacrosse"
+  | "volleyball"
+  | "baseball"
+  | "softball"
+  | "tennis"
+  | "pickleball"
+  | "badminton"
+  | "squash"
+  | "racquetball"
+  | "boxing"
+  | "kickboxing"
+  | "muay_thai"
+  | "wrestling"
+  | "brazilian_jiu_jitsu"
+  | "mma"
+  | "martial_arts"
   | "hiking"
   | "hyrox"
+  | "skiing"
+  | "snowboarding"
+  | "cross_country_skiing"
+  | "climbing"
+  | "surfing"
+  | "kayaking"
+  | "paddleboarding"
+  | "general_cardio"
+  | "mixed_training"
   | "endurance"
   | "other";
 
 export type WorkoutIntensity = "easy" | "moderate" | "hard";
+export type HeartRateZone = 1 | 2 | 3 | 4 | 5;
 export type CarbSpeed = "fast" | "medium" | "slow";
 export type DataSource = "strictly" | "usda" | "label" | "open_food_facts" | "ai_estimate";
 
@@ -24,6 +76,8 @@ export type WorkoutDraft = {
   intensity: WorkoutIntensity;
   startsInMinutes: number;
   bodyWeightKg: number;
+  /** Optional planned zones. Multiple values support intervals and mixed sessions. */
+  heartRateZones?: HeartRateZone[];
   createdAt: string;
 };
 

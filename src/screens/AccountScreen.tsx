@@ -29,9 +29,11 @@ const AccountScreen = () => {
 
   const {
     user: rcUser,
+    isPro,
     packages,
     purchasePackage,
     restorePermissions,
+    presentCustomerCenter,
   } = useRevenueCat();
 
   const [firstName, setFirstName] = useState<string>("");
@@ -136,6 +138,19 @@ const AccountScreen = () => {
     }
   };
 
+  /**
+   * RevenueCat Customer Center. It handles cancellations, plan changes, refund
+   * requests, subscription status and win-back offers without us building any
+   * of those screens — and it is configured from the RevenueCat dashboard, so
+   * the copy can change without an app release. When the native UI package is
+   * not linked (Expo Go, an older dev client) we send the customer to Apple's
+   * own subscription settings instead.
+   */
+  const handleManageSubscription = async () => {
+    const opened = await presentCustomerCenter();
+    if (!opened) await handleOpenLink("https://apps.apple.com/account/subscriptions");
+  };
+
   // Open external links
   const handleOpenLink = async (url: string) => {
     try {
@@ -205,7 +220,7 @@ const AccountScreen = () => {
             onPress={() => setShowSettingsModal(true)}
             accessibilityLabel="Open settings"
           >
-            <Ionicons name="settings-outline" size={21} color={strictlyColors.ink} />
+            <Ionicons name="settings-outline" size={21} color={strictlyColors.text} />
           </Pressable>
         </View>
 
@@ -231,7 +246,7 @@ const AccountScreen = () => {
         <Text style={styles.sectionLabel}>Personalization</Text>
         <TouchableOpacity style={styles.personalizationCard} onPress={() => setShowProfileModal(true)}>
           <View style={styles.personalizationIcon}>
-            <Ionicons name="options-outline" size={21} color={strictlyColors.ink} />
+            <Ionicons name="options-outline" size={21} color={strictlyColors.text} />
           </View>
           <View style={styles.personalizationCopy}>
             <Text style={styles.personalizationTitle}>Your food profile</Text>
@@ -260,7 +275,7 @@ const AccountScreen = () => {
 
         {!rcUser.pro && !isAnonymous ? (
           <View style={styles.subscriptionCard}>
-            <View style={styles.subscriptionIcon}><Ionicons name="sparkles" size={22} color={strictlyColors.ink} /></View>
+            <View style={styles.subscriptionIcon}><Ionicons name="sparkles" size={22} color={strictlyColors.text} /></View>
             <View style={styles.subscriptionCopy}>
               <Text style={styles.subscriptionTitle}>Strictly Pro</Text>
               <Text style={styles.subscriptionDetail}>More scans, deeper insights, less guesswork.</Text>
@@ -268,7 +283,7 @@ const AccountScreen = () => {
             {packages.length > 0 ? packages.map((pack) => (
               <TouchableOpacity key={pack.identifier} style={styles.upgradeButton} onPress={() => handleSubscribe(pack.identifier)}>
                 <Text style={styles.upgradeButtonText}>{pack.product.pricePerMonthString}/mo</Text>
-                <Ionicons name="arrow-forward" size={18} color={strictlyColors.ink} />
+                <Ionicons name="arrow-forward" size={18} color={strictlyColors.text} />
               </TouchableOpacity>
             )) : (
               <Text style={styles.unavailableText}>Plans loading…</Text>
@@ -279,22 +294,30 @@ const AccountScreen = () => {
           </View>
         ) : (
           <View style={styles.proCard}>
-            <View style={styles.proBadge}><Ionicons name="checkmark" size={17} color={strictlyColors.ink} /></View>
-            <View style={styles.subscriptionCopy}>
-              <Text style={styles.subscriptionTitle}>{isAnonymous ? "Save your progress" : "Pro is active"}</Text>
-              <Text style={styles.subscriptionDetail}>{isAnonymous ? "Create your account to keep scans across devices." : "You have access to all current Pro features."}</Text>
+            <View style={styles.proCardRow}>
+              <View style={styles.proBadge}><Ionicons name="checkmark" size={17} color={strictlyColors.text} /></View>
+              <View style={styles.subscriptionCopy}>
+                <Text style={styles.subscriptionTitle}>{isAnonymous ? "Save your progress" : "Pro is active"}</Text>
+                <Text style={styles.subscriptionDetail}>{isAnonymous ? "Create your account to keep scans across devices." : "You have access to all current Pro features."}</Text>
+              </View>
             </View>
+            {isPro ? (
+              <TouchableOpacity style={styles.manageButton} onPress={handleManageSubscription}>
+                <Ionicons name="settings-outline" size={17} color={strictlyColors.text} />
+                <Text style={styles.manageButtonText}>Manage subscription</Text>
+              </TouchableOpacity>
+            ) : null}
           </View>
         )}
 
         <Text style={styles.sectionLabel}>Stay connected</Text>
         <View style={styles.socialRow}>
           <TouchableOpacity style={styles.socialButton} onPress={() => handleOpenLink("https://www.instagram.com/strictlybased/")}>
-            <Ionicons name="logo-instagram" size={20} color={strictlyColors.ink} />
+            <Ionicons name="logo-instagram" size={20} color={strictlyColors.text} />
             <Text style={styles.socialButtonText}>Instagram</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.socialButton} onPress={() => handleOpenLink("https://www.tiktok.com/@strictlybased")}>
-            <Ionicons name="logo-tiktok" size={20} color={strictlyColors.ink} />
+            <Ionicons name="logo-tiktok" size={20} color={strictlyColors.text} />
             <Text style={styles.socialButtonText}>TikTok</Text>
           </TouchableOpacity>
         </View>
@@ -400,7 +423,7 @@ const styles = StyleSheet.create({
   profileCard: { backgroundColor: strictlyColors.black, borderRadius: strictlyRadius.large, padding: 20, marginBottom: 28 },
   profileTopRow: { flexDirection: "row", alignItems: "center" },
   avatar: { width: 54, height: 54, borderRadius: 27, backgroundColor: strictlyColors.lime, alignItems: "center", justifyContent: "center" },
-  avatarText: { color: strictlyColors.ink, fontFamily: strictlyType.sansBold, fontWeight: "700", fontSize: 18 },
+  avatarText: { color: strictlyColors.text, fontFamily: strictlyType.sansBold, fontWeight: "700", fontSize: 18 },
   profileCopy: { flex: 1, marginLeft: 13 },
   statusPill: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: strictlyRadius.pill, backgroundColor: "rgba(251,249,245,0.13)" },
   statusPillPro: { backgroundColor: strictlyColors.lime },
@@ -428,7 +451,10 @@ const styles = StyleSheet.create({
   unavailableText: { color: strictlyColors.muted, fontFamily: "System", fontSize: 13, marginTop: 14 },
   restoreButton: { alignItems: "center", paddingTop: 15 },
   restoreButtonText: { color: strictlyColors.good, fontFamily: "System", fontSize: 12, textDecorationLine: "underline" },
-  proCard: { flexDirection: "row", alignItems: "center", backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, borderRadius: strictlyRadius.large, padding: 17, marginBottom: 28 },
+  proCard: { backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, borderRadius: strictlyRadius.large, padding: 17, marginBottom: 28 },
+  proCardRow: { flexDirection: "row", alignItems: "center" },
+  manageButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, height: 44, marginTop: 14, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.surfaceMuted },
+  manageButtonText: { color: strictlyColors.text, fontFamily: strictlyType.sansMedium, fontWeight: "700", fontSize: 13 },
   proBadge: { width: 42, height: 42, borderRadius: 21, backgroundColor: strictlyColors.lime, alignItems: "center", justifyContent: "center", marginRight: 13 },
   sectionLabel: { color: strictlyColors.textSoft, fontFamily: strictlyType.mono, fontSize: 10, letterSpacing: 1, marginBottom: 10 },
   socialRow: { flexDirection: "row", gap: 10, marginBottom: 36 },
@@ -485,7 +511,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   upgradeButtonText: {
-    color: strictlyColors.ink,
+    color: strictlyColors.text,
     fontSize: 16,
     fontWeight: "bold",
     fontFamily: strictlyType.sansMedium,
@@ -500,7 +526,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   contactButtonText: {
-    color: strictlyColors.ink,
+    color: strictlyColors.text,
     fontSize: 16,
     fontFamily: "System",
     fontWeight: "600",
@@ -601,7 +627,7 @@ const styles = StyleSheet.create({
   profileModalContent: { paddingHorizontal: 22, paddingTop: 22, paddingBottom: 28 },
   profileModalIntro: { color: strictlyColors.textSoft, fontFamily: strictlyType.sans, fontSize: 14, lineHeight: 20, marginBottom: 26 },
   profilePrivacyCard: { flexDirection: "row", alignItems: "flex-start", gap: 9, padding: 14, backgroundColor: strictlyColors.cream, borderRadius: strictlyRadius.medium },
-  profilePrivacyText: { flex: 1, color: strictlyColors.ink, fontFamily: strictlyType.sans, fontSize: 11, lineHeight: 16 },
+  profilePrivacyText: { flex: 1, color: strictlyColors.text, fontFamily: strictlyType.sans, fontSize: 11, lineHeight: 16 },
   profileModalFooter: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12, borderTopWidth: 1, borderTopColor: strictlyColors.border },
   profileSaveButton: { minHeight: 49, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: strictlyColors.ink, borderRadius: strictlyRadius.small },
   profileSaveText: { color: strictlyColors.paper, fontFamily: strictlyType.sansMedium, fontWeight: "600", fontSize: 14 },

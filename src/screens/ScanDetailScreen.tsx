@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
   detailsText: {
     fontSize: 16,
     lineHeight: 24,
-    color: strictlyColors.ink,
+    color: strictlyColors.text,
     marginBottom: 20,
     fontFamily: "System", // normal variant
   },
@@ -330,7 +330,7 @@ const styles = StyleSheet.create({
     fontSize: 20, // Adjust font size as needed
     textAlign: "center",
     fontFamily: "System", // Use the desired font
-    color: strictlyColors.ink,
+    color: strictlyColors.text,
   },
 });
 

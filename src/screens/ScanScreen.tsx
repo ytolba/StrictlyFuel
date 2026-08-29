@@ -1828,7 +1828,7 @@ const ScanScreen: React.FC = () => {
                     accessibilityLabel="Take picture"
                   >
                     <View style={styles.captureButtonInner}>
-                      <Ionicons name="scan" size={25} color={strictlyColors.ink} />
+                      <Ionicons name="scan" size={25} color={strictlyColors.text} />
                     </View>
                   </TouchableOpacity>
                 </View>
@@ -2080,7 +2080,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   modeTextActive: {
-    color: strictlyColors.ink,
+    color: strictlyColors.text,
   },
   bottomControlsContainer: {
     height: 154,
@@ -2266,7 +2266,7 @@ const styles = StyleSheet.create({
     color: "#2c2d30", // Uniform black for both cases
   },
   basedText: {
-    color: strictlyColors.ink,
+    color: strictlyColors.text,
     fontFamily: "System",
     fontSize: 27,
     letterSpacing: -0.8,
@@ -2281,13 +2281,13 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 0, 0.2)",
   },
   notBasedText: {
-    color: strictlyColors.ink,
+    color: strictlyColors.text,
     fontFamily: "System",
     fontSize: 27,
     letterSpacing: -0.8,
   },
   unknownText: {
-    color: strictlyColors.ink,
+    color: strictlyColors.text,
     fontFamily: "System",
     fontSize: 27,
     letterSpacing: -0.8,
@@ -2303,13 +2303,13 @@ const styles = StyleSheet.create({
   detailsText: {
     fontSize: 16,
     lineHeight: 24,
-    color: strictlyColors.ink,
+    color: strictlyColors.text,
     marginBottom: 20,
     fontFamily: "System", // normal variant
   },
   boldText: {
     fontFamily: "System", // bold variant
-    color: strictlyColors.ink,
+    color: strictlyColors.text,
   },
   linkText: {
     color: "blue",
@@ -2379,7 +2379,7 @@ const styles = StyleSheet.create({
     width: "86%",
   },
   modalTitle: {
-    color: strictlyColors.ink,
+    color: strictlyColors.text,
     fontSize: 28,
     fontFamily: "System",
     letterSpacing: -0.8,

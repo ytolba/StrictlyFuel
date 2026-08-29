@@ -32,8 +32,8 @@ export default function FuelPostDetailScreen({ navigation, route }: any) {
     {post.visibility.macros ? <View style={styles.fuel}><View style={styles.fuelTop}><View><Text style={styles.fuelLabel}>CARBOHYDRATES</Text><Text style={styles.carbs}>{Math.round(post.meal.macros.carbs)}g</Text></View><View style={styles.score}><Text style={styles.scoreValue}>{post.meal.score.total}</Text><Text style={styles.scoreLabel}>STRICTLY SCORE</Text></View></View><CarbSpeedBar fast={post.meal.macros.fastCarbs} medium={post.meal.macros.mediumCarbs} slow={post.meal.macros.slowCarbs} /><View style={styles.macros}><Text style={styles.macro}>{Math.round(post.meal.macros.protein)}g protein</Text><Text style={styles.macro}>{Math.round(post.meal.macros.fat)}g fat</Text><Text style={styles.macro}>{Math.round(post.meal.macros.fiber)}g fiber</Text></View></View> : null}
     {post.visibility.ingredients ? <><Text style={styles.sectionTitle}>What’s in it</Text><View style={styles.ingredients}>{post.meal.ingredients.map((item: any) => <View key={item.id} style={styles.ingredient}><Text style={styles.ingredientName}>{item.food.emoji}  {item.food.name}</Text><Text style={styles.ingredientAmount}>{Math.round(item.grams)} g</Text></View>)}</View></> : null}
     <View style={styles.useful}><Text style={styles.usefulValue}>{post.saves + (saved ? 1 : 0)}</Text><Text style={styles.usefulLabel}>athletes saved this</Text><View style={styles.utilityDivider} /><Text style={styles.usefulValue}>{post.copies}</Text><Text style={styles.usefulLabel}>copied it</Text></View>
-    <TouchableOpacity style={styles.copy} onPress={copy}><Ionicons name="copy-outline" size={18} color={strictlyColors.ink} /><Text style={styles.copyText}>Adapt to my {target?.carbTarget || "fuel"} g target</Text></TouchableOpacity>
-    <TouchableOpacity style={styles.save} onPress={save}><Ionicons name={saved ? "bookmark" : "bookmark-outline"} size={18} color={strictlyColors.ink} /><Text style={styles.saveText}>{saved ? "Saved to My Fuel" : "Save meal"}</Text></TouchableOpacity>
+    <TouchableOpacity style={styles.copy} onPress={copy}><Ionicons name="copy-outline" size={18} color={strictlyColors.onLime} /><Text style={styles.copyText}>Adapt to my {target?.carbTarget || "fuel"} g target</Text></TouchableOpacity>
+    <TouchableOpacity style={styles.save} onPress={save}><Ionicons name={saved ? "bookmark" : "bookmark-outline"} size={18} color={strictlyColors.text} /><Text style={styles.saveText}>{saved ? "Saved to My Fuel" : "Save meal"}</Text></TouchableOpacity>
   </ScreenShell>;
 }
 
@@ -44,31 +44,31 @@ const styles = StyleSheet.create({
   author: { flexDirection: "row", gap: 10, alignItems: "center", marginTop: 15 },
   avatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: strictlyColors.ink, alignItems: "center", justifyContent: "center" },
   avatarText: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.lime },
-  username: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.ink, fontSize: 12 },
+  username: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 12 },
   context: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 9, marginTop: 3, textTransform: "capitalize" },
-  name: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.ink, fontSize: 29, letterSpacing: -0.8, marginTop: 19 },
+  name: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 29, letterSpacing: -0.8, marginTop: 19 },
   caption: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 13, lineHeight: 20, marginTop: 7 },
   fuel: { padding: 17, backgroundColor: strictlyColors.ink, borderRadius: strictlyRadius.large, marginTop: 16 },
   fuelTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 13 },
   fuelLabel: { fontFamily: strictlyType.mono, color: strictlyColors.sage, fontSize: 8, letterSpacing: 1 },
   carbs: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.white, fontSize: 35, marginTop: 2 },
   score: { width: 66, height: 66, borderRadius: 33, backgroundColor: strictlyColors.lime, alignItems: "center", justifyContent: "center" },
-  scoreValue: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.ink, fontSize: 23, lineHeight: 25 },
-  scoreLabel: { fontFamily: strictlyType.mono, color: strictlyColors.ink, fontSize: 5 },
+  scoreValue: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.onLime, fontSize: 23, lineHeight: 25 },
+  scoreLabel: { fontFamily: strictlyType.mono, color: strictlyColors.onLime, fontSize: 5 },
   macros: { flexDirection: "row", gap: 8, marginTop: 13 },
   macro: { fontFamily: strictlyType.sans, color: "#C7D0C9", fontSize: 9 },
-  sectionTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.ink, fontSize: 18, marginTop: 23, marginBottom: 9 },
+  sectionTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 18, marginTop: 23, marginBottom: 9 },
   ingredients: { backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, borderRadius: strictlyRadius.large, overflow: "hidden" },
   ingredient: { flexDirection: "row", justifyContent: "space-between", padding: 13, borderBottomWidth: 1, borderBottomColor: strictlyColors.border },
-  ingredientName: { fontFamily: strictlyType.sansMedium, color: strictlyColors.ink, fontSize: 12 },
+  ingredientName: { fontFamily: strictlyType.sansMedium, color: strictlyColors.text, fontSize: 12 },
   ingredientAmount: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 9 },
   useful: { flexDirection: "row", alignItems: "baseline", gap: 5, padding: 15, backgroundColor: strictlyColors.cream, borderRadius: strictlyRadius.medium, marginTop: 13 },
-  usefulValue: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.ink, fontSize: 16 },
+  usefulValue: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 16 },
   usefulLabel: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 9 },
   utilityDivider: { width: 1, height: 20, backgroundColor: strictlyColors.borderStrong, marginHorizontal: 5 },
   copy: { height: 56, flexDirection: "row", gap: 8, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.lime, borderRadius: strictlyRadius.medium, marginTop: 14 },
-  copyText: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.ink },
+  copyText: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.onLime },
   save: { height: 50, flexDirection: "row", gap: 8, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, borderRadius: strictlyRadius.medium, marginTop: 8 },
-  saveText: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.ink, fontSize: 12 },
+  saveText: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 12 },
 });
 

@@ -1,112 +1,334 @@
-import React, { useMemo, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useFuel } from "../../contexts/FuelContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { saveWorkout } from "../../services/fuelService";
-import { COMMUNITY_SEED } from "../../data/communitySeed";
-import type { ActivityType, WorkoutIntensity } from "../../types/fuel";
+import { loadNutritionProfile, saveNutritionProfile } from "../../services/nutritionProfileService";
+import { EMPTY_NUTRITION_PROFILE, type NutritionProfile } from "../../types/nutritionProfile";
+import { DEFAULT_ACTIVITIES, getActivity, supportsHeartRateZones } from "../../data/activities";
+import { formatDuration } from "../../logic/mealTiming";
+import type { ActivityType, HeartRateZone, WorkoutIntensity } from "../../types/fuel";
 import { ScreenShell } from "../../components/fuel/ScreenShell";
 import { FuelTargetCard } from "../../components/fuel/FuelTargetCard";
-import { FuelPostCard } from "../../components/fuel/FuelPostCard";
+import { ValueEditorSheet, DURATION_UNITS, WEIGHT_UNITS } from "../../components/fuel/ValueEditorSheet";
+import { ActivityPickerSheet } from "../../components/fuel/ActivityPickerSheet";
 import { strictlyColors, strictlyRadius, strictlyType } from "../../theme/strictlyTheme";
 
-const ACTIVITIES: { id: ActivityType; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { id: "running", label: "Run", icon: "walk-outline" },
-  { id: "cycling", label: "Ride", icon: "bicycle-outline" },
-  { id: "strength", label: "Lift", icon: "barbell-outline" },
-  { id: "swimming", label: "Swim", icon: "water-outline" },
-  { id: "hyrox", label: "Hyrox", icon: "fitness-outline" },
-  { id: "crossfit", label: "CrossFit", icon: "flash-outline" },
-  { id: "soccer", label: "Soccer", icon: "football-outline" },
-  { id: "basketball", label: "Basketball", icon: "basketball-outline" },
-  { id: "triathlon", label: "Triathlon", icon: "trophy-outline" },
-  { id: "hiking", label: "Hike", icon: "trail-sign-outline" },
-  { id: "other", label: "Other", icon: "add-outline" },
-];
+type EditingField = "duration" | "startsIn" | "weight";
 
 export default function FuelHomeScreen({ navigation }: any) {
   const { user } = useAuth();
-  const { workout, target, createWorkout, importPostMeal, savedPostIds, toggleSavedPost } = useFuel();
-  const [activityType, setActivityType] = useState<ActivityType>("running");
-  const [duration, setDuration] = useState("60");
-  const [startsIn, setStartsIn] = useState("90");
-  const [weight, setWeight] = useState("165");
-  const [intensity, setIntensity] = useState<WorkoutIntensity>("moderate");
-  const similar = useMemo(() => COMMUNITY_SEED.filter((post) => post.workout.activityType === (workout?.activityType || activityType)).slice(0, 2), [activityType, workout]);
+  const { workout, target, createWorkout, recentActivities, favoriteActivities, toggleFavoriteActivity } = useFuel();
+
+  const [activityType, setActivityType] = useState<ActivityType>(workout?.activityType || "running");
+  const [duration, setDuration] = useState(workout?.durationMinutes || 60);
+  const [startsIn, setStartsIn] = useState(workout?.startsInMinutes || 90);
+  const [intensity, setIntensity] = useState<WorkoutIntensity>(workout?.intensity || "moderate");
+  const [heartRateZones, setHeartRateZones] = useState<HeartRateZone[]>(workout?.heartRateZones || []);
+  const [editingField, setEditingField] = useState<EditingField>();
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [profile, setProfile] = useState<NutritionProfile>(EMPTY_NUTRITION_PROFILE);
+
+  useEffect(() => {
+    loadNutritionProfile().then(setProfile);
+  }, []);
+
+  const quickActivities = useMemo(
+    () =>
+      [...favoriteActivities, ...recentActivities, ...DEFAULT_ACTIVITIES]
+        .filter((id, index, all) => all.indexOf(id) === index)
+        .slice(0, 4),
+    [favoriteActivities, recentActivities]
+  );
+
+  const selectedActivity = getActivity(activityType);
+  const isImperial = profile.measurementSystem === "imperial";
+  const weightLabel = profile.bodyWeightKg
+    ? isImperial
+      ? `${Math.round(profile.bodyWeightKg * 2.20462)} lb`
+      : `${Math.round(profile.bodyWeightKg * 10) / 10} kg`
+    : "Add your weight";
+
+  const persistProfile = async (next: NutritionProfile) => {
+    setProfile(next);
+    await saveNutritionProfile(next);
+  };
+
+  // The sheet reports kilograms whatever unit was typed in.
+  const saveWeight = (kg: number) => persistProfile({ ...profile, bodyWeightKg: kg });
+
+  const saveUnitPreference = (unitId: string) =>
+    persistProfile({ ...profile, measurementSystem: unitId === "kg" ? "metric" : "imperial" });
 
   const calculate = () => {
-    const durationMinutes = Number(duration);
-    const startsInMinutes = Number(startsIn);
-    const weightLb = Number(weight);
-    if (!durationMinutes || durationMinutes < 15 || !startsInMinutes || startsInMinutes < 10 || !weightLb || weightLb < 70) {
-      return Alert.alert("Check your workout", "Use at least 15 minutes for duration, 10 minutes before training, and a valid body weight.");
+    if (duration < 15 || startsIn < 10) {
+      return Alert.alert("Check your workout", "Use at least 15 minutes for duration, and 10 minutes before training.");
     }
-    const next = createWorkout({ activityType, durationMinutes, startsInMinutes, bodyWeightKg: weightLb / 2.20462, intensity });
+    if (!profile.bodyWeightKg || profile.bodyWeightKg < 25) {
+      return Alert.alert(
+        "Add your weight once",
+        "Weight is a major part of the carb calculation. Add it here and Strictly will remember it.",
+        [{ text: "Not now", style: "cancel" }, { text: "Add weight", onPress: () => setEditingField("weight") }]
+      );
+    }
+    const next = createWorkout({
+      activityType,
+      durationMinutes: duration,
+      startsInMinutes: startsIn,
+      bodyWeightKg: profile.bodyWeightKg,
+      intensity,
+      heartRateZones: supportsHeartRateZones(activityType) ? heartRateZones : [],
+    });
     if (user?.uid) saveWorkout(user.uid, next.workout, next.target).catch(() => undefined);
     navigation.navigate("FuelTarget");
   };
 
-  return <ScreenShell>
-    <View style={styles.brandRow}><View><Text style={styles.brand}>STRICTLY</Text><Text style={styles.brandSub}>PRE-WORKOUT FUEL</Text></View><TouchableOpacity onPress={() => navigation.navigate("Profile")} style={styles.avatar}><Text style={styles.avatarText}>{(user?.firstName || "A").slice(0, 1).toUpperCase()}</Text></TouchableOpacity></View>
-    <Text style={styles.hero}>What are you training today?</Text>
-    <Text style={styles.subhero}>Get a carb target built for this workout, not your whole day.</Text>
+  const editorProps = () => {
+    if (editingField === "weight") {
+      return {
+        label: "Body weight",
+        value: profile.bodyWeightKg || (isImperial ? 75 : 75),
+        units: WEIGHT_UNITS,
+        unitId: isImperial ? "lb" : "kg",
+        onUnitChange: saveUnitPreference,
+        helpText: "Stored once and reused for every future target.",
+        onSave: saveWeight,
+      };
+    }
+    const isDuration = editingField === "duration";
+    return {
+      label: isDuration ? "How long is the session?" : "How long until you start?",
+      value: isDuration ? duration : startsIn,
+      units: DURATION_UNITS,
+      unitId: "min",
+      helpText: "Switch to hours for longer sessions.",
+      onSave: (minutes: number) => {
+        const rounded = Math.max(1, Math.round(minutes));
+        if (isDuration) setDuration(rounded);
+        else setStartsIn(rounded);
+      },
+    };
+  };
 
-    <Text style={styles.label}>ACTIVITY</Text>
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.activityRow}>
-      {ACTIVITIES.map((activity) => <TouchableOpacity key={activity.id} onPress={() => setActivityType(activity.id)} style={[styles.activity, activityType === activity.id && styles.activityActive]}><Ionicons name={activity.icon} size={18} color={activityType === activity.id ? strictlyColors.white : strictlyColors.ink} /><Text style={[styles.activityText, activityType === activity.id && styles.activityTextActive]}>{activity.label}</Text></TouchableOpacity>)}
-    </ScrollView>
-
-    <View style={styles.formCard}>
-      <View style={styles.fieldRow}>
-        <View style={styles.field}><Text style={styles.fieldLabel}>Duration</Text><View style={styles.inputWrap}><TextInput value={duration} onChangeText={setDuration} keyboardType="number-pad" style={styles.input} /><Text style={styles.suffix}>min</Text></View></View>
-        <View style={styles.field}><Text style={styles.fieldLabel}>Starts in</Text><View style={styles.inputWrap}><TextInput value={startsIn} onChangeText={setStartsIn} keyboardType="number-pad" style={styles.input} /><Text style={styles.suffix}>min</Text></View></View>
-        <View style={styles.field}><Text style={styles.fieldLabel}>Weight</Text><View style={styles.inputWrap}><TextInput value={weight} onChangeText={setWeight} keyboardType="number-pad" style={styles.input} /><Text style={styles.suffix}>lb</Text></View></View>
+  return (
+    <ScreenShell>
+      <View style={styles.brandRow}>
+        <View>
+          <Text style={styles.brand}>STRICTLY</Text>
+          <Text style={styles.brandSub}>FUEL THE WORK.</Text>
+        </View>
+        <TouchableOpacity onPress={() => navigation.navigate("Profile")} style={styles.avatar} accessibilityLabel="Your profile">
+          <Text style={styles.avatarText}>{(user?.firstName || "A").slice(0, 1).toUpperCase()}</Text>
+        </TouchableOpacity>
       </View>
-      <Text style={[styles.fieldLabel, { marginTop: 18 }]}>Intensity</Text>
-      <View style={styles.segment}>{(["easy", "moderate", "hard"] as WorkoutIntensity[]).map((value) => <TouchableOpacity key={value} onPress={() => setIntensity(value)} style={[styles.segmentItem, intensity === value && styles.segmentActive]}><Text style={[styles.segmentText, intensity === value && styles.segmentTextActive]}>{value}</Text></TouchableOpacity>)}</View>
-      <TouchableOpacity style={styles.primary} onPress={calculate}><Text style={styles.primaryText}>Calculate my fuel</Text><Ionicons name="arrow-forward" size={18} color={strictlyColors.ink} /></TouchableOpacity>
-    </View>
 
-    {workout && target ? <View style={styles.previous}><View style={styles.sectionHead}><Text style={styles.sectionTitle}>Your active workout</Text><TouchableOpacity onPress={() => navigation.navigate("FuelTarget")}><Text style={styles.link}>Open target</Text></TouchableOpacity></View><FuelTargetCard workout={workout} target={target} /></View> : null}
+      {/* A returning athlete's live target comes first — they came back for it. */}
+      {workout && target ? (
+        <TouchableOpacity style={styles.activeWrap} activeOpacity={0.9} onPress={() => navigation.navigate("FuelTarget")}>
+          <FuelTargetCard workout={workout} target={target} />
+          <View style={styles.activeFooter}>
+            <Text style={styles.activeFooterText}>Open today’s plan</Text>
+            <Ionicons name="arrow-forward" size={16} color={strictlyColors.onLime} />
+          </View>
+        </TouchableOpacity>
+      ) : (
+        <>
+          <Text style={styles.hero}>What are you training today?</Text>
+          <Text style={styles.subhero}>Tell us the session. We’ll turn it into food you can actually use.</Text>
+        </>
+      )}
 
-    <View style={styles.sectionHead}><View><Text style={styles.sectionTitle}>Athletes fueling similar work</Text><Text style={styles.sectionSubtitle}>Useful meals, ranked by context</Text></View><TouchableOpacity onPress={() => navigation.navigate("Discover")}><Text style={styles.link}>See all</Text></TouchableOpacity></View>
-    {similar.map((post) => <FuelPostCard key={post.id} post={post} saved={savedPostIds.includes(post.id)} onPress={() => navigation.navigate("FuelPostDetail", { postId: post.id })} onSave={() => toggleSavedPost(post.id)} onCopy={() => { if (!target) return Alert.alert("Set a fuel target first", "Calculate today’s workout so Strictly can scale this meal for you."); importPostMeal(post); navigation.navigate("BuildMeal"); }} />)}
-  </ScreenShell>;
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>{workout && target ? "Plan another session" : "Your session"}</Text>
+
+        {/* 1 — activity */}
+        <Text style={styles.stepLabel}>ACTIVITY</Text>
+        <View style={styles.chips}>
+          {quickActivities.map((id) => {
+            const activity = getActivity(id);
+            const active = activityType === id;
+            return (
+              <TouchableOpacity key={id} onPress={() => setActivityType(id)} style={[styles.chip, active && styles.chipActive]}>
+                <Ionicons name={activity.icon} size={16} color={active ? strictlyColors.onLime : strictlyColors.textSoft} />
+                <Text style={[styles.chipText, active && styles.chipTextActive]} numberOfLines={1}>
+                  {activity.shortLabel}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+          <TouchableOpacity onPress={() => setPickerOpen(true)} style={styles.chipMore}>
+            <Ionicons name="ellipsis-horizontal" size={16} color={strictlyColors.text} />
+            <Text style={styles.chipMoreText}>More</Text>
+          </TouchableOpacity>
+        </View>
+        {!quickActivities.includes(activityType) ? (
+          <Text style={styles.chosen}>Selected: {selectedActivity.label}</Text>
+        ) : null}
+
+        {/* 2 — duration and start, in whichever unit suits */}
+        <View style={styles.pairRow}>
+          <TouchableOpacity style={styles.pair} onPress={() => setEditingField("duration")}>
+            <Text style={styles.pairLabel}>HOW LONG</Text>
+            <Text style={styles.pairValue}>{formatDuration(duration)}</Text>
+            <Ionicons name="create-outline" size={15} color={strictlyColors.textSoft} style={styles.pairIcon} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.pair} onPress={() => setEditingField("startsIn")}>
+            <Text style={styles.pairLabel}>STARTS IN</Text>
+            <Text style={styles.pairValue}>{formatDuration(startsIn)}</Text>
+            <Ionicons name="time-outline" size={15} color={strictlyColors.textSoft} style={styles.pairIcon} />
+          </TouchableOpacity>
+        </View>
+
+        {/* 3 — intensity */}
+        <Text style={styles.stepLabel}>INTENSITY</Text>
+        <View style={styles.segment}>
+          {(["easy", "moderate", "hard"] as WorkoutIntensity[]).map((value) => (
+            <TouchableOpacity key={value} onPress={() => setIntensity(value)} style={[styles.segmentItem, intensity === value && styles.segmentActive]}>
+              <Text style={[styles.segmentText, intensity === value && styles.segmentTextActive]}>{value}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {supportsHeartRateZones(activityType) ? (
+          <View style={styles.zoneBlock}>
+            <View style={styles.zoneHeading}>
+              <View style={styles.zoneHeadingCopy}>
+                <Text style={styles.stepLabel}>HEART-RATE ZONES · OPTIONAL</Text>
+                <Text style={styles.zoneHelp}>Choose every zone this session will include.</Text>
+              </View>
+              {heartRateZones.length ? (
+                <TouchableOpacity onPress={() => setHeartRateZones([])} hitSlop={8}>
+                  <Text style={styles.zoneClear}>Clear</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+            <View style={styles.zoneRow}>
+              {([1, 2, 3, 4, 5] as HeartRateZone[]).map((zone) => {
+                const active = heartRateZones.includes(zone);
+                return (
+                  <TouchableOpacity
+                    key={zone}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: active }}
+                    accessibilityLabel={`Heart-rate zone ${zone}`}
+                    onPress={() => setHeartRateZones((current) => active ? current.filter((item) => item !== zone) : [...current, zone].sort())}
+                    style={[styles.zone, active && styles.zoneActive]}
+                  >
+                    <Text style={[styles.zoneNumber, active && styles.zoneNumberActive]}>Z{zone}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <Text style={styles.zoneSummary}>
+              {heartRateZones.length
+                ? `Using zones ${heartRateZones.join(", ")} to refine carbohydrate demand.`
+                : "Leave blank if you do not train by heart rate."}
+            </Text>
+          </View>
+        ) : null}
+
+        <TouchableOpacity style={styles.weightLine} onPress={() => setEditingField("weight")}>
+          <Ionicons name="person-outline" size={15} color={strictlyColors.textSoft} />
+          <Text style={styles.weightText}>{weightLabel}</Text>
+          <Text style={styles.weightEdit}>{profile.bodyWeightKg ? "Edit" : "Add"}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.primary} onPress={calculate}>
+          <Text style={styles.primaryText}>Calculate my fuel</Text>
+          <Ionicons name="arrow-forward" size={18} color={strictlyColors.onLime} />
+        </TouchableOpacity>
+      </View>
+
+      <TouchableOpacity style={styles.discover} onPress={() => navigation.navigate("Discover")}>
+        <View style={styles.discoverIcon}>
+          <Ionicons name="compass-outline" size={20} color={strictlyColors.lime} />
+        </View>
+        <View style={styles.discoverCopy}>
+          <Text style={styles.discoverTitle}>What others eat</Text>
+          <Text style={styles.discoverText}>Meals that worked for similar sessions.</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={strictlyColors.textSoft} />
+      </TouchableOpacity>
+
+      <ActivityPickerSheet
+        visible={pickerOpen}
+        selected={activityType}
+        favorites={favoriteActivities}
+        recents={recentActivities}
+        onClose={() => setPickerOpen(false)}
+        onSelect={setActivityType}
+        onToggleFavorite={toggleFavoriteActivity}
+      />
+
+      {editingField ? (
+        <ValueEditorSheet visible onClose={() => setEditingField(undefined)} {...editorProps()} />
+      ) : null}
+    </ScreenShell>
+  );
 }
 
 const styles = StyleSheet.create({
-  brandRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 8 },
-  brand: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.ink, fontSize: 20, letterSpacing: -0.5 },
+  brandRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 8, marginBottom: 20 },
+  brand: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 20, letterSpacing: -0.5 },
   brandSub: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 8, letterSpacing: 1.4, marginTop: 2 },
-  avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: strictlyColors.ink, alignItems: "center", justifyContent: "center" },
+  avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: strictlyColors.surfaceMuted, alignItems: "center", justifyContent: "center" },
   avatarText: { color: strictlyColors.lime, fontFamily: strictlyType.sansMedium, fontWeight: "800" },
-  hero: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.ink, fontSize: 38, lineHeight: 41, letterSpacing: -1.5, marginTop: 30, maxWidth: 340 },
-  subhero: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 15, lineHeight: 22, marginTop: 10, maxWidth: 330 },
-  label: { fontFamily: strictlyType.mono, fontSize: 9, letterSpacing: 1.4, color: strictlyColors.textSoft, marginTop: 28, marginBottom: 10 },
-  activityRow: { gap: 8, paddingRight: 20 },
-  activity: { flexDirection: "row", gap: 7, alignItems: "center", paddingHorizontal: 14, height: 42, borderRadius: strictlyRadius.pill, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
-  activityActive: { backgroundColor: strictlyColors.ink, borderColor: strictlyColors.ink },
-  activityText: { fontFamily: strictlyType.sansMedium, fontWeight: "600", color: strictlyColors.ink, fontSize: 12 },
-  activityTextActive: { color: strictlyColors.white },
-  formCard: { backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, borderRadius: strictlyRadius.large, padding: 16, marginTop: 14 },
-  fieldRow: { flexDirection: "row", gap: 10 },
-  field: { flex: 1 },
-  fieldLabel: { fontFamily: strictlyType.sansMedium, color: strictlyColors.textSoft, fontSize: 10, marginBottom: 7 },
-  inputWrap: { height: 52, flexDirection: "row", alignItems: "center", backgroundColor: strictlyColors.surfaceMuted, borderRadius: strictlyRadius.medium, paddingHorizontal: 12 },
-  input: { flex: 1, fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.ink, fontSize: 17, padding: 0 },
-  suffix: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 9 },
-  segment: { flexDirection: "row", backgroundColor: strictlyColors.surfaceMuted, borderRadius: strictlyRadius.medium, padding: 4 },
-  segmentItem: { flex: 1, alignItems: "center", paddingVertical: 10, borderRadius: 9 },
-  segmentActive: { backgroundColor: strictlyColors.white },
-  segmentText: { fontFamily: strictlyType.sansMedium, color: strictlyColors.textSoft, fontSize: 11, textTransform: "capitalize" },
-  segmentTextActive: { color: strictlyColors.ink, fontWeight: "700" },
-  primary: { height: 54, backgroundColor: strictlyColors.lime, borderRadius: strictlyRadius.medium, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 9, marginTop: 16 },
-  primaryText: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.ink, fontSize: 14 },
-  previous: { marginTop: 28 },
-  sectionHead: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", marginTop: 30, marginBottom: 12 },
-  sectionTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.ink, fontSize: 19, letterSpacing: -0.35 },
-  sectionSubtitle: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11, marginTop: 4 },
-  link: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.ink, fontSize: 11 },
-});
 
+  hero: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 32, lineHeight: 36, letterSpacing: -1.2, maxWidth: 340 },
+  subhero: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 14, lineHeight: 21, marginTop: 8, marginBottom: 4, maxWidth: 330 },
+
+  activeWrap: { marginBottom: 4 },
+  activeFooter: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, height: 44, marginTop: 8, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.lime },
+  activeFooterText: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.onLime, fontSize: 13 },
+
+  card: { padding: 16, marginTop: 18, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, borderRadius: strictlyRadius.large },
+  cardTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 17, marginBottom: 16 },
+  stepLabel: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 8, letterSpacing: 1.3, marginBottom: 9 },
+
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: 7 },
+  chip: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 40, paddingHorizontal: 12, borderRadius: strictlyRadius.pill, backgroundColor: strictlyColors.surfaceMuted },
+  chipActive: { backgroundColor: strictlyColors.lime },
+  chipText: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.textSoft, fontSize: 12 },
+  chipTextActive: { color: strictlyColors.onLime, fontWeight: "900" },
+  chipMore: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 40, paddingHorizontal: 12, borderRadius: strictlyRadius.pill, borderWidth: 1, borderColor: strictlyColors.borderStrong },
+  chipMoreText: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 12 },
+  chosen: { fontFamily: strictlyType.sans, color: strictlyColors.lime, fontSize: 11, marginTop: 9 },
+
+  pairRow: { flexDirection: "row", gap: 9, marginTop: 18 },
+  pair: { flex: 1, minHeight: 76, justifyContent: "center", paddingHorizontal: 14, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.surfaceMuted },
+  pairLabel: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 7, letterSpacing: 1.1 },
+  pairValue: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 18, marginTop: 5 },
+  pairIcon: { position: "absolute", top: 12, right: 12 },
+
+  segment: { flexDirection: "row", gap: 6, marginBottom: 4 },
+  segmentItem: { flex: 1, height: 44, alignItems: "center", justifyContent: "center", borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.surfaceMuted },
+  segmentActive: { backgroundColor: strictlyColors.lime },
+  segmentText: { fontFamily: strictlyType.sansMedium, color: strictlyColors.textSoft, fontSize: 12, textTransform: "capitalize" },
+  segmentTextActive: { color: strictlyColors.onLime, fontWeight: "900" },
+
+  zoneBlock: { marginTop: 17 },
+  zoneHeading: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
+  zoneHeadingCopy: { flex: 1 },
+  zoneHelp: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 10, marginTop: -4, marginBottom: 9 },
+  zoneClear: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.lime, fontSize: 10 },
+  zoneRow: { flexDirection: "row", gap: 7 },
+  zone: { flex: 1, height: 43, borderRadius: strictlyRadius.medium, borderWidth: 1, borderColor: strictlyColors.border, backgroundColor: strictlyColors.surfaceMuted, alignItems: "center", justifyContent: "center" },
+  zoneActive: { backgroundColor: strictlyColors.lime, borderColor: strictlyColors.lime },
+  zoneNumber: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 10, fontWeight: "700" },
+  zoneNumberActive: { color: strictlyColors.onLime, fontWeight: "900" },
+  zoneSummary: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 9, lineHeight: 14, marginTop: 7 },
+
+  weightLine: { height: 48, flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 },
+  weightText: { flex: 1, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 12 },
+  weightEdit: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.lime, fontSize: 11 },
+
+  primary: { height: 56, backgroundColor: strictlyColors.lime, borderRadius: strictlyRadius.medium, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 9, marginTop: 4 },
+  primaryText: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.onLime, fontSize: 14 },
+
+  discover: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 68, paddingHorizontal: 15, marginTop: 12, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
+  discoverIcon: { width: 40, height: 40, borderRadius: 14, backgroundColor: strictlyColors.surfaceMuted, alignItems: "center", justifyContent: "center" },
+  discoverCopy: { flex: 1 },
+  discoverTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 14 },
+  discoverText: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11, marginTop: 3 },
+});

@@ -28,7 +28,9 @@ export function LoadingState({ title = "Getting things ready", messages = [], co
     return () => clearInterval(timer);
   }, [messages]);
 
-  const foreground = inverted ? strictlyColors.white : strictlyColors.ink;
+  // Loading states live on green/cream semantic surfaces. Using `text` here
+  // keeps them cream in dark mode and deep green in light mode.
+  const foreground = inverted ? strictlyColors.white : strictlyColors.text;
   const muted = inverted ? strictlyColors.sage : strictlyColors.textSoft;
 
   return <View accessibilityRole="progressbar" accessibilityLabel={`${title}. ${messages[messageIndex] || "Loading"}`} style={[styles.wrap, compact && styles.compact]}>

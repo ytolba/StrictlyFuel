@@ -57,7 +57,7 @@ export function scoreMeal(macros: MealMacros, target: FuelTarget, workout: Worko
   };
 }
 
-export function suggestMealFixes(ingredients: MealIngredient[], macros: MealMacros, target: FuelTarget, workout: WorkoutDraft): MealFix[] {
+export function suggestMealFixes(_ingredients: MealIngredient[], macros: MealMacros, target: FuelTarget, _workout: WorkoutDraft): MealFix[] {
   const fixes: MealFix[] = [];
   const carbGap = target.carbTarget - macros.carbs;
   if (carbGap > 5) {
@@ -69,22 +69,16 @@ export function suggestMealFixes(ingredients: MealIngredient[], macros: MealMacr
     }
   }
 
-  const fatLimit = workout.startsInMinutes <= 30 ? 5 : workout.startsInMinutes <= 60 ? 8 : workout.startsInMinutes <= 120 ? 15 : 24;
-  if (macros.fat > fatLimit) {
-    const highFat = [...ingredients].sort((a, b) => (b.food.per100g.fat * b.grams) - (a.food.per100g.fat * a.grams))[0];
-    if (highFat?.food.per100g.fat > 5 && highFat.grams > 8) {
-      const grams = Math.max(5, Math.round(highFat.grams * 0.4));
-      fixes.push({ id: `reduce-${highFat.id}`, action: "reduce", ingredientName: highFat.food.name, grams, detail: "Reduces fat close to training and may improve comfort." });
-    }
-  }
-
-  if (!fixes.length && Math.abs(carbGap) > 5 && carbGap < 0) {
-    const largestCarb = [...ingredients].sort((a, b) => (b.food.per100g.carbs * b.grams) - (a.food.per100g.carbs * a.grams))[0];
-    if (largestCarb) {
-      const grams = Math.max(5, Math.round((Math.abs(carbGap) / largestCarb.food.per100g.carbs) * 100));
-      fixes.push({ id: `reduce-${largestCarb.id}`, action: "reduce", ingredientName: largestCarb.food.name, grams, detail: `Moves the meal closer to your ${target.carbTarget} g target.` });
-    }
-  }
   return fixes.slice(0, 2);
 }
 
+export function futureMealNotes(macros: MealMacros, workout: WorkoutDraft) {
+  const notes: string[] = [];
+  const fatLimit = workout.startsInMinutes <= 30 ? 5 : workout.startsInMinutes <= 60 ? 8 : workout.startsInMinutes <= 120 ? 15 : 24;
+  const fiberLimit = workout.startsInMinutes <= 30 ? 3 : workout.startsInMinutes <= 60 ? 5 : workout.startsInMinutes <= 120 ? 9 : 15;
+  if (macros.fat > fatLimit) notes.push(`This meal is a little high in fat for ${workout.startsInMinutes} minutes before training. Next time, use less of the highest-fat ingredient or eat it earlier.`);
+  if (macros.fiber > fiberLimit) notes.push(`Fiber is above the usual comfort range for this timing. Next time, choose a lower-fiber carb source or give the meal more time.`);
+  if (macros.protein > 35 && workout.startsInMinutes < 90) notes.push("This is protein-heavy for a close pre-workout window. Next time, keep the protein portion smaller and put more room toward carbohydrate.");
+  if (macros.calories > 750 && workout.startsInMinutes < 120) notes.push("The total meal volume may feel heavy this close to training. Next time, eat earlier or use a more compact carbohydrate source.");
+  return notes.slice(0, 3);
+}

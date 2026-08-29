@@ -9,16 +9,19 @@ import { calculateMealMacros } from "../../logic/nutritionEngine";
 import { saveMeal } from "../../services/fuelService";
 import { ScreenShell } from "../../components/fuel/ScreenShell";
 import { CarbSpeedBar } from "../../components/fuel/CarbSpeedBar";
+import { LoadingState } from "../../components/fuel/LoadingState";
+import { ValueEditorSheet } from "../../components/fuel/ValueEditorSheet";
 import { strictlyColors, strictlyRadius, strictlyType } from "../../theme/strictlyTheme";
 import type { FuelFood } from "../../types/fuel";
 
-export default function MealBuilderScreen({ navigation }: any) {
+export default function MealBuilderScreen({ navigation, route }: any) {
   const { user } = useAuth();
   const { workout, target, ingredients, addIngredient, updateIngredient, removeIngredient, buildMeal } = useFuel();
   const [query, setQuery] = useState("");
-  const [name, setName] = useState("My pre-workout meal");
+  const [name, setName] = useState(route.params?.suggestedName || "My pre-workout meal");
   const [results, setResults] = useState<FuelFood[]>(searchFuelFoods(""));
   const [searching, setSearching] = useState(false);
+  const [editingId, setEditingId] = useState<string>();
   const macros = useMemo(() => calculateMealMacros(ingredients), [ingredients]);
 
   useEffect(() => {
@@ -45,13 +48,16 @@ export default function MealBuilderScreen({ navigation }: any) {
     <View style={styles.targetMini}><View><Text style={styles.targetLabel}>TARGET</Text><Text style={styles.targetValue}>{target.carbTarget}g</Text></View><View style={styles.targetProgress}><View style={[styles.targetFill, { width: `${Math.min(100, macros.carbs / Math.max(1, target.carbTarget) * 100)}%` }]} /></View><Text style={styles.actual}>{Math.round(macros.carbs)}g</Text></View>
 
     <TextInput value={name} onChangeText={setName} style={styles.nameInput} placeholder="Meal name" placeholderTextColor={strictlyColors.textSoft} />
-    <View style={styles.search}><Ionicons name="search" size={18} color={strictlyColors.textSoft} /><TextInput value={query} onChangeText={setQuery} style={styles.searchInput} placeholder="Search any food or product…" placeholderTextColor={strictlyColors.textSoft} />{searching ? <View style={styles.searchPulse} /> : null}</View>
-    {query ? <View style={styles.results}>{results.map((food) => <TouchableOpacity key={food.id} onPress={() => { addIngredient({ food, grams: food.defaultGrams }); setQuery(""); }} style={styles.result}><Text style={styles.foodEmoji}>{food.emoji}</Text><View style={styles.foodCopy}><Text style={styles.foodName}>{food.name}</Text><Text style={styles.foodMeta}>{food.servingLabel} · {food.carbSpeed} digesting</Text></View><View style={styles.add}><Ionicons name="add" size={19} color={strictlyColors.ink} /></View></TouchableOpacity>)}</View> : null}
+    <View style={styles.search}><Ionicons name="search" size={18} color={strictlyColors.textSoft} /><TextInput value={query} onChangeText={setQuery} style={styles.searchInput} placeholder="Try ‘white rice’, ‘banana’ or a brand…" placeholderTextColor={strictlyColors.textSoft} returnKeyType="search" autoCorrect={false} />{query ? <TouchableOpacity onPress={() => setQuery("")} hitSlop={8}><Ionicons name="close-circle" size={19} color={strictlyColors.textSoft} /></TouchableOpacity> : null}</View>
+    {query && searching ? <View style={styles.searchLoading}><LoadingState compact title="Searching foods" messages={["Matching what you meant", "Checking Strictly and product data"]} /></View> : null}
+    {query && results.length ? <View style={styles.results}>{results.map((food) => <TouchableOpacity key={food.id} onPress={() => { addIngredient({ food, grams: food.defaultGrams }); setQuery(""); }} style={styles.result}><Text style={styles.foodEmoji}>{food.emoji}</Text><View style={styles.foodCopy}><Text style={styles.foodName}>{food.name}</Text><Text style={styles.foodMeta}>{food.servingLabel} · {food.carbSpeed} digesting</Text></View><View style={styles.add}><Ionicons name="add" size={19} color={strictlyColors.onLime} /></View></TouchableOpacity>)}</View> : null}
+    {query && !searching && !results.length ? <View style={styles.noResults}><Text style={styles.noResultsTitle}>No useful match yet</Text><Text style={styles.noResultsText}>Scan the barcode, or photograph the package label and add it with the printed macros.</Text><TouchableOpacity style={styles.captureButton} onPress={() => navigation.navigate("FoodCapture")}><Ionicons name="scan-outline" size={18} color={strictlyColors.onLime} /><Text style={styles.captureText}>Scan or add this product</Text></TouchableOpacity></View> : null}
+    <View style={styles.captureRow}><TouchableOpacity style={styles.captureQuick} onPress={() => navigation.navigate("FoodCapture")}><Ionicons name="barcode-outline" size={20} color={strictlyColors.text} /><Text style={styles.captureQuickText}>Barcode</Text></TouchableOpacity><TouchableOpacity style={styles.captureQuick} onPress={() => navigation.navigate("FoodCapture")}><Ionicons name="document-text-outline" size={20} color={strictlyColors.text} /><Text style={styles.captureQuickText}>Nutrition label</Text></TouchableOpacity></View>
 
     <View style={styles.sectionHead}><Text style={styles.sectionTitle}>Meal</Text><Text style={styles.count}>{ingredients.length} items</Text></View>
     {!ingredients.length ? <View style={styles.emptyCard}><Text style={styles.emptyIcon}>＋</Text><Text style={styles.emptyTitle}>Start with one food</Text><Text style={styles.emptyText}>Search above or scan your plate instead.</Text></View> : <View style={styles.items}>{ingredients.map((item) => <View key={item.id} style={styles.item}>
       <Text style={styles.foodEmoji}>{item.food.emoji}</Text><View style={styles.foodCopy}><Text style={styles.foodName}>{item.food.name}</Text><Text style={styles.foodMeta}>{Math.round(item.food.per100g.carbs * item.grams / 100)}g carbs · {item.food.carbSpeed}</Text></View>
-      <View style={styles.stepper}><TouchableOpacity onPress={() => updateIngredient(item.id, { grams: Math.max(1, item.grams - 10) })} style={styles.step}><Text>−</Text></TouchableOpacity><TextInput value={String(Math.round(item.grams))} onChangeText={(value) => updateIngredient(item.id, { grams: Math.max(1, Number(value) || 1) })} keyboardType="number-pad" style={styles.grams} /><Text style={styles.g}>g</Text><TouchableOpacity onPress={() => updateIngredient(item.id, { grams: item.grams + 10 })} style={styles.step}><Text>+</Text></TouchableOpacity></View>
+      <View style={styles.stepper}><TouchableOpacity onPress={() => updateIngredient(item.id, { grams: Math.max(1, item.grams - 10) })} style={styles.step}><Text>−</Text></TouchableOpacity><TouchableOpacity onPress={() => setEditingId(item.id)} style={styles.gramsButton}><Text style={styles.grams}>{Math.round(item.grams)}</Text><Text style={styles.g}>g</Text><Ionicons name="create-outline" size={12} color={strictlyColors.textSoft} /></TouchableOpacity><TouchableOpacity onPress={() => updateIngredient(item.id, { grams: item.grams + 10 })} style={styles.step}><Text>+</Text></TouchableOpacity></View>
       <TouchableOpacity onPress={() => removeIngredient(item.id)} style={styles.remove}><Ionicons name="close" size={16} color={strictlyColors.textSoft} /></TouchableOpacity>
     </View>)}</View>}
 
@@ -63,8 +69,9 @@ export default function MealBuilderScreen({ navigation }: any) {
     </View>
 
     <View style={styles.macros}>{[["Calories", `${Math.round(macros.calories)}`], ["Protein", `${Math.round(macros.protein)}g`], ["Fat", `${Math.round(macros.fat)}g`], ["Fiber", `${Math.round(macros.fiber)}g`]].map(([label, value]) => <View key={label} style={styles.macro}><Text style={styles.macroValue}>{value}</Text><Text style={styles.macroLabel}>{label}</Text></View>)}</View>
-    <TouchableOpacity style={[styles.primary, !ingredients.length && styles.disabled]} disabled={!ingredients.length} onPress={analyze}><Text style={styles.primaryText}>Score this meal</Text><Ionicons name="arrow-forward" size={18} color={strictlyColors.ink} /></TouchableOpacity>
+    <TouchableOpacity style={[styles.primary, !ingredients.length && styles.disabled]} disabled={!ingredients.length} onPress={analyze}><Text style={styles.primaryText}>Score this meal</Text><Ionicons name="arrow-forward" size={18} color={strictlyColors.onLime} /></TouchableOpacity>
     <Text style={styles.source}>Results combine Strictly’s curated catalog with USDA FoodData Central and Open Food Facts. Package labels take priority for branded products.</Text>
+    {editingId ? <ValueEditorSheet visible label={ingredients.find((item) => item.id === editingId)?.food.name || "Food amount"} value={ingredients.find((item) => item.id === editingId)?.grams || 100} presets={[50, 100, 150, 200]} onClose={() => setEditingId(undefined)} onSave={(grams) => updateIngredient(editingId, { grams })} /> : null}
   </ScreenShell>;
 }
 
@@ -76,44 +83,53 @@ const styles = StyleSheet.create({
   targetProgress: { flex: 1, height: 7, backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 4, overflow: "hidden" },
   targetFill: { height: "100%", backgroundColor: strictlyColors.lime },
   actual: { minWidth: 42, textAlign: "right", fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.white, fontSize: 16 },
-  nameInput: { height: 50, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, borderRadius: strictlyRadius.medium, paddingHorizontal: 14, color: strictlyColors.ink, fontFamily: strictlyType.sansMedium, marginTop: 12 },
+  nameInput: { height: 50, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, borderRadius: strictlyRadius.medium, paddingHorizontal: 14, color: strictlyColors.text, fontFamily: strictlyType.sansMedium, marginTop: 12 },
   search: { height: 52, flexDirection: "row", alignItems: "center", gap: 9, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, borderRadius: strictlyRadius.medium, paddingHorizontal: 14, marginTop: 9 },
-  searchInput: { flex: 1, color: strictlyColors.ink, fontFamily: strictlyType.sans },
-  searchPulse: { width: 8, height: 8, borderRadius: 4, backgroundColor: strictlyColors.lime, borderWidth: 1, borderColor: strictlyColors.ink },
+  searchInput: { flex: 1, color: strictlyColors.text, fontFamily: strictlyType.sans },
+  searchLoading: { minHeight: 48, justifyContent: "center", marginTop: 7, paddingHorizontal: 12, backgroundColor: strictlyColors.cream, borderRadius: strictlyRadius.medium },
   results: { backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, borderRadius: strictlyRadius.medium, marginTop: 6, overflow: "hidden" },
   result: { flexDirection: "row", alignItems: "center", gap: 10, padding: 13, borderBottomWidth: 1, borderBottomColor: strictlyColors.border },
+  noResults: { padding: 16, marginTop: 7, backgroundColor: strictlyColors.surface, borderRadius: strictlyRadius.large, borderWidth: 1, borderColor: strictlyColors.border },
+  noResultsTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 15 },
+  noResultsText: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 17, marginTop: 5 },
+  captureButton: { height: 46, marginTop: 11, backgroundColor: strictlyColors.lime, borderRadius: strictlyRadius.medium, flexDirection: "row", gap: 7, alignItems: "center", justifyContent: "center" },
+  captureText: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.onLime, fontSize: 12 },
+  captureRow: { flexDirection: "row", gap: 8, marginTop: 8 },
+  captureQuick: { flex: 1, height: 46, flexDirection: "row", gap: 7, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.cream, borderRadius: strictlyRadius.medium, borderWidth: 1, borderColor: strictlyColors.border },
+  captureQuickText: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 11 },
   foodEmoji: { fontSize: 20, width: 28, textAlign: "center" },
   foodCopy: { flex: 1 },
-  foodName: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.ink, fontSize: 13 },
+  foodName: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 13 },
   foodMeta: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 10, marginTop: 3, textTransform: "capitalize" },
   add: { width: 30, height: 30, borderRadius: 15, backgroundColor: strictlyColors.lime, alignItems: "center", justifyContent: "center" },
   sectionHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 25, marginBottom: 9 },
-  sectionTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.ink, fontSize: 18, marginTop: 24, marginBottom: 9 },
+  sectionTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 18, marginTop: 24, marginBottom: 9 },
   count: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 9 },
   items: { backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, borderRadius: strictlyRadius.large, overflow: "hidden" },
   item: { flexDirection: "row", alignItems: "center", padding: 12, borderBottomWidth: 1, borderBottomColor: strictlyColors.border },
   stepper: { flexDirection: "row", alignItems: "center", backgroundColor: strictlyColors.surfaceMuted, borderRadius: 9, padding: 3 },
   step: { width: 26, height: 28, alignItems: "center", justifyContent: "center" },
-  grams: { width: 35, textAlign: "right", padding: 0, color: strictlyColors.ink, fontFamily: strictlyType.sansMedium, fontSize: 12 },
-  g: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 9, marginRight: 2 },
+  gramsButton: { minWidth: 58, height: 30, paddingHorizontal: 5, flexDirection: "row", gap: 3, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.surface, borderRadius: 7 },
+  grams: { color: strictlyColors.text, fontFamily: strictlyType.sansMedium, fontWeight: "700", fontSize: 12 },
+  g: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 9 },
   remove: { marginLeft: 5, width: 24, height: 28, alignItems: "center", justifyContent: "center" },
   emptyCard: { alignItems: "center", padding: 28, borderWidth: 1, borderColor: strictlyColors.border, borderStyle: "dashed", borderRadius: strictlyRadius.large },
-  emptyIcon: { fontSize: 25, color: strictlyColors.ink },
-  emptyTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.ink, marginTop: 8 },
+  emptyIcon: { fontSize: 25, color: strictlyColors.text },
+  emptyTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, marginTop: 8 },
   emptyText: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11, marginTop: 4 },
   compare: { padding: 15, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, borderRadius: strictlyRadius.large },
   compareHead: { flexDirection: "row", paddingBottom: 7 },
   compareLabel: { flex: 1, textAlign: "right", fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 8, letterSpacing: 0.8 },
   compareRow: { flexDirection: "row", paddingVertical: 8, borderTopWidth: 1, borderTopColor: strictlyColors.border },
-  compareName: { flex: 1, fontFamily: strictlyType.sansMedium, color: strictlyColors.ink, fontSize: 12 },
+  compareName: { flex: 1, fontFamily: strictlyType.sansMedium, color: strictlyColors.text, fontSize: 12 },
   compareNumber: { flex: 1, textAlign: "right", fontFamily: strictlyType.sansMedium, color: strictlyColors.textSoft, fontSize: 12 },
   onTarget: { color: strictlyColors.good, fontWeight: "800" },
   macros: { flexDirection: "row", gap: 7, marginTop: 10 },
   macro: { flex: 1, backgroundColor: strictlyColors.cream, borderRadius: strictlyRadius.medium, alignItems: "center", paddingVertical: 12 },
-  macroValue: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.ink, fontSize: 15 },
+  macroValue: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 15 },
   macroLabel: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 7, textTransform: "uppercase", marginTop: 3 },
   primary: { height: 56, backgroundColor: strictlyColors.lime, borderRadius: strictlyRadius.medium, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 16 },
-  primaryText: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.ink },
+  primaryText: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.onLime },
   disabled: { opacity: 0.4 },
   source: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 9, lineHeight: 14, marginTop: 11 },
 });

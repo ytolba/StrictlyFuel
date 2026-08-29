@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
 import { StrictlyMark } from "../components/StrictlyBrand";
 import { NutritionProfileForm } from "../components/NutritionProfileForm";
+import { AthleteBasicsForm } from "../components/AthleteBasicsForm";
 import { saveNutritionProfile } from "../services/nutritionProfileService";
 import { EMPTY_NUTRITION_PROFILE, NutritionProfile } from "../types/nutritionProfile";
 import { strictlyColors, strictlyRadius, strictlyType } from "../theme/strictlyTheme";
@@ -13,7 +14,7 @@ import { strictlyColors, strictlyRadius, strictlyType } from "../theme/strictlyT
 type OnboardingStackParamList = { Onboarding: undefined; Auth: undefined };
 type OnboardingNavigation = StackNavigationProp<OnboardingStackParamList, "Onboarding">;
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 6;
 
 const OnboardingScreen = () => {
   const navigation = useNavigation<OnboardingNavigation>();
@@ -31,16 +32,16 @@ const OnboardingScreen = () => {
   const renderIntro = () => (
     <View style={styles.intro}>
       <View style={styles.markWrap}><StrictlyMark size={66} dark={false} /></View>
-      <Text style={styles.kicker}>PERSONALIZED INGREDIENT INTELLIGENCE</Text>
-      <Text style={styles.hero}>One score. Three clear signals.</Text>
+      <Text style={styles.kicker}>FUEL THE WORK IN FRONT OF YOU</Text>
+      <Text style={styles.hero}>Meals built for the workout ahead.</Text>
       <Text style={styles.heroDescription}>
-        Strictly scores every product on what it contains, how heavily it’s processed, and how well it fits you.
+        Strictly turns a workout into a carb target, then helps you build, scan, and adjust a meal that actually fits the timing.
       </Text>
       <View style={styles.metricPreview}>
         {[
-          ["01", "Ingredient quality", "What’s present—and what isn’t."],
-          ["02", "Level of processing", "Whole ingredients to heavy formulation."],
-          ["03", "Fit for you", "Your sensitivities, values, and priorities."],
+          ["01", "Set the workout", "Sport, duration, intensity, and start time."],
+          ["02", "See the fuel", "A carb target you can understand on a plate."],
+          ["03", "Make it yours", "Timing, sensitivities, digestion, and preferences."],
         ].map(([number, title, copy], index) => (
           <View key={number} style={[styles.previewRow, index === 2 && styles.previewRowLast]}>
             <Text style={styles.previewNumber}>{number}</Text>
@@ -53,17 +54,18 @@ const OnboardingScreen = () => {
         ))}
       </View>
       <View style={styles.exampleCard}>
-        <Text style={styles.exampleScore}>74</Text>
+        <Text style={styles.exampleScore}>82g</Text>
         <View style={styles.exampleCopy}>
-          <Text style={styles.exampleLabel}>Not a fit for you</Text>
-          <Text style={styles.exampleText}>A product can score well overall and still conflict with something you avoid.</Text>
+          <Text style={styles.exampleLabel}>Then see what 82 grams looks like</Text>
+          <Text style={styles.exampleText}>Build a meal, scan your plate, or borrow an idea from an athlete fueling similar work.</Text>
         </View>
       </View>
     </View>
   );
 
   const renderProfileStep = () => {
-    const sections = step === 1 ? ["sensitivities"] : step === 2 ? ["conditions"] : ["dietaryPatterns", "priorities"];
+    if (step === 1) return <AthleteBasicsForm profile={profile} onChange={setProfile} />;
+    const sections = step === 2 ? ["sensitivities"] : step === 3 ? ["conditions"] : step === 4 ? ["dietaryPatterns"] : ["priorities"];
     return (
       <View>
         <NutritionProfileForm
@@ -75,9 +77,9 @@ const OnboardingScreen = () => {
           <Ionicons name="lock-closed-outline" size={17} color={strictlyColors.good} />
           <Text style={styles.privacyText}>Your profile is optional and stored on this device. You can update it from Account.</Text>
         </View>
-        {step === 2 && (
+        {step === 3 && (
           <Text style={styles.medicalNote}>
-            Strictly personalizes ingredient context; it does not diagnose conditions or determine whether a food is medically safe.
+            Strictly uses this context to filter and explain workout-fuel ideas. It does not diagnose conditions or determine whether a meal is medically safe.
           </Text>
         )}
       </View>
@@ -86,6 +88,7 @@ const OnboardingScreen = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <View style={styles.topBar}>
         <TouchableOpacity
           style={[styles.iconButton, step === 0 && styles.iconButtonHidden]}
@@ -100,7 +103,7 @@ const OnboardingScreen = () => {
         <Text style={styles.stepCount}>{String(step + 1).padStart(2, "0")}/{String(TOTAL_STEPS).padStart(2, "0")}</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" automaticallyAdjustKeyboardInsets>
         {step === 0 ? renderIntro() : renderProfileStep()}
       </ScrollView>
 
@@ -111,16 +114,18 @@ const OnboardingScreen = () => {
           </TouchableOpacity>
         )}
         <TouchableOpacity style={styles.nextButton} onPress={next}>
-          <Text style={styles.nextText}>{step === TOTAL_STEPS - 1 ? "Save profile" : step === 0 ? "Personalize my score" : "Continue"}</Text>
+          <Text style={styles.nextText}>{step === TOTAL_STEPS - 1 ? "Start fueling" : step === 0 ? "Build my fuel profile" : "Continue"}</Text>
           <Ionicons name="arrow-forward" size={17} color={strictlyColors.paper} />
         </TouchableOpacity>
       </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: strictlyColors.background },
+  flex: { flex: 1 },
   topBar: { height: 58, flexDirection: "row", alignItems: "center", paddingHorizontal: 20, gap: 12 },
   iconButton: { width: 36, height: 36, borderWidth: 1, borderColor: strictlyColors.border, borderRadius: strictlyRadius.small, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.surface },
   iconButtonHidden: { opacity: 0 },
@@ -146,7 +151,7 @@ const styles = StyleSheet.create({
   exampleLabel: { color: strictlyColors.white, fontFamily: strictlyType.sansBold, fontWeight: "700", fontSize: 15 },
   exampleText: { color: "#B8C3BC", fontFamily: strictlyType.sans, fontSize: 11, lineHeight: 15, marginTop: 3 },
   privacyCard: { flexDirection: "row", alignItems: "flex-start", gap: 10, padding: 14, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.cream },
-  privacyText: { flex: 1, color: strictlyColors.ink, fontFamily: strictlyType.sans, fontSize: 12, lineHeight: 17 },
+  privacyText: { flex: 1, color: strictlyColors.text, fontFamily: strictlyType.sans, fontSize: 12, lineHeight: 17 },
   medicalNote: { color: strictlyColors.textSoft, fontFamily: strictlyType.sans, fontSize: 11, lineHeight: 16, marginTop: 11 },
   footer: { flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 8, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12, borderTopWidth: 1, borderTopColor: strictlyColors.border, backgroundColor: strictlyColors.background },
   skipButton: { height: 48, justifyContent: "center", paddingHorizontal: 12 },
