@@ -7,7 +7,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
  * read. Without this the backend has no idea who is Pro.
  *
  * Configure in RevenueCat → Integrations → Webhooks:
- *   URL:            https://<project>.functions.supabase.co/revenuecat-webhook
+ *   URL:            https://<project-ref>.supabase.co/functions/v1/revenuecat-webhook
  *   Authorization:  the value of REVENUECAT_WEBHOOK_SECRET
  *
  * `verify_jwt` is false for this function (RevenueCat cannot send a Supabase

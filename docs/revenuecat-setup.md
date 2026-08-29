@@ -84,7 +84,7 @@ For sandbox testing, use a sandbox Apple ID with the real app's `appl_` key.
 `public.user_subscriptions`, which is what `consume_ai_credit()` reads on the
 server. Configure it under **Integrations → Webhooks**:
 
-- URL: `https://<project>.functions.supabase.co/revenuecat-webhook`
+- URL: `https://<project-ref>.supabase.co/functions/v1/revenuecat-webhook`
 - Authorization header: the value of `REVENUECAT_WEBHOOK_SECRET`
 
 Its `PRO_ENTITLEMENT` constant is `strictlyfuel_pro` and must stay in step with
