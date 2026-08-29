@@ -48,7 +48,8 @@ Everything below has to match the constants in `src/config/monetization.ts`.
 
 ## 3. API keys
 
-Keys are read from the environment, with the current Apple key as the fallback:
+Keys are read from the environment. There is intentionally no hard-coded
+fallback, so a key from another RevenueCat project cannot silently ship:
 
 ```
 EXPO_PUBLIC_REVENUECAT_IOS_KEY=appl_...
@@ -68,7 +69,7 @@ purchases without App Store Connect. Two constraints:
 - It must never reach a release build. `resolveApiKey()` only returns it when
   `__DEV__` is true *and* `EXPO_PUBLIC_REVENUECAT_USE_TEST_STORE=1` is set.
 
-For sandbox testing today, use a sandbox Apple ID with the real `appl_` key.
+For sandbox testing, use a sandbox Apple ID with the real app's `appl_` key.
 
 ## 4. Webhook
 

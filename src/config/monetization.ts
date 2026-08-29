@@ -33,7 +33,11 @@ export const PRO_ENTITLEMENT = "strictlyfuel_pro";
  * meant to ship long-term, since AI-scan limits still gate correctly but real
  * purchases cannot go through while it is off.
  */
-export const REVENUECAT_ENABLED = false;
+// The native provider may be linked in a development build before the store
+// configuration exists. With no real public SDK key, the provider safely stays
+// inactive. This prevents a Test Store or an old project's key from reaching
+// production.
+export const REVENUECAT_ENABLED = true;
 
 /**
  * Package identifiers inside the offering. RevenueCat's built-in packages use
@@ -76,10 +80,8 @@ export const OFFERING_ID: string | null = null;
  * Keys are read from the environment first so that a build can be pointed at a
  * different RevenueCat project without a code change.
  */
-const FALLBACK_APPLE_KEY = "appl_VmOPptSHnlPQZyKexioqRSiPuBX";
-
 export const REVENUECAT_KEYS = {
-  apple: process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY || FALLBACK_APPLE_KEY,
+  apple: process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY || "",
   google: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY || "",
   /**
    * RevenueCat Test Store key (`test_` prefix). It simulates purchases without

@@ -35,6 +35,7 @@ export default function PaywallScreen({ navigation }: any) {
   const RevenueCatUI = getRevenueCatUI();
   const [selected, setSelected] = useState<PlanKey>("yearly");
   const [busy, setBusy] = useState(false);
+  const hasMonthlyPlan = Boolean(monthlyPackage);
 
   const packFor = (plan: PlanKey): PurchasesPackage | undefined => (plan === "yearly" ? yearlyPackage : monthlyPackage);
 
@@ -176,19 +177,21 @@ export default function PaywallScreen({ navigation }: any) {
         </View>
       </TouchableOpacity>
 
-      <TouchableOpacity style={[styles.plan, selected === "monthly" && styles.planActive]} onPress={() => setSelected("monthly")} accessibilityRole="radio" accessibilityState={{ selected: selected === "monthly" }}>
-        <View style={styles.planLeft}>
-          <View style={[styles.radio, selected === "monthly" && styles.radioActive]}>{selected === "monthly" ? <View style={styles.radioDot} /> : null}</View>
-          <View>
-            <Text style={styles.planName}>Monthly</Text>
-            <Text style={styles.planNote}>Cancel any time</Text>
+      {hasMonthlyPlan ? (
+        <TouchableOpacity style={[styles.plan, selected === "monthly" && styles.planActive]} onPress={() => setSelected("monthly")} accessibilityRole="radio" accessibilityState={{ selected: selected === "monthly" }}>
+          <View style={styles.planLeft}>
+            <View style={[styles.radio, selected === "monthly" && styles.radioActive]}>{selected === "monthly" ? <View style={styles.radioDot} /> : null}</View>
+            <View>
+              <Text style={styles.planName}>Monthly</Text>
+              <Text style={styles.planNote}>Cancel any time</Text>
+            </View>
           </View>
-        </View>
-        <View style={styles.planRight}>
-          <Text style={styles.planPrice}>{priceFor("monthly")}</Text>
-          <Text style={styles.planPeriod}>per month</Text>
-        </View>
-      </TouchableOpacity>
+          <View style={styles.planRight}>
+            <Text style={styles.planPrice}>{priceFor("monthly")}</Text>
+            <Text style={styles.planPeriod}>per month</Text>
+          </View>
+        </TouchableOpacity>
+      ) : null}
 
       <TouchableOpacity style={[styles.cta, busy && styles.ctaBusy]} onPress={buy} disabled={busy}>
         {busy ? <ActivityIndicator color={strictlyColors.onLime} /> : (
