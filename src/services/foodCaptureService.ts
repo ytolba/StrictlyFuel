@@ -23,6 +23,8 @@ export async function saveFoodLabel(food: FoodLabelAnalysis): Promise<FuelFood> 
     per100g: {
       calories: food.caloriesPerServing / factor, carbs: food.carbsPerServing / factor,
       protein: food.proteinPerServing / factor, fat: food.fatPerServing / factor, fiber: food.fiberPerServing / factor,
-    }, source: "label", sourceId: row.source_product_id,
+      sugarAlcohols: food.sugarAlcoholsPerServing / factor, sugarAlcoholType: food.sugarAlcoholType,
+      allulose: food.allulosePerServing / factor,
+    }, source: "label", sourceId: row.source_product_id, dataQualityScore: Math.min(70, food.confidence), isVerified: false,
   };
 }

@@ -5,7 +5,10 @@
     "start": "expo start --dev-client",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "test:logic": "tsc -p tsconfig.logic-tests.json && node .logic-test-dist/tests/fuelingLogic.test.js",
+    "test": "(rm -rf .test-build 2>/dev/null || true) && tsc src/logic/mealRecommendation.ts src/logic/fuelCalculator.ts --outDir .test-build --module commonjs --target es2020 --skipLibCheck --esModuleInterop --moduleResolution node && node --test tests/*.test.js",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -38,9 +41,7 @@
     "expo-splash-screen": "~31.0.13",
     "expo-status-bar": "~3.0.9",
     "expo-web-browser": "~15.0.11",
-    "firebase": "^11.1.0",
     "jsc-android": "^250231.0.0",
-    "openai-react-native": "^0.3.6",
     "paapi5-nodejs-sdk": "^1.1.0",
     "paapi5-react-native-sdk": "^1.0.4",
     "react": "19.1.0",
@@ -79,11 +80,6 @@
     "postinstall-postinstall": "^2.1.0",
     "react-native-svg-transformer": "^1.5.0",
     "react-native-typescript-transformer": "^1.1.0"
-  },
-  "overrides": {
-    "openai-react-native": {
-      "expo-file-system": "$expo-file-system"
-    }
   },
   "private": true,
   "expo": {

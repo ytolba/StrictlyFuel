@@ -116,7 +116,7 @@ export default function PaywallScreen({ navigation }: any) {
     return (
       <ScreenShell title="StrictlyFuel Pro" eyebrow="ACTIVE" back onBack={() => navigation.goBack()}>
         <View style={styles.activeCard}>
-          <Ionicons name="checkmark-circle" size={40} color={strictlyColors.lime} />
+          <Ionicons name="checkmark-circle" size={40} color={strictlyColors.accentText} />
           <Text style={styles.activeTitle}>Pro is active</Text>
           <Text style={styles.activeText}>
             You have {SCAN_LIMITS.pro} meal scans a week. Manage or cancel any time in your Apple ID subscription settings.
@@ -245,10 +245,10 @@ const styles = StyleSheet.create({
   sectionTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 19, marginTop: 26, marginBottom: 10 },
 
   plan: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 16, marginBottom: 9, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface, borderWidth: 2, borderColor: strictlyColors.border },
-  planActive: { borderColor: strictlyColors.lime, backgroundColor: strictlyColors.surfaceMuted },
+  planActive: { borderColor: strictlyColors.accentText, backgroundColor: strictlyColors.surfaceMuted },
   planLeft: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
   radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: strictlyColors.borderStrong, alignItems: "center", justifyContent: "center" },
-  radioActive: { borderColor: strictlyColors.lime },
+  radioActive: { borderColor: strictlyColors.accentText },
   radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: strictlyColors.lime },
   planName: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 16 },
   planNote: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11, marginTop: 3 },

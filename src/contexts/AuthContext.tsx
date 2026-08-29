@@ -4,6 +4,7 @@ import * as AppleAuthentication from "expo-apple-authentication";
 import * as Linking from "expo-linking";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
+import { clearLocalUserData } from "../services/localUserData";
 import { APPLE_SIGN_IN_ENABLED } from "../config/authFeatures";
 import { loadNutritionProfile } from "../services/nutritionProfileService";
 
@@ -200,6 +201,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     clearError();
     const { error } = await supabase.auth.signOut();
     if (error) fail(error);
+    // Meals, workouts, allergies and the scan counter live in AsyncStorage and
+    // are not touched by signOut, so without this the next person to sign in on
+    // this device inherits them.
+    await clearLocalUserData();
     setUser(null);
   };
 
@@ -227,19 +232,66 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (error) { return fail(error); }
   };
 
+  /**
+   * Read the real reason out of a functions.invoke failure.
+   *
+   * supabase-js collapses every non-2xx response into the same
+   * "Edge Function returned a non-2xx status code" message and hides the body
+   * on `error.context`, which is the actual Response. Without unwrapping it,
+   * a missing deployment, an expired session and a server misconfiguration all
+   * look identical to the person tapping Delete.
+   */
+  const readFunctionError = async (error: any): Promise<string> => {
+    const response: Response | undefined = error?.context;
+    if (response && typeof response.text === "function") {
+      try {
+        const body = await response.text();
+        const parsed = body ? JSON.parse(body) : null;
+        if (parsed?.error) return parsed.error;
+        if (body) return body;
+      } catch {
+        // Body was not JSON, or had already been consumed.
+      }
+      if (response.status === 404) {
+        return "Account deletion isn’t available yet — the server function has not been deployed.";
+      }
+      if (response.status === 401) {
+        return "Your session has expired. Sign in again, then delete your account.";
+      }
+    }
+    if (/failed to fetch|network/i.test(String(error?.message))) {
+      return "We couldn’t reach the server. Check your connection and try again.";
+    }
+    return error?.message || "Something went wrong on our side. Please try again.";
+  };
+
   const deleteAccount = async () => {
     if (!user) return;
-    // Handled server-side by the delete-account edge function, which resolves
-    // the caller from their own JWT and cascades the delete across their data.
-    const { data, error } = await supabase.functions.invoke("delete-account");
-    if (error || !data?.deleted) {
-      Alert.alert(
-        "We couldn’t delete the account",
-        error?.message || "Something went wrong on our side. Please try again, or contact support if it keeps happening."
-      );
+
+    // The function authorises the caller from their own JWT, so a live session
+    // is required. Refresh it first rather than sending a stale token.
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session) {
+      Alert.alert("Sign in again", "Your session has expired. Sign in again, then delete your account.");
       return;
     }
-    await supabase.auth.signOut();
+
+    // Handled server-side by the delete-account edge function, which resolves
+    // the caller from their own JWT and cascades the delete across their data.
+    const { data, error } = await supabase.functions.invoke("delete-account", {
+      headers: { Authorization: `Bearer ${sessionData.session.access_token}` },
+    });
+
+    if (error || !data?.deleted) {
+      const message = error ? await readFunctionError(error) : "The server did not confirm the deletion.";
+      Alert.alert("We couldn’t delete the account", message);
+      return;
+    }
+
+    // The auth user is gone, so signOut may itself 403 — the local session must
+    // be cleared either way.
+    await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
+    await clearLocalUserData();
     setUser(null);
     Alert.alert("Account deleted", "Your account and its data have been removed.");
   };

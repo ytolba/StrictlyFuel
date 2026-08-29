@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { KeyboardAvoidingView, Modal, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { ACTIVITY_CATALOG, ACTIVITY_CATEGORIES, getActivity, searchActivities } from "../../data/activities";
 import type { ActivityType } from "../../types/fuel";
 import { strictlyColors, strictlyRadius, strictlyType } from "../../theme/strictlyTheme";
@@ -26,7 +26,7 @@ export function ActivityPickerSheet({ visible, selected, favorites, recents, onC
     const active = selected === id;
     const favorite = favorites.includes(id);
     return <TouchableOpacity key={id} onPress={() => choose(id)} style={[styles.activity, compact && styles.activityCompact, active && styles.activityActive]}>
-      <View style={[styles.activityIcon, active && styles.activityIconActive]}><Ionicons name={activity.icon} size={18} color={active ? strictlyColors.lime : strictlyColors.ink} /></View>
+      <View style={[styles.activityIcon, active && styles.activityIconActive]}><MaterialCommunityIcons name={activity.icon} size={19} color={active ? strictlyColors.lime : strictlyColors.text} /></View>
       <Text numberOfLines={1} style={[styles.activityText, active && styles.activityTextActive]}>{activity.label}</Text>
       <TouchableOpacity hitSlop={10} onPress={() => onToggleFavorite(id)} style={styles.star}><Ionicons name={favorite ? "star" : "star-outline"} size={17} color={favorite ? strictlyColors.lime : strictlyColors.textSoft} /></TouchableOpacity>
     </TouchableOpacity>;

@@ -170,7 +170,7 @@ export function ValueEditorSheet({ visible, label, value, unit = "g", presets = 
 
 const styles = StyleSheet.create({
   fill: { flex: 1, justifyContent: "flex-end" },
-  scrim: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(4,14,9,0.62)" },
+  scrim: { ...StyleSheet.absoluteFillObject, backgroundColor: strictlyColors.scrim },
   sheet: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 30, borderTopLeftRadius: 28, borderTopRightRadius: 28, backgroundColor: strictlyColors.surface, borderTopWidth: 1, borderColor: strictlyColors.border },
   handle: { width: 42, height: 4, borderRadius: 2, backgroundColor: strictlyColors.borderStrong, alignSelf: "center", marginBottom: 18 },
   head: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
   unitText: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.textSoft, fontSize: 12 },
   unitTextActive: { color: strictlyColors.onLime, fontWeight: "900" },
 
-  inputWrap: { height: 80, flexDirection: "row", alignItems: "center", gap: 8, marginTop: 14, paddingHorizontal: 18, backgroundColor: strictlyColors.background, borderRadius: strictlyRadius.large, borderWidth: 2, borderColor: strictlyColors.lime },
+  inputWrap: { height: 80, flexDirection: "row", alignItems: "center", gap: 8, marginTop: 14, paddingHorizontal: 18, backgroundColor: strictlyColors.background, borderRadius: strictlyRadius.large, borderWidth: 2, borderColor: strictlyColors.accentText },
   input: { flex: 1, fontFamily: strictlyType.sansMedium, fontWeight: "900", fontSize: 34, color: strictlyColors.text },
   unit: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 13 },
   help: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 16, marginTop: 10 },

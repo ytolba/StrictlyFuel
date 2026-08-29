@@ -5,7 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-const foodSelect = "id,source_id,source_product_id,barcode,name,brand,category,image_url,carb_speed_tier_id,carb_speed_reason,calories_per_100g,carbs_per_100g,protein_per_100g,fat_per_100g,fiber_per_100g,sugar_per_100g,sodium_mg_per_100g,data_quality_score,is_verified";
+const foodSelect = "id,source_id,source_product_id,barcode,name,brand,category,image_url,carb_speed_tier_id,carb_speed_reason,calories_per_100g,carbs_per_100g,protein_per_100g,fat_per_100g,fiber_per_100g,soluble_fiber_per_100g,insoluble_fiber_per_100g,sugar_alcohols_per_100g,sugar_alcohol_type,allulose_per_100g,alcohol_per_100g,sugar_per_100g,sodium_mg_per_100g,data_quality_score,is_verified";
 
 type NormalizedFood = {
   source_id: "usda" | "open_food_facts";
@@ -20,6 +20,9 @@ type NormalizedFood = {
   protein_per_100g: number;
   fat_per_100g: number;
   fiber_per_100g: number;
+  sugar_alcohols_per_100g?: number;
+  sugar_alcohol_type?: "unknown";
+  allulose_per_100g?: number;
   sugar_per_100g?: number;
   sodium_mg_per_100g?: number;
   raw_source_data: unknown;
@@ -98,6 +101,9 @@ async function searchOpenFoodFacts(query: string): Promise<NormalizedFood[]> {
     protein_per_100g: number(food.nutriments?.proteins_100g),
     fat_per_100g: number(food.nutriments?.fat_100g),
     fiber_per_100g: number(food.nutriments?.fiber_100g),
+    sugar_alcohols_per_100g: number(food.nutriments?.polyols_100g),
+    sugar_alcohol_type: number(food.nutriments?.polyols_100g) > 0 ? "unknown" : undefined,
+    allulose_per_100g: number(food.nutriments?.allulose_100g),
     sugar_per_100g: number(food.nutriments?.sugars_100g),
     sodium_mg_per_100g: number(food.nutriments?.sodium_100g) * 1000,
     raw_source_data: food,
@@ -119,6 +125,8 @@ async function lookupOpenFoodFactsBarcode(barcode: string): Promise<NormalizedFo
     image_url: food.image_front_small_url || undefined, calories_per_100g: number(food.nutriments?.["energy-kcal_100g"]),
     carbs_per_100g: number(food.nutriments?.carbohydrates_100g), protein_per_100g: number(food.nutriments?.proteins_100g),
     fat_per_100g: number(food.nutriments?.fat_100g), fiber_per_100g: number(food.nutriments?.fiber_100g),
+    sugar_alcohols_per_100g: number(food.nutriments?.polyols_100g), sugar_alcohol_type: number(food.nutriments?.polyols_100g) > 0 ? "unknown" : undefined,
+    allulose_per_100g: number(food.nutriments?.allulose_100g),
     sugar_per_100g: number(food.nutriments?.sugars_100g), sodium_mg_per_100g: number(food.nutriments?.sodium_100g) * 1000,
     raw_source_data: food,
   }];

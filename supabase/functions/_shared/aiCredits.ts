@@ -1,6 +1,8 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-export const corsHeaders = {
+// Keep this name distinct from the vision helper's CORS export. That makes
+// the function safe to bundle as a single file in dashboard deployments too.
+export const creditCorsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
@@ -60,6 +62,6 @@ export function limitReachedResponse(result: CreditResult) {
       limit: result.weekly_limit,
       isPro: result.is_pro,
     },
-    { status: 429, headers: corsHeaders }
+    { status: 429, headers: creditCorsHeaders }
   );
 }

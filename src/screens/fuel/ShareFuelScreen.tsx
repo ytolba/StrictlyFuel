@@ -8,6 +8,7 @@ import type { FuelPost, PostVisibility } from "../../types/fuel";
 import { ScreenShell } from "../../components/fuel/ScreenShell";
 import { CarbSpeedBar } from "../../components/fuel/CarbSpeedBar";
 import { LoadingState } from "../../components/fuel/LoadingState";
+import { makeUuid } from "../../utils/ids";
 import { strictlyColors, strictlyRadius, strictlyType } from "../../theme/strictlyTheme";
 
 export default function ShareFuelScreen({ navigation, route }: any) {
@@ -21,9 +22,19 @@ export default function ShareFuelScreen({ navigation, route }: any) {
 
   const publish = async () => {
     if (!user?.uid) return Alert.alert("Account required", "Sign in before sharing a meal publicly.");
-    const username = (user.firstName || user.email.split("@")[0] || "athlete").toLowerCase().replace(/[^a-z0-9._]/g, "");
+    // A guest session has no profile row, so it cannot own a community post.
+    if (user.isGuest) {
+      return Alert.alert("Create an account", "Community posts are tied to an account. Create one to share your fuel.");
+    }
+
+    // `author_username` is NOT NULL, and stripping punctuation can empty the
+    // whole string (an email like "___@x.com"), so fall back to something real.
+    const username =
+      (user.firstName || user.email?.split("@")[0] || "athlete").toLowerCase().replace(/[^a-z0-9._]/g, "") || "athlete";
+
     const post: FuelPost = {
-      id: `post-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      // fuel_posts.id is a uuid column — a readable id is rejected outright.
+      id: makeUuid(),
       userId: user.uid,
       username,
       meal,
@@ -38,11 +49,16 @@ export default function ShareFuelScreen({ navigation, route }: any) {
     };
     setPublishing(true);
     try {
-      await publishFuelPost(post);
+      // publishFuelPost saves the workout and meal first; the post row has a
+      // foreign key to both and its RLS policy re-checks meal ownership.
+      await publishFuelPost(user.uid, post, target);
       addLocalPost(post);
       Alert.alert("Fuel shared", "Your meal is now available to athletes looking for similar workout fuel.", [{ text: "View post", onPress: () => navigation.navigate("Main", { screen: "Discover" }) }]);
-    } catch (error: any) { Alert.alert("Could not publish", error?.message || "Try again in a moment."); }
-    finally { setPublishing(false); }
+    } catch (error: any) {
+      Alert.alert("Could not publish", error?.message || "Try again in a moment.");
+    } finally {
+      setPublishing(false);
+    }
   };
 
   return <ScreenShell title="Share your fuel" eyebrow="PRIVATE UNTIL YOU PUBLISH" back onBack={() => navigation.goBack()}>

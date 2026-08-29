@@ -3,69 +3,47 @@ import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useFuel } from "../../contexts/FuelContext";
 import { useSubscription } from "../../provider/RevenuCatProvider";
-import { CURATED_MEAL_TEMPLATES, ingredientsForTemplate, type CuratedMealTemplate } from "../../data/mealTemplates";
-import { calculateMealMacros } from "../../logic/nutritionEngine";
-import { scaleMealToTarget } from "../../logic/mealScaling";
-import { scoreMeal } from "../../logic/mealScore";
-import { calculateMealTiming, formatDuration } from "../../logic/mealTiming";
+import { type CuratedMealTemplate } from "../../data/mealTemplates";
+import { fetchMealTemplates } from "../../services/mealTemplateService";
+import { rankMealTemplates, type MealRecommendation } from "../../logic/mealRecommendation";
+import { formatDuration } from "../../logic/mealTiming";
 import { loadNutritionProfile } from "../../services/nutritionProfileService";
 import { EMPTY_NUTRITION_PROFILE, type NutritionProfile } from "../../types/nutritionProfile";
 import { ScreenShell } from "../../components/fuel/ScreenShell";
 import { CarbSpeedBar } from "../../components/fuel/CarbSpeedBar";
 import { scoreColor, scoreLabel, strictlyColors, strictlyRadius, strictlyType } from "../../theme/strictlyTheme";
 
-type Recommendation = {
-  template: CuratedMealTemplate;
-  ingredients: ReturnType<typeof ingredientsForTemplate>;
-  macros: ReturnType<typeof calculateMealMacros>;
-  score: ReturnType<typeof scoreMeal>;
-  timing: ReturnType<typeof calculateMealTiming>;
-  rank: number;
-};
+/** Eligibility and ranking live in logic/mealRecommendation — no AI, no network. */
+type Recommendation = MealRecommendation;
 
 const PAGE_SIZE = 3;
-
-function fitsProfile(meal: CuratedMealTemplate, profile: NutritionProfile) {
-  const excluded = new Set([...profile.sensitivities, ...profile.conditions]);
-  if (meal.allergens.includes("dairy") && (excluded.has("dairy") || excluded.has("lactose"))) return false;
-  if (meal.allergens.includes("gluten") && (excluded.has("gluten") || excluded.has("celiac"))) return false;
-  if (profile.dietaryPatterns.includes("vegan") && !meal.dietaryTags.includes("vegan")) return false;
-  if (profile.dietaryPatterns.includes("vegetarian") && !meal.dietaryTags.includes("vegetarian")) return false;
-  if (profile.dietaryPatterns.includes("halal") && !meal.dietaryTags.includes("halal")) return false;
-  return true;
-}
 
 export default function MealIdeasScreen({ navigation }: any) {
   const { workout, target, setIngredients } = useFuel();
   const { isPro, canReshuffle, reshufflesRemaining, consumeReshuffle, refreshUsage } = useSubscription();
   const [profile, setProfile] = useState<NutritionProfile>(EMPTY_NUTRITION_PROFILE);
   const [offset, setOffset] = useState(0);
+  const [templates, setTemplates] = useState<CuratedMealTemplate[]>([]);
+  const [loadingCatalog, setLoadingCatalog] = useState(true);
 
   useEffect(() => {
-    loadNutritionProfile().then(setProfile);
+    let cancelled = false;
+    loadNutritionProfile().then((next) => { if (!cancelled) setProfile(next); });
+    // One cached read of the Supabase catalog per day. Falls back to the
+    // bundled set offline, so this screen never depends on the network.
+    fetchMealTemplates()
+      .then(({ templates: rows }) => { if (!cancelled) setTemplates(rows); })
+      .finally(() => { if (!cancelled) setLoadingCatalog(false); });
     refreshUsage();
+    return () => { cancelled = true; };
   }, [refreshUsage]);
 
   // The full eligible pool, best first. Reshuffling rotates a window over it
   // rather than re-ranking, so every option shown is still a genuine fit.
-  const pool = useMemo<Recommendation[]>(() => {
-    if (!workout || !target) return [];
-    return CURATED_MEAL_TEMPLATES.filter((meal) => fitsProfile(meal, profile) && workout.durationMinutes >= meal.minWorkoutMinutes)
-      .map((meal) => {
-        const ingredients = scaleMealToTarget(ingredientsForTemplate(meal), target);
-        const macros = calculateMealMacros(ingredients);
-        const score = scoreMeal(macros, target, workout);
-        const timing = calculateMealTiming(macros, workout);
-        const activityMatch = meal.activityTypes.includes(workout.activityType) ? 16 : 0;
-        const timingFit = Math.max(0, 20 - Math.abs(timing.bestMinutes - workout.startsInMinutes) / 5);
-        return { template: meal, ingredients, macros, score, timing, rank: score.total + activityMatch + timingFit };
-      })
-      // A recommendation is a promise, not filler. Anything below 90 stays
-      // available in the manual builder but is never presented as a pick.
-      .filter((meal) => meal.score.total >= 90)
-      .sort((a, b) => b.rank - a.rank)
-      .filter((meal, index, all) => all.findIndex((other) => other.template.name === meal.template.name) === index);
-  }, [profile, target, workout]);
+  const pool = useMemo<Recommendation[]>(
+    () => (workout && target ? rankMealTemplates(templates, { target, workout, profile }) : []),
+    [templates, profile, target, workout]
+  );
 
   const visible = useMemo(() => {
     if (!pool.length) return [];
@@ -91,6 +69,14 @@ export default function MealIdeasScreen({ navigation }: any) {
     return (
       <ScreenShell title="Meal ideas" back onBack={() => navigation.goBack()}>
         <Text style={styles.empty}>Calculate a workout first.</Text>
+      </ScreenShell>
+    );
+  }
+
+  if (loadingCatalog && !pool.length) {
+    return (
+      <ScreenShell title="Meal ideas" back onBack={() => navigation.goBack()}>
+        <Text style={styles.empty}>Matching meals to your session…</Text>
       </ScreenShell>
     );
   }

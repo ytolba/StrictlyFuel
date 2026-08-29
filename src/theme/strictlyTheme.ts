@@ -37,6 +37,33 @@ export const strictlyLightPalette = {
   white: "#FFF9EC",
   black: "#0A1C12",
   glass: "rgba(18, 60, 42, 0.90)",
+  inverseText: "#FFF9EC",
+  inverseTextSoft: "#DDE4D8",
+  overlaySubtle: "rgba(18,60,42,0.08)",
+  overlayLine: "rgba(255,249,236,0.14)",
+  scrim: "rgba(4,14,9,0.62)",
+  shadow: "#0A1C12",
+  inverseOverlay: "rgba(255,249,236,0.10)",
+  onAccentOverlay: "rgba(10,28,18,0.12)",
+
+  /**
+   * Lime is a *fill* colour. As a foreground it only works against the dark
+   * greens: on the cream surfaces of light mode #C9DA5B lands at 1.2–1.4:1,
+   * which is effectively invisible. `accentText` is the accent to use for
+   * text, icons and selection borders that sit on the page — it reads at
+   * 5.6:1 or better on every light surface and stays lime in dark mode.
+   */
+  accentText: "#4C5C10",
+
+  /** Typed value color in text inputs (email/password, etc). Explicit near-black in light mode. */
+  fieldText: "#0A0A0A",
+
+  /**
+   * The native launch screen is cream in both appearances, so these two do not
+   * flip with the theme.
+   */
+  creamLight: "#F2EAD7",
+  onCreamLight: "#0A1C12",
 } as const;
 
 export const strictlyDarkPalette = {
@@ -46,7 +73,7 @@ export const strictlyDarkPalette = {
   background: "#102A1C",    // the page
   surface: "#1A3A28",       // cards
   surfaceMuted: "#234A33",  // chips, inputs, secondary fills
-  cream: "#1E4230",         // tinted callout blocks
+  cream: "#1E4230",         // tinted callout blocks (a dark green, despite the name)
   paper: "#1A3A28",
 
   // Accent.
@@ -76,6 +103,24 @@ export const strictlyDarkPalette = {
   white: "#FFF9EC",
   black: "#0A0A0A",
   glass: "rgba(8, 22, 14, 0.88)",
+  inverseText: "#FFF9EC",
+  inverseTextSoft: "#C5BDAA",
+  overlaySubtle: "rgba(255,249,236,0.08)",
+  overlayLine: "rgba(255,249,236,0.14)",
+  scrim: "rgba(4,14,9,0.72)",
+  shadow: "#050A07",
+  inverseOverlay: "rgba(255,249,236,0.10)",
+  onAccentOverlay: "rgba(10,28,18,0.12)",
+
+  /** Accent foreground. On the dark greens lime already reads at 7–11:1. */
+  accentText: "#D8E66B",
+
+  /** Typed value color in text inputs (email/password, etc). Explicit warm beige in dark mode. */
+  fieldText: "#E9D8B4",
+
+  /** The cream launch screen, identical in both appearances. */
+  creamLight: "#F2EAD7",
+  onCreamLight: "#0A1C12",
 } as const;
 
 export type StrictlyPalette = { [K in keyof typeof strictlyDarkPalette]: string };
@@ -89,6 +134,22 @@ const adaptive = (key: StrictlyColorKey) => Platform.OS === "ios"
 export const strictlyColors = Object.fromEntries(
   (Object.keys(strictlyDarkPalette) as StrictlyColorKey[]).map((key) => [key, adaptive(key)])
 ) as { [K in StrictlyColorKey]: ReturnType<typeof adaptive> };
+
+/** Readable semantic aliases for new UI. Existing token names remain supported. */
+export const semanticColors = {
+  textPrimary: strictlyColors.text,
+  textSecondary: strictlyColors.textSoft,
+  textMuted: strictlyColors.muted,
+  background: strictlyColors.background,
+  surface: strictlyColors.surface,
+  surfaceSecondary: strictlyColors.surfaceMuted,
+  border: strictlyColors.border,
+  accent: strictlyColors.lime,
+  accentText: strictlyColors.accentText,
+  success: strictlyColors.good,
+  error: strictlyColors.danger,
+  inverseText: strictlyColors.inverseText,
+} as const;
 
 /**
  * Rating colors. Scores use a four-band scale so a number reads as a verdict
@@ -145,8 +206,8 @@ export const strictlyType = {
   mono: "Menlo",
 } as const;
 
-/** Layout constants shared between the tab bar and the screens it floats over. */
+/** Layout constants for the docked bottom tab bar. */
 export const strictlyLayout = {
+  /** Height of the row of tab items, before the home-indicator inset is added. */
   tabBarHeight: 62,
-  tabBarMargin: 12,
 } as const;

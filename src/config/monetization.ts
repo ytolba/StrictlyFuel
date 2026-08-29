@@ -23,6 +23,19 @@ import { Platform } from "react-native";
 export const PRO_ENTITLEMENT = "strictlyfuel_pro";
 
 /**
+ * Kill switch for the whole RevenueCat SDK.
+ *
+ * Flip to `false` to skip `Purchases.configure()` (and every other native
+ * call) entirely — the app runs as if nobody is Pro, and no RevenueCat native
+ * module is ever touched. Use this to isolate a startup crash: if the app
+ * opens fine with this `false`, RevenueCat configuration/linking is the
+ * cause. Set it back to `true` once RevenueCat is working again — this is not
+ * meant to ship long-term, since AI-scan limits still gate correctly but real
+ * purchases cannot go through while it is off.
+ */
+export const REVENUECAT_ENABLED = false;
+
+/**
  * Package identifiers inside the offering. RevenueCat's built-in packages use
  * the `$rc_` prefix; a hand-named package uses whatever you typed in the
  * dashboard. We look both up so the app works either way.

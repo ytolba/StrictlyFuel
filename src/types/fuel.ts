@@ -110,9 +110,18 @@ export type FuelFood = {
     protein: number;
     fat: number;
     fiber: number;
+    /** Optional detailed carbohydrates. Only populated when the source provides them. */
+    solubleFiber?: number;
+    insolubleFiber?: number;
+    sugarAlcohols?: number;
+    sugarAlcoholType?: "erythritol" | "mannitol" | "isomalt" | "lactitol" | "maltitol" | "xylitol" | "sorbitol" | "hydrogenated_starch_hydrolysates" | "unknown";
+    allulose?: number;
+    alcohol?: number;
   };
   source: DataSource;
   sourceId?: string;
+  dataQualityScore?: number;
+  isVerified?: boolean;
 };
 
 export type MealIngredient = {
@@ -120,6 +129,9 @@ export type MealIngredient = {
   food: FuelFood;
   grams: number;
   confidence?: number;
+  foodConfidence?: number;
+  portionConfidence?: number;
+  nutritionMatchConfidence?: number;
   estimated?: boolean;
 };
 
@@ -152,10 +164,14 @@ export type MealScore = {
 
 export type MealFix = {
   id: string;
-  action: "add" | "reduce";
+  action: "increase" | "add" | "top_up" | "reduce";
   ingredientName: string;
   grams: number;
   detail: string;
+  /** Existing meal item to adjust, when this is an increase/reduction. */
+  ingredientId?: string;
+  foodId?: string;
+  carbImpact?: number;
 };
 
 export type FuelMeal = {

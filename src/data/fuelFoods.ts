@@ -30,6 +30,8 @@ const food = (
     fiber: nutrition[4],
   },
   source: "usda",
+  dataQualityScore: 88,
+  isVerified: true,
 });
 
 // Practical starter catalog. Nutrient values are per 100 g and should be

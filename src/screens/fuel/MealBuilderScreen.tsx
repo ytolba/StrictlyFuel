@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
   targetMini: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: strictlyColors.ink, borderRadius: strictlyRadius.large, padding: 15 },
   targetLabel: { fontFamily: strictlyType.mono, color: strictlyColors.sage, fontSize: 8, letterSpacing: 1 },
   targetValue: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.white, fontSize: 20, marginTop: 2 },
-  targetProgress: { flex: 1, height: 7, backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 4, overflow: "hidden" },
+  targetProgress: { flex: 1, height: 7, backgroundColor: strictlyColors.inverseOverlay, borderRadius: 4, overflow: "hidden" },
   targetFill: { height: "100%", backgroundColor: strictlyColors.lime },
   actual: { minWidth: 42, textAlign: "right", fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.white, fontSize: 16 },
   nameInput: { height: 50, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, borderRadius: strictlyRadius.medium, paddingHorizontal: 14, color: strictlyColors.text, fontFamily: strictlyType.sansMedium, marginTop: 12 },

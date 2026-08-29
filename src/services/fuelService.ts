@@ -1,5 +1,6 @@
 import { supabase } from "../lib/supabase";
 import type { FuelMeal, FuelPost, FuelTarget, WorkoutDraft } from "../types/fuel";
+import { nutritionForIngredient } from "../logic/nutritionEngine";
 
 const scorePercent = (score: number, max: number) => Math.max(0, Math.min(100, Math.round((score / Math.max(1, max)) * 100)));
 
@@ -33,12 +34,14 @@ export async function saveMeal(userId: string, meal: FuelMeal) {
   if (mealError) throw mealError;
   await supabase.from("meal_items").delete().eq("meal_id", meal.id);
   const items = meal.ingredients.map((item, position) => {
-    const factor = item.grams / 100;
+    const nutrition = nutritionForIngredient(item);
     return {
       meal_id: meal.id, position, food_name_snapshot: item.food.name, quantity: 1, grams: item.grams,
-      calories: item.food.per100g.calories * factor, carbs_g: item.food.per100g.carbs * factor,
-      protein_g: item.food.per100g.protein * factor, fat_g: item.food.per100g.fat * factor, fiber_g: item.food.per100g.fiber * factor,
+      calories: nutrition.calories, carbs_g: nutrition.carbs,
+      protein_g: nutrition.protein, fat_g: nutrition.fat, fiber_g: nutrition.fiber,
       carb_speed_tier_id: item.food.carbSpeed, confidence: item.confidence ?? null, is_estimate: Boolean(item.estimated),
+      food_confidence: item.foodConfidence ?? null, portion_confidence: item.portionConfidence ?? null,
+      nutrition_match_confidence: item.nutritionMatchConfidence ?? null,
     };
   });
   const { error: itemError } = await supabase.from("meal_items").insert(items);
@@ -56,13 +59,60 @@ export async function saveMeal(userId: string, meal: FuelMeal) {
   if (analysisError) throw analysisError;
 }
 
-export async function publishFuelPost(post: FuelPost) {
-  const { error } = await supabase.from("fuel_posts").upsert({
-    id: post.id, user_id: post.userId, meal_id: post.meal.id, workout_id: post.workout.id,
-    author_username: post.username, caption: post.caption, show_workout: post.visibility.workout,
-    show_macros: post.visibility.macros, show_ingredients: post.visibility.ingredients, is_public: true,
-  });
-  if (error) throw error;
+/**
+ * Turn a Postgres/PostgREST failure into something an athlete can act on.
+ *
+ * The raw messages leak schema detail ("insert or update on table
+ * \"fuel_posts\" violates foreign key constraint ...") and tell the person
+ * nothing about what to do next.
+ */
+function describePublishError(error: { code?: string; message?: string }): string {
+  switch (error.code) {
+    case "22P02": // invalid input syntax — almost always a malformed uuid
+      return "This post could not be created. Please rebuild the meal and try sharing again.";
+    case "23503": // foreign key violation — the meal or workout is not saved yet
+      return "This meal hasn’t finished saving to your account yet. Wait a moment and try again.";
+    case "23505": // unique violation — user_id + meal_id already published
+      return "You’ve already shared this meal with the community.";
+    case "42501": // RLS denied
+      return "You can only share meals saved to your own account. Try signing out and back in.";
+    case "PGRST301":
+      return "Your session has expired. Sign in again and try sharing.";
+    default:
+      return error.message || "Your meal could not be published. Please try again.";
+  }
+}
+
+/**
+ * Publish a meal to the community feed.
+ *
+ * `fuel_posts` has a foreign key to both `meals` and `workouts`, and its insert
+ * policy re-checks that the meal belongs to the caller. Elsewhere in the app
+ * meals are saved fire-and-forget, so by the time someone shares one the row
+ * may never have reached the server — publishing therefore persists the workout
+ * and the meal first, and only then creates the post.
+ */
+export async function publishFuelPost(
+  userId: string,
+  post: FuelPost,
+  target: FuelTarget
+): Promise<void> {
+  await saveWorkout(userId, post.workout, target);
+  await saveMeal(userId, post.meal);
+
+  const { error } = await supabase.from("fuel_posts").upsert(
+    {
+      id: post.id, user_id: userId, meal_id: post.meal.id, workout_id: post.workout.id,
+      author_username: post.username, caption: post.caption, show_workout: post.visibility.workout,
+      show_macros: post.visibility.macros, show_ingredients: post.visibility.ingredients, is_public: true,
+      deleted_at: null,
+    },
+    // Re-sharing the same meal updates the existing post rather than tripping
+    // the unique (user_id, meal_id) constraint.
+    { onConflict: "user_id,meal_id" }
+  );
+
+  if (error) throw new Error(describePublishError(error));
 }
 
 // Rich post hydration is intentionally kept separate from the core meal flow.

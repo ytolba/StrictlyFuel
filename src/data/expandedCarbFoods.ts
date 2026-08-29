@@ -72,4 +72,6 @@ export const EXPANDED_CARB_FOODS: FuelFood[] = GROUPS.flatMap((group) => group.n
   servingLabel: group.serving,
   per100g: { calories: group.nutrition[0], carbs: group.nutrition[1], protein: group.nutrition[2], fat: group.nutrition[3], fiber: group.nutrition[4] },
   source: "strictly" as const,
+  dataQualityScore: 68,
+  isVerified: false,
 })));

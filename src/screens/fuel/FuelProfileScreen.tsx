@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { ActivityIndicator, Alert, Linking, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../../contexts/AuthContext";
@@ -19,20 +19,32 @@ export default function FuelProfileScreen({ navigation }: any) {
   const name = [user?.firstName, user?.lastName].filter(Boolean).join(" ") || "Strictly athlete";
   const username = (user?.firstName || user?.email?.split("@")[0] || "athlete").toLowerCase();
 
+  // A second tap on the alert's Delete button would fire a second privileged
+  // request while the first is still running. State alone is too slow here —
+  // React batches it, so the guard has to be synchronous.
+  const deleteInFlight = useRef(false);
+
   const confirmDelete = () => {
+    if (deleteInFlight.current) return;
     Alert.alert(
       "Delete your account?",
-      "This permanently removes your account, workouts, meals and posts. It cannot be undone.",
+      "This permanently removes your account, workouts, meals, saved foods and community posts. It cannot be undone.",
       [
         { text: "Cancel", style: "cancel" },
         {
           text: "Delete",
           style: "destructive",
           onPress: async () => {
+            if (deleteInFlight.current) return;
+            deleteInFlight.current = true;
             setDeleting(true);
             try {
+              // deleteAccount reports its own failure and leaves the session
+              // intact, so there is nothing to navigate on error: the app swaps
+              // to the auth stack by itself once the user is cleared.
               await deleteAccount();
             } finally {
+              deleteInFlight.current = false;
               setDeleting(false);
             }
           },
@@ -144,7 +156,7 @@ export default function FuelProfileScreen({ navigation }: any) {
       )}
 
       <View style={styles.principle}>
-        <Ionicons name="shield-checkmark-outline" size={22} color={strictlyColors.lime} />
+        <Ionicons name="shield-checkmark-outline" size={22} color={strictlyColors.accentText} />
         <View style={styles.principleCopy}>
           <Text style={styles.principleTitle}>Private by default</Text>
           <Text style={styles.principleText}>Meals and workouts are private unless you explicitly create a community post.</Text>
@@ -168,7 +180,7 @@ const styles = StyleSheet.create({
 
   plan: { flexDirection: "row", alignItems: "center", gap: 12, padding: 15, marginTop: 12, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.lime },
   planPro: { backgroundColor: strictlyColors.lime },
-  planIcon: { width: 42, height: 42, borderRadius: 15, backgroundColor: "rgba(10,28,18,0.12)", alignItems: "center", justifyContent: "center" },
+  planIcon: { width: 42, height: 42, borderRadius: 15, backgroundColor: strictlyColors.onAccentOverlay, alignItems: "center", justifyContent: "center" },
   planCopy: { flex: 1 },
   planTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.onLime, fontSize: 15 },
   planText: { fontFamily: strictlyType.sans, color: strictlyColors.onLimeSoft, fontSize: 11, lineHeight: 16, marginTop: 3 },

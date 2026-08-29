@@ -1,5 +1,5 @@
 import type { FuelTarget, MealFix, MealIngredient, MealMacros, MealScore, WorkoutDraft } from "../types/fuel";
-import { FUEL_FOODS } from "../data/fuelFoods";
+import { rankMealAdjustments } from "./mealImprovement";
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 const statusFor = (ratio: number): "excellent" | "good" | "adjust" => ratio >= 0.88 ? "excellent" : ratio >= 0.68 ? "good" : "adjust";
@@ -57,19 +57,8 @@ export function scoreMeal(macros: MealMacros, target: FuelTarget, workout: Worko
   };
 }
 
-export function suggestMealFixes(_ingredients: MealIngredient[], macros: MealMacros, target: FuelTarget, _workout: WorkoutDraft): MealFix[] {
-  const fixes: MealFix[] = [];
-  const carbGap = target.carbTarget - macros.carbs;
-  if (carbGap > 5) {
-    const neededSpeed = macros.fastCarbs < target.fastCarbs ? "fast" : macros.mediumCarbs < target.mediumCarbs ? "medium" : "slow";
-    const candidate = FUEL_FOODS.find((item) => item.carbSpeed === neededSpeed && item.per100g.carbs >= 20 && item.category !== "fat");
-    if (candidate) {
-      const grams = Math.max(5, Math.round((Math.min(carbGap, 35) / candidate.per100g.carbs) * 100));
-      fixes.push({ id: `add-${candidate.id}`, action: "add", ingredientName: candidate.name, grams, detail: `Adds about ${Math.round(candidate.per100g.carbs * grams / 100)} g ${neededSpeed} carbs.` });
-    }
-  }
-
-  return fixes.slice(0, 2);
+export function suggestMealFixes(ingredients: MealIngredient[], macros: MealMacros, target: FuelTarget, workout: WorkoutDraft): MealFix[] {
+  return rankMealAdjustments(ingredients, macros, target, workout);
 }
 
 export function futureMealNotes(macros: MealMacros, workout: WorkoutDraft) {

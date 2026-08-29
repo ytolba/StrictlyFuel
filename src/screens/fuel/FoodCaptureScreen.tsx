@@ -16,12 +16,13 @@ import { strictlyColors, strictlyRadius, strictlyType } from "../../theme/strict
 
 type Mode = "choose" | "barcode" | "label";
 
-type NumericField = "servingGrams" | "caloriesPerServing" | "carbsPerServing" | "proteinPerServing" | "fatPerServing" | "fiberPerServing" | "sugarPerServing" | "sodiumMgPerServing";
+type NumericField = "servingGrams" | "caloriesPerServing" | "carbsPerServing" | "proteinPerServing" | "fatPerServing" | "fiberPerServing" | "sugarPerServing" | "sugarAlcoholsPerServing" | "allulosePerServing" | "sodiumMgPerServing";
 const numericFields: { key: NumericField; label: string; unit: string }[] = [
   { key: "servingGrams", label: "Serving weight", unit: "g" }, { key: "caloriesPerServing", label: "Calories", unit: "kcal" },
   { key: "carbsPerServing", label: "Carbohydrates", unit: "g" }, { key: "proteinPerServing", label: "Protein", unit: "g" },
   { key: "fatPerServing", label: "Fat", unit: "g" }, { key: "fiberPerServing", label: "Fiber", unit: "g" },
   { key: "sugarPerServing", label: "Sugar", unit: "g" }, { key: "sodiumMgPerServing", label: "Sodium", unit: "mg" },
+  { key: "sugarAlcoholsPerServing", label: "Sugar alcohols", unit: "g" }, { key: "allulosePerServing", label: "Allulose", unit: "g" },
 ];
 
 export default function FoodCaptureScreen({ navigation }: any) {
@@ -105,11 +106,12 @@ export default function FoodCaptureScreen({ navigation }: any) {
       {loading ? <View style={styles.loadingCard}><LoadingState title={label ? "Saving this food" : "Reading the package"} messages={["Finding serving size", "Reading macros", "Checking ingredients and carb speed"]} /></View> : null}
       {label && !loading ? <View style={styles.form}>
         <View style={styles.review}><Ionicons name={label.needsCorrection ? "alert-circle-outline" : "checkmark-circle-outline"} size={20} color={strictlyColors.text} /><Text style={styles.reviewText}>{label.needsCorrection ? "Review highlighted values before saving." : `${label.confidence}% read confidence. Confirm everything below.`}</Text></View>
-        <Text style={styles.fieldLabel}>PRODUCT</Text><TextInput value={label.productName} onChangeText={(productName) => setLabel({ ...label, productName })} style={styles.textField} placeholder="Product name" />
-        <TextInput value={label.brand} onChangeText={(brand) => setLabel({ ...label, brand })} style={styles.textField} placeholder="Brand (optional)" />
-        <TextInput value={label.servingLabel} onChangeText={(servingLabel) => setLabel({ ...label, servingLabel })} style={styles.textField} placeholder="Serving, e.g. 1 bar" />
+        <Text style={styles.fieldLabel}>PRODUCT</Text><TextInput value={label.productName} onChangeText={(productName) => setLabel({ ...label, productName })} style={styles.textField} placeholder="Product name" placeholderTextColor={strictlyColors.textSoft} />
+        <TextInput value={label.brand} onChangeText={(brand) => setLabel({ ...label, brand })} style={styles.textField} placeholder="Brand (optional)" placeholderTextColor={strictlyColors.textSoft} />
+        <TextInput value={label.servingLabel} onChangeText={(servingLabel) => setLabel({ ...label, servingLabel })} style={styles.textField} placeholder="Serving, e.g. 1 bar" placeholderTextColor={strictlyColors.textSoft} />
         <View style={styles.numericGrid}>{numericFields.map((field) => <View key={field.key} style={styles.numericField}><Text style={styles.numberLabel}>{field.label}</Text><TouchableOpacity onPress={() => setNumericKey(field.key)} style={styles.numberInputWrap}><Text style={styles.numberInput}>{Math.round(Number(label[field.key]) * 10) / 10}</Text><Text style={styles.unit}>{field.unit}</Text><Ionicons name="create-outline" size={13} color={strictlyColors.textSoft} /></TouchableOpacity></View>)}</View>
-        <Text style={styles.fieldLabel}>INGREDIENTS</Text><TextInput value={label.ingredientsText} onChangeText={(ingredientsText) => setLabel({ ...label, ingredientsText })} multiline style={[styles.textField, styles.ingredients]} placeholder="Ingredients from package" />
+        {label.sugarAlcoholsPerServing > 0 ? <Text style={styles.reason}>Sugar alcohol: {label.sugarAlcoholType === "unknown" ? "type not specified on the label" : label.sugarAlcoholType}</Text> : null}
+        <Text style={styles.fieldLabel}>INGREDIENTS</Text><TextInput value={label.ingredientsText} onChangeText={(ingredientsText) => setLabel({ ...label, ingredientsText })} multiline style={[styles.textField, styles.ingredients]} placeholder="Ingredients from package" placeholderTextColor={strictlyColors.textSoft} />
         <Text style={styles.fieldLabel}>CARB SPEED</Text><View style={styles.speedRow}>{(["fast", "medium", "slow"] as const).map((speed) => <TouchableOpacity key={speed} onPress={() => setLabel({ ...label, carbSpeed: speed })} style={[styles.speed, label.carbSpeed === speed && styles.speedActive]}><Text style={[styles.speedText, label.carbSpeed === speed && styles.speedTextActive]}>{speed}</Text></TouchableOpacity>)}</View>
         <Text style={styles.reason}>{label.carbSpeedReason}</Text>
         <TouchableOpacity style={styles.primary} onPress={save}><Text style={styles.primaryText}>Save and add to meal</Text><Ionicons name="arrow-forward" size={18} color={strictlyColors.onLime} /></TouchableOpacity>

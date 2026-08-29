@@ -9,6 +9,7 @@ import MealScanScreen from "../screens/fuel/MealScanScreen";
 import MyFuelScreen from "../screens/fuel/MyFuelScreen";
 import type { CommunityFilters } from "../types/fuel";
 import { strictlyColors, strictlyLayout, strictlyRadius, strictlyType } from "../theme/strictlyTheme";
+import { useStrictlyAppearance } from "../contexts/AppearanceContext";
 
 export type AppTabParamList = {
   Home: undefined;
@@ -35,9 +36,11 @@ const ICONS: Record<keyof AppTabParamList, [string, string]> = {
 
 export default function AppTabNavigator() {
   const insets = useSafeAreaInsets();
-  // Sit the bar above the home indicator on notched phones, and keep a normal
-  // margin on devices that report no bottom inset.
-  const bottomGap = Math.max(insets.bottom, strictlyLayout.tabBarMargin);
+  const { palette } = useStrictlyAppearance();
+  // A docked bar owns the bottom edge, so it has to absorb the home-indicator
+  // inset itself: the row of items keeps its full height and the inset becomes
+  // padding underneath it.
+  const barHeight = strictlyLayout.tabBarHeight + insets.bottom;
 
   return (
     <Tab.Navigator
@@ -45,10 +48,10 @@ export default function AppTabNavigator() {
         headerShown: false,
         tabBarHideOnKeyboard: true,
         animation: "fade",
-        tabBarStyle: [styles.tabBar, { bottom: bottomGap, height: strictlyLayout.tabBarHeight }],
+        tabBarStyle: [styles.tabBar, { height: barHeight, paddingBottom: insets.bottom + 6 }],
         tabBarItemStyle: styles.item,
-        tabBarActiveTintColor: strictlyColors.onLime,
-        tabBarInactiveTintColor: strictlyColors.textSoft,
+        tabBarActiveTintColor: palette.onLime,
+        tabBarInactiveTintColor: palette.textSoft,
         tabBarLabel: ({ focused }) => (
           <Text style={[styles.label, focused && styles.labelActive]} numberOfLines={1}>
             {LABELS[route.name]}
@@ -78,21 +81,18 @@ export default function AppTabNavigator() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    position: "absolute",
-    left: 12,
-    right: 12,
+    // Docked to the bottom edge: no absolute positioning, no side margins and
+    // no corner radius, so the bar reaches the very bottom of the screen and
+    // the navigator reserves space for it instead of overlapping content.
     paddingTop: 8,
-    paddingBottom: 8,
     backgroundColor: strictlyColors.surface,
-    borderWidth: 1,
-    borderColor: strictlyColors.border,
     borderTopWidth: 1,
     borderTopColor: strictlyColors.border,
-    borderRadius: strictlyRadius.xlarge,
-    // Keep the floating bar readable over scrolling content.
+    // A hairline is enough separation once the bar sits on the edge; the heavy
+    // drop shadow only made sense while it floated over the page.
     ...Platform.select({
-      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 16 },
-      android: { elevation: 10 },
+      android: { elevation: 8 },
+      default: {},
     }),
   },
   item: { paddingTop: 2 },

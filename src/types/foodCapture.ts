@@ -12,6 +12,9 @@ export type FoodLabelAnalysis = {
   fatPerServing: number;
   fiberPerServing: number;
   sugarPerServing: number;
+  sugarAlcoholsPerServing: number;
+  sugarAlcoholType: FuelFood["per100g"]["sugarAlcoholType"];
+  allulosePerServing: number;
   sodiumMgPerServing: number;
   ingredientsText: string;
   carbSpeed: CarbSpeed;

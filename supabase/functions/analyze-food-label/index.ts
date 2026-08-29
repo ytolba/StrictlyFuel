@@ -1,11 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { consumeAiCredit, limitReachedResponse } from "../_shared/aiCredits.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { callVision, corsHeaders } from "../_shared/ai.ts";
 
 const labelSchema = {
   type: "object", additionalProperties: false,
@@ -14,12 +10,27 @@ const labelSchema = {
     servingLabel: { type: "string" }, servingGrams: { type: "number" },
     caloriesPerServing: { type: "number" }, carbsPerServing: { type: "number" }, proteinPerServing: { type: "number" },
     fatPerServing: { type: "number" }, fiberPerServing: { type: "number" }, sugarPerServing: { type: "number" },
+    sugarAlcoholsPerServing: { type: "number" },
+    sugarAlcoholType: { type: "string", enum: ["erythritol", "mannitol", "isomalt", "lactitol", "maltitol", "xylitol", "sorbitol", "hydrogenated_starch_hydrolysates", "unknown"] },
+    allulosePerServing: { type: "number" },
     sodiumMgPerServing: { type: "number" }, ingredientsText: { type: "string" },
     carbSpeed: { type: "string", enum: ["fast", "medium", "slow"] }, carbSpeedReason: { type: "string" },
     confidence: { type: "integer", minimum: 0, maximum: 100 }, needsCorrection: { type: "boolean" },
   },
-  required: ["productName", "brand", "barcode", "servingLabel", "servingGrams", "caloriesPerServing", "carbsPerServing", "proteinPerServing", "fatPerServing", "fiberPerServing", "sugarPerServing", "sodiumMgPerServing", "ingredientsText", "carbSpeed", "carbSpeedReason", "confidence", "needsCorrection"],
+  required: ["productName", "brand", "barcode", "servingLabel", "servingGrams", "caloriesPerServing", "carbsPerServing", "proteinPerServing", "fatPerServing", "fiberPerServing", "sugarPerServing", "sugarAlcoholsPerServing", "sugarAlcoholType", "allulosePerServing", "sodiumMgPerServing", "ingredientsText", "carbSpeed", "carbSpeedReason", "confidence", "needsCorrection"],
 };
+
+/**
+ * Transcription only. Every field here is written straight into public.foods by
+ * the `save` action below, so a guessed number becomes catalog data other
+ * athletes rely on — hence the hard rule against inferring anything.
+ */
+const LABEL_INSTRUCTIONS = [
+  "Extract only text and nutrition values visible on this package. Never guess a missing number and convert nothing.",
+  "Use 0 for an unreadable numeric field and set needsCorrection true.",
+  "Record sugar alcohols and allulose only when printed; name a sugar alcohol type only when the label states it, otherwise unknown.",
+  "Classify carb speed practically from visible ingredients, fiber, fat and food structure. It is an estimate.",
+].join(" ");
 
 const safeNumber = (value: unknown, max = 10000) => Math.min(max, Math.max(0, Number(value) || 0));
 
@@ -60,6 +71,9 @@ Deno.serve(async (request) => {
         calories_per_100g: safeNumber(food.caloriesPerServing) * factor, carbs_per_100g: safeNumber(food.carbsPerServing) * factor,
         protein_per_100g: safeNumber(food.proteinPerServing) * factor, fat_per_100g: safeNumber(food.fatPerServing) * factor,
         fiber_per_100g: safeNumber(food.fiberPerServing) * factor, sugar_per_100g: safeNumber(food.sugarPerServing) * factor,
+        sugar_alcohols_per_100g: safeNumber(food.sugarAlcoholsPerServing) * factor,
+        sugar_alcohol_type: safeNumber(food.sugarAlcoholsPerServing) > 0 ? String(food.sugarAlcoholType || "unknown") : null,
+        allulose_per_100g: safeNumber(food.allulosePerServing) * factor,
         sodium_mg_per_100g: safeNumber(food.sodiumMgPerServing) * factor, data_quality_score: Math.min(70, safeNumber(food.confidence, 100)),
         is_verified: false, raw_source_data: { contribution_user_id: userId, captured_at: new Date().toISOString(), serving_label: food.servingLabel, serving_grams: grams },
       };
@@ -79,26 +93,27 @@ Deno.serve(async (request) => {
     const credit = await consumeAiCredit(request, "scan");
     if (!credit) return Response.json({ error: "We could not verify your scan allowance. Please sign in and try again." }, { status: 401, headers: corsHeaders });
     if (!credit.allowed) return limitReachedResponse(credit);
-    const response = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST", headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: Deno.env.get("OPENAI_LABEL_MODEL") || "gpt-5.6-luna", store: false, reasoning: { effort: "low" }, max_output_tokens: 3000,
-        instructions: "Extract only text and nutrition values visible on this package. Never guess a missing number. Convert nothing beyond directly reading the serving values. Use 0 for an unreadable numeric field and set needsCorrection true. Classify carb speed practically from the visible ingredients, fiber, fat, food structure, and intended pre-workout use. This classification is an estimate.",
-        input: [{ role: "user", content: [
-          { type: "input_text", text: "Read the product name, brand, barcode if visible, serving size, full nutrition facts, and ingredient list. Flag any uncertain fields for correction." },
-          { type: "input_image", image_url: `data:image/jpeg;base64,${image}`, detail: "high" },
-        ] }],
-        text: { format: { type: "json_schema", name: "strictlyfuel_label", strict: true, schema: labelSchema } },
-      }), signal: AbortSignal.timeout(50_000),
+    // Reading printed values off a package is transcription, not reasoning, so
+    // the output is a fixed set of ~20 short fields. The old 3000-token ceiling
+    // was roughly three times what the schema can even produce.
+    const result = await callVision({
+      feature: "label_vision",
+      request,
+      userId,
+      apiKey,
+      instructions: LABEL_INSTRUCTIONS,
+      userText: "Read the product name, brand, barcode if visible, serving size, nutrition facts and ingredient list. Flag uncertain fields for correction.",
+      imageBase64: image,
+      schemaName: "strictlyfuel_label",
+      schema: labelSchema,
+      maxOutputTokens: 900,
+      timeoutMs: 50_000,
     });
-    if (!response.ok) {
-      console.error("OpenAI label response", response.status, (await response.text()).slice(0, 600));
+
+    if (!result.ok) {
       return Response.json({ error: "The label could not be read. Try a flatter, brighter photo." }, { status: 502, headers: corsHeaders });
     }
-    const payload = await response.json();
-    const outputText = payload.output_text || payload.output?.flatMap((item: any) => item.content || []).find((part: any) => part.type === "output_text")?.text;
-    if (!outputText) throw new Error("No label details were returned.");
-    return Response.json(JSON.parse(outputText), { headers: corsHeaders });
+    return Response.json(JSON.parse(result.text), { headers: corsHeaders });
   } catch (error) {
     console.error(error);
     return Response.json({ error: error instanceof Error ? error.message : "Label scan failed." }, { status: 500, headers: corsHeaders });

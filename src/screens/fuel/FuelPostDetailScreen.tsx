@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
   scoreValue: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.onLime, fontSize: 23, lineHeight: 25 },
   scoreLabel: { fontFamily: strictlyType.mono, color: strictlyColors.onLime, fontSize: 5 },
   macros: { flexDirection: "row", gap: 8, marginTop: 13 },
-  macro: { fontFamily: strictlyType.sans, color: "#C7D0C9", fontSize: 9 },
+  macro: { fontFamily: strictlyType.sans, color: strictlyColors.inverseTextSoft, fontSize: 9 },
   sectionTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 18, marginTop: 23, marginBottom: 9 },
   ingredients: { backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, borderRadius: strictlyRadius.large, overflow: "hidden" },
   ingredient: { flexDirection: "row", justifyContent: "space-between", padding: 13, borderBottomWidth: 1, borderBottomColor: strictlyColors.border },
@@ -71,4 +71,3 @@ const styles = StyleSheet.create({
   save: { height: 50, flexDirection: "row", gap: 8, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, borderRadius: strictlyRadius.medium, marginTop: 8 },
   saveText: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 12 },
 });
-

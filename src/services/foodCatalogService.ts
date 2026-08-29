@@ -17,6 +17,14 @@ type FoodRow = {
   protein_per_100g: number;
   fat_per_100g: number;
   fiber_per_100g: number;
+  soluble_fiber_per_100g?: number;
+  insoluble_fiber_per_100g?: number;
+  sugar_alcohols_per_100g?: number;
+  sugar_alcohol_type?: FuelFood["per100g"]["sugarAlcoholType"];
+  allulose_per_100g?: number;
+  alcohol_per_100g?: number;
+  data_quality_score?: number;
+  is_verified?: boolean;
 };
 
 const queryAliases: Record<string, string[]> = {
@@ -67,9 +75,17 @@ function toFuelFood(row: FoodRow): FuelFood {
       protein: Number(row.protein_per_100g) || 0,
       fat: Number(row.fat_per_100g) || 0,
       fiber: Number(row.fiber_per_100g) || 0,
+      solubleFiber: Number(row.soluble_fiber_per_100g) || undefined,
+      insolubleFiber: Number(row.insoluble_fiber_per_100g) || undefined,
+      sugarAlcohols: Number(row.sugar_alcohols_per_100g) || undefined,
+      sugarAlcoholType: row.sugar_alcohol_type || undefined,
+      allulose: Number(row.allulose_per_100g) || undefined,
+      alcohol: Number(row.alcohol_per_100g) || undefined,
     },
     source: row.source_id,
     sourceId: row.source_product_id,
+    dataQualityScore: Number(row.data_quality_score) || undefined,
+    isVerified: Boolean(row.is_verified),
   };
 }
 

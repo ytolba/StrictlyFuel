@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
 
   rows: { marginTop: 12, gap: 7 },
   row: { flexDirection: "row", gap: 11, padding: 12, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.surfaceMuted },
-  rowOnDark: { backgroundColor: "rgba(255,255,255,0.06)" },
+  rowOnDark: { backgroundColor: strictlyColors.inverseOverlay },
   stripe: { width: 4, borderRadius: 2 },
   rowCopy: { flex: 1 },
   rowTop: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between" },

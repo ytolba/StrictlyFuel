@@ -1,3 +1,5 @@
+> **Superseded.** This document describes the retired Firebase/Firestore design. Supabase is now the only backend; see docs/supabase-data-model.md.
+
 # Strictly knowledge base
 
 The knowledge base stays in Firebase for now. It is deliberately source-backed: AI can normalize labels and draft a claim, but a claim is not shown to users until it has a source and `reviewStatus: "published"`.

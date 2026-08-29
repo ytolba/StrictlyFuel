@@ -14,6 +14,7 @@ import {
   PACKAGE_IDS,
   PRO_ENTITLEMENT,
   RC_PACKAGE_IDS,
+  REVENUECAT_ENABLED,
   TEST_STORE_MIN_SDK,
   resolveApiKey,
 } from "../config/monetization";
@@ -230,6 +231,16 @@ export const RevenueCatProvider = ({ children }: { children: React.ReactNode }) 
     const init = async () => {
       await refreshUsage();
 
+      if (!REVENUECAT_ENABLED) {
+        // Kill switch is off — never touch the native module. The app runs
+        // fully on the free tier until this is flipped back on.
+        if (mounted.current) {
+          setBillingAvailable(false);
+          setReady(true);
+        }
+        return;
+      }
+
       const { apiKey, usingTestStore } = resolveApiKey();
       if (!apiKey) {
         if (mounted.current) setReady(true);
@@ -279,19 +290,21 @@ export const RevenueCatProvider = ({ children }: { children: React.ReactNode }) 
     // Keep the RevenueCat identity and the usage counters in step with auth.
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted.current) return;
-      const user = session?.user;
-      if (event === "SIGNED_OUT") {
-        Purchases.logOut().catch(() => undefined);
-        setIsPro(false);
-        setCustomerInfo(null);
-      } else if (user && !user.is_anonymous) {
-        Purchases.logIn(user.id)
-          .then(({ customerInfo: info }) => {
-            applyCustomerInfo(info);
-            // Offerings can be targeted per user, so re-read after identifying.
-            refreshOfferings();
-          })
-          .catch(() => undefined);
+      if (REVENUECAT_ENABLED) {
+        const user = session?.user;
+        if (event === "SIGNED_OUT") {
+          Purchases.logOut().catch(() => undefined);
+          setIsPro(false);
+          setCustomerInfo(null);
+        } else if (user && !user.is_anonymous) {
+          Purchases.logIn(user.id)
+            .then(({ customerInfo: info }) => {
+              applyCustomerInfo(info);
+              // Offerings can be targeted per user, so re-read after identifying.
+              refreshOfferings();
+            })
+            .catch(() => undefined);
+        }
       }
       refreshUsage();
     });

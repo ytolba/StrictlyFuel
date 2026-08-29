@@ -6,12 +6,12 @@ import { scoreMeal } from "../logic/mealScore";
 import { scaleMealToTarget } from "../logic/mealScaling";
 import { DEFAULT_ACTIVITIES } from "../data/activities";
 import type { ActivityType, FuelMeal, FuelPost, FuelTarget, MealIngredient, WorkoutDraft } from "../types/fuel";
+import { makeUuid } from "../utils/ids";
+import { supabase } from "../lib/supabase";
 
 const STORAGE_KEY = "strictlyfuel:p0-state:v1";
-const makeId = (_prefix: string) => "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (value) => {
-  const random = Math.floor(Math.random() * 16);
-  return (value === "x" ? random : (random & 0x3) | 0x8).toString(16);
-});
+// Workouts, meals and ingredients all become uuid primary keys in Postgres.
+const makeId = (_prefix: string) => makeUuid();
 
 type WorkoutInput = Omit<WorkoutDraft, "id" | "createdAt">;
 
@@ -73,6 +73,28 @@ export function FuelProvider({ children }: { children: React.ReactNode }) {
     if (!hydrated) return;
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ workout, target, ingredients, meals, savedPostIds, localPosts, recentActivities, favoriteActivities })).catch(() => undefined);
   }, [hydrated, workout, target, ingredients, meals, savedPostIds, localPosts, recentActivities, favoriteActivities]);
+
+  /**
+   * Drop everything belonging to the previous person when the session ends.
+   *
+   * Clearing AsyncStorage alone is not enough: this provider keeps the same
+   * state in memory and the effect above would immediately write it back, so a
+   * signed-out or deleted account's meals would reappear under the next login.
+   */
+  useEffect(() => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event) => {
+      if (event !== "SIGNED_OUT") return;
+      setWorkout(null);
+      setTarget(null);
+      setIngredients([]);
+      setMeals([]);
+      setSavedPostIds([]);
+      setLocalPosts([]);
+      setRecentActivities([]);
+      setFavoriteActivities(DEFAULT_ACTIVITIES);
+    });
+    return () => listener.subscription.unsubscribe();
+  }, []);
 
   const createWorkout = useCallback((input: WorkoutInput) => {
     const nextWorkout: WorkoutDraft = { ...input, id: makeId("workout"), createdAt: new Date().toISOString() };

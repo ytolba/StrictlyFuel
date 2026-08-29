@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
@@ -7,9 +7,9 @@ import { useFuel } from "../../contexts/FuelContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { analyzeMealPhoto } from "../../services/mealAnalysisService";
 import { isAiLimitError } from "../../services/functionErrors";
-import { inferCarbSpeed } from "../../logic/nutritionEngine";
+import { validateMealNutrition } from "../../logic/nutritionEngine";
 import { saveMeal } from "../../services/fuelService";
-import type { FuelFood, MealIngredient } from "../../types/fuel";
+import type { MealIngredient } from "../../types/fuel";
 import type { MealAnalysis } from "../../types/mealAnalysis";
 import { useSubscription } from "../../provider/RevenuCatProvider";
 import { SCAN_LIMITS } from "../../config/monetization";
@@ -21,28 +21,16 @@ import { strictlyColors, strictlyRadius, strictlyType } from "../../theme/strict
 function detectedIngredients(analysis: MealAnalysis): MealIngredient[] {
   return analysis.items.map((item, index) => {
     const grams = Math.max(1, item.estimatedGrams || 100);
-    const factor = 100 / grams;
-    const base: FuelFood = {
-      id: `ai-${item.id}-${index}`,
-      name: item.name,
-      aliases: [],
-      emoji: "◉",
-      category: item.carbs >= item.protein ? "grain" : "protein",
-      carbSpeed: "medium",
-      timing: "Estimated from meal photo",
-      defaultGrams: grams,
-      servingLabel: item.portionDescription,
-      per100g: {
-        calories: (item.calories || 0) * factor,
-        carbs: (item.carbs || 0) * factor,
-        protein: (item.protein || 0) * factor,
-        fat: (item.fat || 0) * factor,
-        fiber: (item.fiber || 0) * factor,
-      },
-      source: "ai_estimate",
+    return {
+      id: `detected-${item.id}-${index}`,
+      food: item.food,
+      grams,
+      confidence: Math.min(item.foodConfidence, item.portionConfidence, item.nutritionMatchConfidence),
+      foodConfidence: item.foodConfidence,
+      portionConfidence: item.portionConfidence,
+      nutritionMatchConfidence: item.nutritionMatchConfidence,
+      estimated: true,
     };
-    base.carbSpeed = inferCarbSpeed(base);
-    return { id: `detected-${item.id}-${index}`, food: base, grams, confidence: item.confidence, estimated: true };
   });
 }
 
@@ -58,9 +46,14 @@ export default function MealScanScreen({ navigation }: any) {
   const [context, setContext] = useState("");
   const [editingId, setEditingId] = useState<string>();
 
+  // Every vision call costs a scan from the weekly allowance, so a double tap
+  // must not buy two. `loading` is React state and lands a frame too late.
+  const visionInFlight = useRef(false);
+
   useEffect(() => { refreshUsage(); }, [refreshUsage]);
 
   const estimatedCarbs = useMemo(() => items.reduce((sum, item) => sum + item.food.per100g.carbs * item.grams / 100, 0), [items]);
+  const nutritionWarnings = useMemo(() => validateMealNutrition(items), [items]);
 
   const pick = async (source: "camera" | "library") => {
     if (!target) return Alert.alert("Set your workout first", "Strictly scores a meal against a specific workout and timing window.", [{ text: "Go to Home", onPress: () => navigation.navigate("Home") }]);
@@ -75,6 +68,8 @@ export default function MealScanScreen({ navigation }: any) {
     if (!permission.granted) return Alert.alert("Permission needed", `Allow ${source === "camera" ? "camera" : "photo library"} access to scan a meal.`);
     const result = source === "camera" ? await ImagePicker.launchCameraAsync({ mediaTypes: ["images"], quality: 1 }) : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 1 });
     if (result.canceled) return;
+    if (visionInFlight.current) return;
+    visionInFlight.current = true;
     setPhotoUri(result.assets[0].uri);
     setAnalysis(undefined);
     setItems([]);
@@ -99,11 +94,15 @@ export default function MealScanScreen({ navigation }: any) {
       } else {
         Alert.alert("Could not read this meal", error?.message || "Try again in brighter light with the full plate visible.");
       }
-    } finally { setLoading(false); }
+    } finally {
+      visionInFlight.current = false;
+      setLoading(false);
+    }
   };
 
   const refine = async () => {
     if (!base64 || !context.trim()) return;
+    if (visionInFlight.current) return;
     if (!canScan) {
       return Alert.alert(
         "Weekly scans used up",
@@ -111,6 +110,7 @@ export default function MealScanScreen({ navigation }: any) {
         [{ text: "Not now", style: "cancel" }, { text: "See Pro", onPress: () => navigation.getParent()?.navigate("Paywall") }]
       );
     }
+    visionInFlight.current = true;
     setLoading(true);
     try {
       const next = await analyzeMealPhoto(base64, `User confirmed: ${context.trim()}`);
@@ -128,7 +128,10 @@ export default function MealScanScreen({ navigation }: any) {
         Alert.alert("Could not refine this estimate", error?.message || "Try again.");
       }
     }
-    finally { setLoading(false); }
+    finally {
+      visionInFlight.current = false;
+      setLoading(false);
+    }
   };
 
   const confirm = () => {
@@ -158,7 +161,9 @@ export default function MealScanScreen({ navigation }: any) {
       {loading ? <View style={styles.loadingCard}><LoadingState title={analysis ? "Refining your meal" : "Reading your plate"} messages={["Finding visible foods", "Estimating portions", "Checking the nutrition estimate"]} /></View> : analysis ? <>
         <View style={styles.estimateHead}><View><Text style={styles.estimateLabel}>CAMERA ESTIMATE · {analysis.confidence}% CONFIDENCE</Text><Text style={styles.estimateName}>{analysis.mealName}</Text></View><Text style={styles.estimateCarbs}>~{Math.round(estimatedCarbs)}g<Text style={styles.estimateUnit}> carbs</Text></Text></View>
         <Text style={styles.range}>Likely range: {Math.round(analysis.ranges.carbs[0])}–{Math.round(analysis.ranges.carbs[1])} g carbs. Correct the foods below before scoring.</Text>
-        <View style={styles.items}>{items.map((item) => <View key={item.id} style={styles.item}><View style={styles.itemCopy}><Text style={styles.itemName}>{item.food.name}</Text><Text style={styles.itemMeta}>{item.food.servingLabel} · {item.confidence}% confidence</Text></View><TouchableOpacity style={styles.gramsButton} onPress={() => setEditingId(item.id)}><Text style={styles.grams}>{Math.round(item.grams)}g</Text><Ionicons name="create-outline" size={12} color={strictlyColors.textSoft} /></TouchableOpacity><TouchableOpacity onPress={() => setItems((current) => current.filter((row) => row.id !== item.id))}><Ionicons name="close-circle" size={21} color={strictlyColors.textSoft} /></TouchableOpacity></View>)}</View>
+        <View style={styles.items}>{items.map((item) => <View key={item.id} style={styles.item}><View style={styles.itemCopy}><Text style={styles.itemName}>{item.food.name}</Text><Text style={styles.itemMeta}>{item.food.servingLabel} · food {item.foodConfidence}% · portion {item.portionConfidence}%</Text><Text style={styles.sourceMeta}>{item.food.source === "ai_estimate" ? "AI nutrition fallback" : `${item.food.source.toUpperCase()} nutrition match · ${item.nutritionMatchConfidence}%`}</Text></View><TouchableOpacity style={styles.gramsButton} onPress={() => setEditingId(item.id)}><Text style={styles.grams}>{Math.round(item.grams)}g</Text><Ionicons name="create-outline" size={12} color={strictlyColors.textSoft} /></TouchableOpacity><TouchableOpacity onPress={() => setItems((current) => current.filter((row) => row.id !== item.id))}><Ionicons name="close-circle" size={21} color={strictlyColors.textSoft} /></TouchableOpacity></View>)}</View>
+        <TouchableOpacity style={styles.editFoods} onPress={() => { setIngredients(items); navigation.getParent()?.navigate("BuildMeal", { suggestedName: analysis.mealName }); }}><Ionicons name="add-circle-outline" size={17} color={strictlyColors.text} /><Text style={styles.editFoodsText}>Add or replace a food</Text></TouchableOpacity>
+        {nutritionWarnings.length ? <View style={styles.warning}><Ionicons name="alert-circle-outline" size={18} color={strictlyColors.clay} /><Text style={styles.warningText}>Strictly corrected an inconsistent calorie value from the matched nutrition record. Review the affected food before logging.</Text></View> : null}
         {analysis.followUpQuestion ? <View style={styles.followup}><Text style={styles.followupQuestion}>{analysis.followUpQuestion}</Text><TextInput value={context} onChangeText={setContext} placeholder="Add portion or preparation details" placeholderTextColor={strictlyColors.textSoft} style={styles.contextInput} /><TouchableOpacity disabled={!context.trim()} onPress={refine} style={[styles.refine, !context.trim() && styles.disabled]}><Text style={styles.refineText}>Refine estimate</Text></TouchableOpacity></View> : null}
         <TouchableOpacity style={styles.primary} onPress={confirm}><Text style={styles.primaryText}>Confirm foods and score</Text><Ionicons name="arrow-forward" size={18} color={strictlyColors.onLime} /></TouchableOpacity>
         <TouchableOpacity style={styles.secondary} onPress={() => { setPhotoUri(undefined); setAnalysis(undefined); setItems([]); }}><Text style={styles.secondaryText}>Retake photo</Text></TouchableOpacity>
@@ -172,7 +177,7 @@ export default function MealScanScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   usage: { flexDirection: "row", alignItems: "center", gap: 8, minHeight: 44, paddingHorizontal: 14, marginTop: 14, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
   usageText: { flex: 1, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11 },
-  usageLink: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.lime, fontSize: 11 },
+  usageLink: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.accentText, fontSize: 11 },
   hero: { alignItems: "center", paddingVertical: 34, paddingHorizontal: 15, backgroundColor: strictlyColors.cream, borderRadius: strictlyRadius.large },
   cameraCircle: { width: 72, height: 72, borderRadius: 36, backgroundColor: strictlyColors.lime, alignItems: "center", justifyContent: "center" },
   heroTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "800", fontSize: 25, color: strictlyColors.text, marginTop: 18 },
@@ -197,8 +202,13 @@ const styles = StyleSheet.create({
   itemCopy: { flex: 1 },
   itemName: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 13 },
   itemMeta: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 9, marginTop: 3 },
+  sourceMeta: { fontFamily: strictlyType.mono, color: strictlyColors.muted, fontSize: 7, marginTop: 4, textTransform: "uppercase" },
   gramsButton: { minWidth: 64, height: 34, flexDirection: "row", gap: 4, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.surfaceMuted, paddingHorizontal: 8, borderRadius: 9 },
   grams: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 12 },
+  editFoods: { minHeight: 46, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, marginTop: 8, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.surfaceMuted },
+  editFoodsText: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 11 },
+  warning: { flexDirection: "row", gap: 9, padding: 13, marginTop: 9, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.dangerSurface },
+  warningText: { flex: 1, fontFamily: strictlyType.sans, color: strictlyColors.text, fontSize: 10, lineHeight: 15 },
   followup: { padding: 14, backgroundColor: strictlyColors.cream, borderRadius: strictlyRadius.large, marginTop: 12 },
   followupQuestion: { fontFamily: strictlyType.sansMedium, color: strictlyColors.text, fontSize: 12, lineHeight: 18 },
   contextInput: { minHeight: 46, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.borderStrong, borderRadius: strictlyRadius.medium, paddingHorizontal: 12, marginTop: 9, fontFamily: strictlyType.sans, color: strictlyColors.text },

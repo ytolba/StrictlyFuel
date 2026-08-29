@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
   eyebrow: { fontFamily: strictlyType.mono, color: strictlyColors.sage, fontSize: 9, letterSpacing: 1.5 },
   eyebrowLight: { color: strictlyColors.textSoft },
   workout: { fontFamily: strictlyType.sansMedium, fontWeight: "600", color: strictlyColors.white, fontSize: 15, marginTop: 6 },
-  time: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "rgba(255,255,255,0.08)", borderRadius: strictlyRadius.pill, paddingHorizontal: 10, paddingVertical: 6 },
+  time: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: strictlyColors.inverseOverlay, borderRadius: strictlyRadius.pill, paddingHorizontal: 10, paddingVertical: 6 },
   timeLight: { backgroundColor: strictlyColors.surfaceMuted },
   timeText: { color: strictlyColors.white, fontFamily: strictlyType.mono, fontSize: 10 },
   number: { fontFamily: strictlyType.sansMedium, fontWeight: "800", fontSize: 46, letterSpacing: -2, color: strictlyColors.white, marginTop: 22 },

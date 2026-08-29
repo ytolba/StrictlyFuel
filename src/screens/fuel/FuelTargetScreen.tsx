@@ -48,7 +48,7 @@ export default function FuelTargetScreen({ navigation }: any) {
       {/* Digestion speed is the part athletes get wrong most often, so it gets
           its own explainer rather than only a bar on the card above. */}
       <TouchableOpacity style={styles.splitToggle} onPress={() => setShowSplit((current) => !current)} activeOpacity={0.8}>
-        <Ionicons name="speedometer-outline" size={18} color={strictlyColors.lime} />
+        <Ionicons name="speedometer-outline" size={18} color={strictlyColors.accentText} />
         <Text style={styles.splitToggleText}>What do fast, medium and slow mean?</Text>
         <Ionicons name={showSplit ? "chevron-up" : "chevron-down"} size={17} color={strictlyColors.textSoft} />
       </TouchableOpacity>
@@ -64,7 +64,7 @@ export default function FuelTargetScreen({ navigation }: any) {
       ) : null}
 
       <View style={styles.note}>
-        <Ionicons name="information-circle-outline" size={19} color={strictlyColors.lime} />
+        <Ionicons name="information-circle-outline" size={19} color={strictlyColors.accentText} />
         <Text style={styles.noteText}>{target.rationale}</Text>
       </View>
 
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
   action: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, marginBottom: 9 },
   actionPrimary: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.lime, marginBottom: 9 },
   actionIcon: { width: 42, height: 42, borderRadius: 15, backgroundColor: strictlyColors.surfaceMuted, alignItems: "center", justifyContent: "center" },
-  actionIconPrimary: { width: 42, height: 42, borderRadius: 15, backgroundColor: "rgba(10,28,18,0.12)", alignItems: "center", justifyContent: "center" },
+  actionIconPrimary: { width: 42, height: 42, borderRadius: 15, backgroundColor: strictlyColors.onAccentOverlay, alignItems: "center", justifyContent: "center" },
   actionCopy: { flex: 1 },
   actionTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 14 },
   actionTitlePrimary: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.onLime, fontSize: 14 },

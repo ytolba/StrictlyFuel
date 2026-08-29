@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Alert, LayoutChangeEvent, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFuel } from "../../contexts/FuelContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { saveWorkout } from "../../services/fuelService";
@@ -30,9 +30,27 @@ export default function FuelHomeScreen({ navigation }: any) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [profile, setProfile] = useState<NutritionProfile>(EMPTY_NUTRITION_PROFILE);
 
+  // The session form is the top of the screen and the result appears beneath
+  // it, so "Calculate" reveals the target in place rather than pushing a new
+  // screen the athlete then has to back out of.
+  const scrollRef = useRef<ScrollView | null>(null);
+  const targetOffset = useRef(0);
+  const [revealTarget, setRevealTarget] = useState(false);
+
   useEffect(() => {
     loadNutritionProfile().then(setProfile);
   }, []);
+
+  useEffect(() => {
+    if (!revealTarget || !workout || !target) return;
+    // One frame is not always enough for the freshly mounted card to report its
+    // position, so give the layout pass a moment before scrolling to it.
+    const timer = setTimeout(() => {
+      scrollRef.current?.scrollTo({ y: Math.max(0, targetOffset.current - 16), animated: true });
+      setRevealTarget(false);
+    }, 140);
+    return () => clearTimeout(timer);
+  }, [revealTarget, workout, target]);
 
   const quickActivities = useMemo(
     () =>
@@ -81,7 +99,7 @@ export default function FuelHomeScreen({ navigation }: any) {
       heartRateZones: supportsHeartRateZones(activityType) ? heartRateZones : [],
     });
     if (user?.uid) saveWorkout(user.uid, next.workout, next.target).catch(() => undefined);
-    navigation.navigate("FuelTarget");
+    setRevealTarget(true);
   };
 
   const editorProps = () => {
@@ -112,7 +130,7 @@ export default function FuelHomeScreen({ navigation }: any) {
   };
 
   return (
-    <ScreenShell>
+    <ScreenShell scrollRef={scrollRef}>
       <View style={styles.brandRow}>
         <View>
           <Text style={styles.brand}>STRICTLY</Text>
@@ -123,24 +141,11 @@ export default function FuelHomeScreen({ navigation }: any) {
         </TouchableOpacity>
       </View>
 
-      {/* A returning athlete's live target comes first — they came back for it. */}
-      {workout && target ? (
-        <TouchableOpacity style={styles.activeWrap} activeOpacity={0.9} onPress={() => navigation.navigate("FuelTarget")}>
-          <FuelTargetCard workout={workout} target={target} />
-          <View style={styles.activeFooter}>
-            <Text style={styles.activeFooterText}>Open today’s plan</Text>
-            <Ionicons name="arrow-forward" size={16} color={strictlyColors.onLime} />
-          </View>
-        </TouchableOpacity>
-      ) : (
-        <>
-          <Text style={styles.hero}>What are you training today?</Text>
-          <Text style={styles.subhero}>Tell us the session. We’ll turn it into food you can actually use.</Text>
-        </>
-      )}
+      <Text style={styles.hero}>What are you training today?</Text>
+      <Text style={styles.subhero}>Tell us the session. We’ll turn it into food you can actually use.</Text>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>{workout && target ? "Plan another session" : "Your session"}</Text>
+        <Text style={styles.cardTitle}>Your session</Text>
 
         {/* 1 — activity */}
         <Text style={styles.stepLabel}>ACTIVITY</Text>
@@ -150,7 +155,7 @@ export default function FuelHomeScreen({ navigation }: any) {
             const active = activityType === id;
             return (
               <TouchableOpacity key={id} onPress={() => setActivityType(id)} style={[styles.chip, active && styles.chipActive]}>
-                <Ionicons name={activity.icon} size={16} color={active ? strictlyColors.onLime : strictlyColors.textSoft} />
+                <MaterialCommunityIcons name={activity.icon} size={17} color={active ? strictlyColors.onLime : strictlyColors.textSoft} />
                 <Text style={[styles.chipText, active && styles.chipTextActive]} numberOfLines={1}>
                   {activity.shortLabel}
                 </Text>
@@ -240,9 +245,28 @@ export default function FuelHomeScreen({ navigation }: any) {
         </TouchableOpacity>
       </View>
 
+      {/* The result of the form above. Scrolled into view by `calculate`. */}
+      {workout && target ? (
+        <View
+          style={styles.activeWrap}
+          onLayout={(event: LayoutChangeEvent) => { targetOffset.current = event.nativeEvent.layout.y; }}
+        >
+          <Text style={styles.resultLabel}>YOUR FUEL TARGET</Text>
+          <FuelTargetCard workout={workout} target={target} />
+          <TouchableOpacity
+            style={styles.activeFooter}
+            activeOpacity={0.9}
+            onPress={() => navigation.navigate("FuelTarget")}
+          >
+            <Text style={styles.activeFooterText}>Open the full plan</Text>
+            <Ionicons name="arrow-forward" size={16} color={strictlyColors.onLime} />
+          </TouchableOpacity>
+        </View>
+      ) : null}
+
       <TouchableOpacity style={styles.discover} onPress={() => navigation.navigate("Discover")}>
         <View style={styles.discoverIcon}>
-          <Ionicons name="compass-outline" size={20} color={strictlyColors.lime} />
+          <Ionicons name="compass-outline" size={20} color={strictlyColors.accentText} />
         </View>
         <View style={styles.discoverCopy}>
           <Text style={styles.discoverTitle}>What others eat</Text>
@@ -273,12 +297,13 @@ const styles = StyleSheet.create({
   brand: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 20, letterSpacing: -0.5 },
   brandSub: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 8, letterSpacing: 1.4, marginTop: 2 },
   avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: strictlyColors.surfaceMuted, alignItems: "center", justifyContent: "center" },
-  avatarText: { color: strictlyColors.lime, fontFamily: strictlyType.sansMedium, fontWeight: "800" },
+  avatarText: { color: strictlyColors.accentText, fontFamily: strictlyType.sansMedium, fontWeight: "800" },
 
   hero: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 32, lineHeight: 36, letterSpacing: -1.2, maxWidth: 340 },
   subhero: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 14, lineHeight: 21, marginTop: 8, marginBottom: 4, maxWidth: 330 },
 
-  activeWrap: { marginBottom: 4 },
+  activeWrap: { marginTop: 20, marginBottom: 4 },
+  resultLabel: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 8, letterSpacing: 1.3, marginBottom: 9 },
   activeFooter: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, height: 44, marginTop: 8, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.lime },
   activeFooterText: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.onLime, fontSize: 13 },
 
@@ -293,7 +318,7 @@ const styles = StyleSheet.create({
   chipTextActive: { color: strictlyColors.onLime, fontWeight: "900" },
   chipMore: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 40, paddingHorizontal: 12, borderRadius: strictlyRadius.pill, borderWidth: 1, borderColor: strictlyColors.borderStrong },
   chipMoreText: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 12 },
-  chosen: { fontFamily: strictlyType.sans, color: strictlyColors.lime, fontSize: 11, marginTop: 9 },
+  chosen: { fontFamily: strictlyType.sans, color: strictlyColors.accentText, fontSize: 11, marginTop: 9 },
 
   pairRow: { flexDirection: "row", gap: 9, marginTop: 18 },
   pair: { flex: 1, minHeight: 76, justifyContent: "center", paddingHorizontal: 14, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.surfaceMuted },
@@ -311,7 +336,7 @@ const styles = StyleSheet.create({
   zoneHeading: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
   zoneHeadingCopy: { flex: 1 },
   zoneHelp: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 10, marginTop: -4, marginBottom: 9 },
-  zoneClear: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.lime, fontSize: 10 },
+  zoneClear: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.accentText, fontSize: 10 },
   zoneRow: { flexDirection: "row", gap: 7 },
   zone: { flex: 1, height: 43, borderRadius: strictlyRadius.medium, borderWidth: 1, borderColor: strictlyColors.border, backgroundColor: strictlyColors.surfaceMuted, alignItems: "center", justifyContent: "center" },
   zoneActive: { backgroundColor: strictlyColors.lime, borderColor: strictlyColors.lime },
@@ -321,7 +346,7 @@ const styles = StyleSheet.create({
 
   weightLine: { height: 48, flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 },
   weightText: { flex: 1, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 12 },
-  weightEdit: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.lime, fontSize: 11 },
+  weightEdit: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.accentText, fontSize: 11 },
 
   primary: { height: 56, backgroundColor: strictlyColors.lime, borderRadius: strictlyRadius.medium, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 9, marginTop: 4 },
   primaryText: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.onLime, fontSize: 14 },

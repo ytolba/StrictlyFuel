@@ -1,4 +1,33 @@
-export type MealAnalysisItem = { id: string; name: string; portionDescription: string; estimatedGrams: number; calories: number; carbs: number; protein: number; fat: number; fiber: number; confidence: number; visualEvidence: string };
+import type { FuelFood } from "./fuel";
+
+export type MealAnalysisItem = {
+  id: string;
+  name: string;
+  lookupQuery: string;
+  portionDescription: string;
+  estimatedGrams: number;
+  foodConfidence: number;
+  portionConfidence: number;
+  visualEvidence: string;
+  preparation: string;
+  /** AI nutrition is retained only as a last-resort fallback when no catalog match exists. */
+  fallbackNutritionPer100g: {
+    calories: number;
+    carbs: number;
+    protein: number;
+    fat: number;
+    fiber: number;
+  };
+  food: FuelFood;
+  nutritionMatchConfidence: number;
+  /** Deprecated compatibility fields. New scan totals come from item.food. */
+  calories?: number;
+  carbs?: number;
+  protein?: number;
+  fat?: number;
+  fiber?: number;
+  confidence?: number;
+};
 export type MealAnalysis = {
   mealName: string;
   items: MealAnalysisItem[];

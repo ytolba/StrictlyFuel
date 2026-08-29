@@ -82,3 +82,5 @@ yarn-error.*
 
 # Local native build output
 /build/
+.logic-test-dist/
+.test-build/

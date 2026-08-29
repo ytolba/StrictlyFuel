@@ -13,7 +13,15 @@ export const StrictlyMark = ({ size = 38, dark = true, onCream = false }: BrandM
   <Svg width={size * 0.88} height={size} viewBox="0 0 100 113.2">
     <Polygon
       points="61.4,0 100,0 82.6,16.4 68.5,16.5 25.1,55.5 25,63 33.1,63.3 65.7,34.4 93.2,34.2 93.3,63.7 38.6,113.2 0,113.2 17.4,96.8 31.5,96.7 74.9,57.7 75,50.2 66.9,49.9 34.3,78.8 6.8,79 6.7,49.5"
-      fill={onCream ? strictlyColors.ink : dark ? strictlyColors.paper : strictlyColors.ink}
+      /**
+       * The mark is a solid silhouette, so its fill has to contrast with
+       * whatever is behind it. `paper` and `ink` are both close to the app's
+       * own surfaces, which is why the logo used to disappear on the sign-up
+       * and onboarding screens. `text` is the one token guaranteed to read
+       * against the page in either appearance; `onCream` covers the launch
+       * screen, which stays cream in both.
+       */
+      fill={onCream ? strictlyColors.onCreamLight : strictlyColors.text}
     />
   </Svg>
 );
@@ -53,7 +61,7 @@ const styles = StyleSheet.create({
     alignItems: "baseline",
   },
   strictly: {
-    color: strictlyColors.paper,
+    color: strictlyColors.text,
     fontFamily: strictlyType.sansBold,
     fontWeight: "700",
     fontSize: 18,
@@ -63,6 +71,6 @@ const styles = StyleSheet.create({
     color: strictlyColors.text,
   },
   strictlyOnCream: {
-    color: strictlyColors.ink,
+    color: strictlyColors.onCreamLight,
   },
 });

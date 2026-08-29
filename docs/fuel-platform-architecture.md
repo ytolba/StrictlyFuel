@@ -1,3 +1,5 @@
+> **Superseded.** This document describes the retired Firebase/Firestore design. Supabase is now the only backend; see docs/supabase-data-model.md.
+
 # StrictlyFuel P0 architecture
 
 ## Product loop

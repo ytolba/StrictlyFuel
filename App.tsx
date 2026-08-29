@@ -17,7 +17,7 @@ import {
   configureFonts,
 } from "react-native-paper";
 import { StrictlyBrand } from "./src/components/StrictlyBrand";
-import { strictlyColors, strictlyRadius, strictlyType } from "./src/theme/strictlyTheme";
+import { strictlyLightPalette, strictlyRadius, strictlyType } from "./src/theme/strictlyTheme";
 import { StrictlyAppearanceProvider, useStrictlyAppearance } from "./src/contexts/AppearanceContext";
 
 const SPLASH_BG_COLOR = "#F2EAD7";
@@ -84,7 +84,7 @@ const AppContent: React.FC = () => {
         <View
           style={[styles.warningWrapper, { backgroundColor: SPLASH_BG_COLOR }]}
         >
-          <Text style={styles.warningText}>
+          <Text style={[styles.warningText, { color: palette.text }]}>
             This app is running in Expo Go. Features like in-app purchases will
             not be available.
           </Text>
@@ -148,14 +148,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   warningText: {
-    color: strictlyColors.white,
     fontSize: 16,
     textAlign: "center",
     fontWeight: "bold",
   },
   splashTagline: {
     marginTop: 18,
-    color: "#486653",
+    color: strictlyLightPalette.inkSoft,
     fontFamily: strictlyType.mono,
     fontWeight: "600",
     fontSize: 10,

@@ -17,13 +17,21 @@ const AppearanceContext = createContext<AppearanceContextValue | undefined>(unde
 
 export function StrictlyAppearanceProvider({ children }: { children: React.ReactNode }) {
   const systemMode = useColorScheme();
-  const [mode, setModeState] = useState<AppearanceMode>("system");
+  // Ships dark by default — a fresh install with no saved preference opens
+  // dark regardless of the device's system setting. The user can switch to
+  // light (or follow system) anytime from Profile -> Appearance.
+  const [mode, setModeState] = useState<AppearanceMode>("dark");
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY).then((saved) => {
       if (saved === "light" || saved === "dark" || saved === "system") {
         setModeState(saved);
         Appearance.setColorScheme(saved === "system" ? null : saved);
+      } else {
+        // No saved preference yet (first launch) — force native appearance to
+        // match the dark default so components reading the OS scheme directly
+        // agree with the app.
+        Appearance.setColorScheme("dark");
       }
     }).catch(() => undefined);
   }, []);
