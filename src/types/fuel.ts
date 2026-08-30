@@ -78,6 +78,17 @@ export type WorkoutDraft = {
   bodyWeightKg: number;
   /** Optional planned zones. Multiple values support intervals and mixed sessions. */
   heartRateZones?: HeartRateZone[];
+  /** Present only when recovery is being built from a completed Apple Health workout. */
+  completedWorkout?: {
+    source: "apple_health";
+    id: string;
+    completedAt: string;
+    sourceName?: string;
+    distanceKm?: number;
+    activeCalories?: number;
+    averageHeartRate?: number;
+    maxHeartRate?: number;
+  };
   createdAt: string;
 };
 

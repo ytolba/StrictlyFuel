@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -9,17 +9,20 @@ import { NutritionProfileForm } from "../components/NutritionProfileForm";
 import { AthleteBasicsForm } from "../components/AthleteBasicsForm";
 import { saveNutritionProfile } from "../services/nutritionProfileService";
 import { EMPTY_NUTRITION_PROFILE, NutritionProfile } from "../types/nutritionProfile";
+import { appleHealthSupported, connectAppleHealth } from "../services/appleHealthService";
 import { strictlyColors, strictlyRadius, strictlyType } from "../theme/strictlyTheme";
 
 type OnboardingStackParamList = { Onboarding: undefined; Auth: undefined };
 type OnboardingNavigation = StackNavigationProp<OnboardingStackParamList, "Onboarding">;
 
-const TOTAL_STEPS = 6;
+const TOTAL_STEPS = 7;
 
 const OnboardingScreen = () => {
   const navigation = useNavigation<OnboardingNavigation>();
   const [step, setStep] = useState(0);
   const [profile, setProfile] = useState<NutritionProfile>(EMPTY_NUTRITION_PROFILE);
+  const [healthConnecting, setHealthConnecting] = useState(false);
+  const [healthConnected, setHealthConnected] = useState(false);
 
   const finish = async () => {
     await saveNutritionProfile(profile);
@@ -64,6 +67,35 @@ const OnboardingScreen = () => {
   );
 
   const renderProfileStep = () => {
+    if (step === 6) {
+      const supported = appleHealthSupported();
+      const connectHealth = async () => {
+        if (!supported) return;
+        setHealthConnecting(true);
+        try {
+          const connected = await connectAppleHealth();
+          setHealthConnected(connected);
+          if (!connected) Alert.alert("Apple Health needs permission", "You can always connect it later from the home screen.");
+        } catch (error) {
+          Alert.alert("Apple Health couldn’t connect", error instanceof Error ? error.message : "You can connect it later from the home screen.");
+        } finally {
+          setHealthConnecting(false);
+        }
+      };
+      return <View style={styles.healthStep}>
+        <View style={styles.healthIcon}><Ionicons name="heart" size={29} color={strictlyColors.white} /></View>
+        <Text style={styles.healthKicker}>OPTIONAL · APPLE HEALTH</Text>
+        <Text style={styles.healthTitle}>Let your training lead the plan.</Text>
+        <Text style={styles.healthDescription}>Connect completed workouts to see their duration, distance, energy, and heart-rate context. Strictly will use that real session to recommend what to eat after it.</Text>
+        <View style={styles.healthList}>
+          {["Recent workouts on your home screen", "Recovery meals after completed sessions", "Read-only access. Your Health data stays on your phone"].map((copy) => <View key={copy} style={styles.healthRow}><Ionicons name="checkmark" size={15} color={strictlyColors.good} /><Text style={styles.healthRowText}>{copy}</Text></View>)}
+        </View>
+        {supported ? <TouchableOpacity style={[styles.healthButton, healthConnected && styles.healthButtonConnected]} disabled={healthConnecting || healthConnected} onPress={connectHealth}>
+          <Ionicons name={healthConnected ? "checkmark-circle" : "heart-outline"} size={19} color={strictlyColors.onLime} />
+          <Text style={styles.healthButtonText}>{healthConnecting ? "Connecting…" : healthConnected ? "Apple Health connected" : "Connect Apple Health"}</Text>
+        </TouchableOpacity> : <View style={styles.healthUnavailable}><Text style={styles.healthUnavailableTitle}>Available after your iPhone build</Text><Text style={styles.healthUnavailableText}>Finish setup now, then connect Apple Health from Home after installing the new iOS build.</Text></View>}
+      </View>;
+    }
     if (step === 1) return <AthleteBasicsForm profile={profile} onChange={setProfile} />;
     const sections = step === 2 ? ["sensitivities"] : step === 3 ? ["conditions"] : step === 4 ? ["dietaryPatterns"] : ["priorities"];
     return (
@@ -160,6 +192,20 @@ const styles = StyleSheet.create({
   skipText: { color: strictlyColors.textSoft, fontFamily: strictlyType.sansMedium, fontSize: 13 },
   nextButton: { minHeight: 48, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingHorizontal: 18, borderRadius: strictlyRadius.small, backgroundColor: strictlyColors.ink },
   nextText: { color: strictlyColors.paper, fontFamily: strictlyType.sansMedium, fontWeight: "600", fontSize: 13 },
+  healthStep: { paddingTop: 18 },
+  healthIcon: { width: 62, height: 62, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: "#E64A55", marginBottom: 24 },
+  healthKicker: { color: strictlyColors.good, fontFamily: strictlyType.mono, fontSize: 9, letterSpacing: 1.1 },
+  healthTitle: { color: strictlyColors.text, fontFamily: strictlyType.sansBold, fontWeight: "700", fontSize: 31, lineHeight: 36, letterSpacing: -1, marginTop: 8, maxWidth: 330 },
+  healthDescription: { color: strictlyColors.textSoft, fontFamily: strictlyType.sans, fontSize: 14, lineHeight: 21, marginTop: 11 },
+  healthList: { gap: 11, padding: 16, marginTop: 22, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
+  healthRow: { flexDirection: "row", alignItems: "flex-start", gap: 9 },
+  healthRowText: { flex: 1, color: strictlyColors.text, fontFamily: strictlyType.sans, fontSize: 12, lineHeight: 17 },
+  healthButton: { minHeight: 54, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 13, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.lime },
+  healthButtonConnected: { opacity: 0.78 },
+  healthButtonText: { color: strictlyColors.onLime, fontFamily: strictlyType.sansMedium, fontWeight: "900", fontSize: 13 },
+  healthUnavailable: { padding: 16, marginTop: 13, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.cream },
+  healthUnavailableTitle: { color: strictlyColors.text, fontFamily: strictlyType.sansMedium, fontWeight: "800", fontSize: 13 },
+  healthUnavailableText: { color: strictlyColors.textSoft, fontFamily: strictlyType.sans, fontSize: 11, lineHeight: 16, marginTop: 5 },
 });
 
 export default OnboardingScreen;

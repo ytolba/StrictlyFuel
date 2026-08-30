@@ -23,7 +23,10 @@ final class StrictlyHealthKit: NSObject {
       return
     }
 
-    let readTypes: Set<HKObjectType> = [HKObjectType.workoutType()]
+    var readTypes: Set<HKObjectType> = [HKObjectType.workoutType()]
+    if let heartRate = HKObjectType.quantityType(forIdentifier: .heartRate) {
+      readTypes.insert(heartRate)
+    }
     store.requestAuthorization(toShare: [], read: readTypes) { success, error in
       if let error {
         reject("HEALTH_AUTH_ERROR", error.localizedDescription, error)
@@ -79,6 +82,17 @@ final class StrictlyHealthKit: NSObject {
     }
     if let energy = workout.totalEnergyBurned?.doubleValue(for: .kilocalorie()), energy > 0 {
       result["activeCalories"] = energy
+    }
+    if #available(iOS 16.0, *),
+       let heartRateType = HKObjectType.quantityType(forIdentifier: .heartRate),
+       let statistics = workout.statistics(for: heartRateType) {
+      let beatsPerMinute = HKUnit.count().unitDivided(by: .minute())
+      if let average = statistics.averageQuantity()?.doubleValue(for: beatsPerMinute), average > 0 {
+        result["averageHeartRate"] = average
+      }
+      if let maximum = statistics.maximumQuantity()?.doubleValue(for: beatsPerMinute), maximum > 0 {
+        result["maxHeartRate"] = maximum
+      }
     }
     return result
   }

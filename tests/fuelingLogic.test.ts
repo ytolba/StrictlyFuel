@@ -81,6 +81,13 @@ const standardRecovery = calculateRecoveryTarget(recoveryWorkout, "standard");
 const rapidRecovery = calculateRecoveryTarget({ ...recoveryWorkout, durationMinutes: 150, intensity: "hard" }, "rapid");
 assert(rapidRecovery.carbs > standardRecovery.carbs, "Rapid recovery should raise carbohydrate priority after a demanding session");
 assert(standardRecovery.protein >= 20 && standardRecovery.protein <= 40, "Recovery protein should remain in a practical meal-sized range");
+const completedHealthWorkout = calculateRecoveryTarget({
+  ...recoveryWorkout,
+  durationMinutes: 60,
+  intensity: "moderate",
+  completedWorkout: { source: "apple_health", id: "health-workout", completedAt: "2026-08-30T10:00:00.000Z", activeCalories: 520, averageHeartRate: 152, maxHeartRate: 182 },
+}, "standard");
+assert(completedHealthWorkout.carbs > standardRecovery.carbs, "A sustained completed Health workout should receive a higher recovery carbohydrate target");
 
 const chickenRice = POST_WORKOUT_MEALS.find((item) => item.name === "Chicken Rice Bowl");
 assert(chickenRice, "Chicken Rice Bowl fixture should exist");

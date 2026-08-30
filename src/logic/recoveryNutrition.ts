@@ -19,7 +19,16 @@ const strengthActivities = new Set([
 export function calculateRecoveryTarget(workout: WorkoutDraft, window: RecoveryWindow): RecoveryTarget {
   const weight = clamp(workout.bodyWeightKg || 70, 40, 180);
   const strengthFocused = strengthActivities.has(workout.activityType);
-  const highDemand = workout.durationMinutes >= 90 || (workout.intensity === "hard" && workout.durationMinutes >= 60);
+  // HealthKit's HR samples are contextual signals, not personal zones. A
+  // sustained session with meaningful energy cost can elevate recovery demand,
+  // while the athlete's own easy/moderate/hard choice remains the main input.
+  const actual = workout.completedWorkout;
+  const energyPerKg = actual?.activeCalories ? actual.activeCalories / weight : 0;
+  const sustainedHeartRate = actual?.averageHeartRate && actual?.maxHeartRate
+    ? actual.averageHeartRate / actual.maxHeartRate >= 0.78
+    : false;
+  const observedHighLoad = Boolean(actual && workout.durationMinutes >= 45 && (energyPerKg >= 6 || sustainedHeartRate));
+  const highDemand = workout.durationMinutes >= 90 || (workout.intensity === "hard" && workout.durationMinutes >= 60) || observedHighLoad;
   const light = workout.durationMinutes < 45 && workout.intensity === "easy";
 
   let category: RecoveryTarget["category"] = light
@@ -49,7 +58,9 @@ export function calculateRecoveryTarget(workout: WorkoutDraft, window: RecoveryW
 
   const rationale = window === "rapid"
     ? "Your next demanding session is close, so carbohydrate replacement is the priority alongside a useful protein serving."
-    : highDemand
+    : observedHighLoad
+      ? "Your completed workout shows a sustained workload, so the meal leans higher in carbohydrate while keeping a complete protein serving."
+      : highDemand
       ? "This was a demanding session, so the meal leans higher in carbohydrate while keeping a complete protein serving."
       : light
         ? "A lighter session usually needs a normal balanced meal, not an oversized recovery feed."

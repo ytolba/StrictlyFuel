@@ -43,8 +43,8 @@ export default function PostWorkoutMealsScreen({ navigation }: any) {
     [profile, templates, window, workout],
   );
 
-  if (!workout || !target) {
-    return <ScreenShell title="Recovery meals" back onBack={() => navigation.goBack()}><Text style={styles.empty}>Calculate a workout first.</Text></ScreenShell>;
+  if (!workout?.completedWorkout || !target) {
+    return <ScreenShell title="Recovery meals" back onBack={() => navigation.goBack()}><View style={styles.emptyCard}><Text style={styles.emptyTitle}>Choose a completed workout first</Text><Text style={styles.emptyText}>Recovery guidance appears after Strictly reads a workout you chose to share from Apple Health, so it can use the actual duration and workout context.</Text><TouchableOpacity style={styles.emptyAction} onPress={() => navigation.navigate("HealthWorkouts")}><Text style={styles.emptyActionText}>Open Apple Health workouts</Text><Ionicons name="arrow-forward" size={16} color={strictlyColors.onLime} /></TouchableOpacity></View></ScreenShell>;
   }
 
   if (loading) {
@@ -56,6 +56,11 @@ export default function PostWorkoutMealsScreen({ navigation }: any) {
   return (
     <ScreenShell title="After your workout" eyebrow="RECOVERY, NOT PRE-WORKOUT" back onBack={() => navigation.goBack()}>
       <Text style={styles.intro}>Complete meals for after training. Strictly adjusts the rice, potatoes, pasta, or protein already on the plate instead of adding random foods.</Text>
+
+        <View style={styles.actualWorkout}>
+        <View style={styles.actualIcon}><Ionicons name="checkmark" size={17} color={strictlyColors.onLime} /></View>
+        <View style={styles.actualCopy}><Text style={styles.actualEyebrow}>COMPLETED WORKOUT · {workout.completedWorkout.sourceName || "APPLE HEALTH"}</Text><Text style={styles.actualTitle}>{workout.durationMinutes} min {workout.activityType.replace(/_/g, " ")}</Text><View style={styles.actualMetrics}><Text style={styles.actualMetric}>{workout.intensity} effort</Text>{workout.completedWorkout.averageHeartRate ? <Text style={styles.actualMetric}>avg {Math.round(workout.completedWorkout.averageHeartRate)} bpm</Text> : null}{workout.completedWorkout.maxHeartRate ? <Text style={styles.actualMetric}>max {Math.round(workout.completedWorkout.maxHeartRate)} bpm</Text> : null}{workout.completedWorkout.distanceKm ? <Text style={styles.actualMetric}>{workout.completedWorkout.distanceKm.toFixed(1)} km</Text> : null}{workout.completedWorkout.activeCalories ? <Text style={styles.actualMetric}>{Math.round(workout.completedWorkout.activeCalories)} kcal</Text> : null}</View></View>
+      </View>
 
       <Text style={styles.question}>When is your next demanding session?</Text>
       <View style={styles.windowList}>
@@ -75,6 +80,7 @@ export default function PostWorkoutMealsScreen({ navigation }: any) {
           <View style={styles.targetDivider} />
           <View><Text style={styles.targetValue}>{target.protein}g</Text><Text style={styles.targetLabel}>PROTEIN</Text></View>
         </View>
+      <Text style={styles.healthContextNote}>Duration and recorded energy can refine the recovery target. Heart rate is shown as useful context, not treated as a personal zone without your own zone settings.</Text>
         <Text style={styles.timing}>{target.timingHeadline}</Text>
         <Text style={styles.rationale}>{target.rationale}</Text>
       </View>
@@ -171,6 +177,16 @@ const styles = StyleSheet.create({
   emptyCard: { padding: 20, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
   emptyTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 15 },
   emptyText: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 17, marginTop: 5 },
+  emptyAction: { height: 43, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, marginTop: 14, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.lime },
+  emptyActionText: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.onLime, fontSize: 11 },
+  actualWorkout: { flexDirection: "row", gap: 10, padding: 14, marginTop: 14, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
+  actualIcon: { width: 30, height: 30, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.lime },
+  actualCopy: { flex: 1 },
+  actualEyebrow: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 7, letterSpacing: 0.8 },
+  actualTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 15, marginTop: 4, textTransform: "capitalize" },
+  actualMetrics: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 8 },
+  actualMetric: { paddingHorizontal: 7, paddingVertical: 4, borderRadius: strictlyRadius.pill, overflow: "hidden", backgroundColor: strictlyColors.cream, fontFamily: strictlyType.mono, color: strictlyColors.text, fontSize: 8 },
+  healthContextNote: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 9, lineHeight: 14, marginTop: 7 },
   hydration: { flexDirection: "row", gap: 9, padding: 14, marginTop: 12, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.cream },
   hydrationText: { flex: 1, fontFamily: strictlyType.sans, color: strictlyColors.text, fontSize: 10, lineHeight: 16 },
   disclaimer: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 9, lineHeight: 14, marginTop: 13 },

@@ -14,6 +14,7 @@ import { ScreenShell } from "../../components/fuel/ScreenShell";
 import { FuelTargetCard } from "../../components/fuel/FuelTargetCard";
 import { ValueEditorSheet, DURATION_UNITS, WEIGHT_UNITS } from "../../components/fuel/ValueEditorSheet";
 import { ActivityPickerSheet } from "../../components/fuel/ActivityPickerSheet";
+import { appleHealthSupported, isAppleHealthConnected, loadRecentHealthWorkouts, type HealthWorkout } from "../../services/appleHealthService";
 import { strictlyColors, strictlyRadius, strictlyType } from "../../theme/strictlyTheme";
 
 type EditingField = "duration" | "startsIn" | "weight";
@@ -31,6 +32,9 @@ export default function FuelHomeScreen({ navigation }: any) {
   const [editingField, setEditingField] = useState<EditingField>();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [profile, setProfile] = useState<NutritionProfile>(EMPTY_NUTRITION_PROFILE);
+  const [healthWorkouts, setHealthWorkouts] = useState<HealthWorkout[]>([]);
+  const [healthLoading, setHealthLoading] = useState(false);
+  const [healthConnected, setHealthConnected] = useState(false);
 
   // The session form is the top of the screen and the result appears beneath
   // it, so "Calculate" reveals the target in place rather than pushing a new
@@ -41,6 +45,29 @@ export default function FuelHomeScreen({ navigation }: any) {
 
   useEffect(() => {
     loadNutritionProfile().then(setProfile);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadHealthWorkouts = async () => {
+      if (!appleHealthSupported()) return;
+      const connected = await isAppleHealthConnected();
+      if (cancelled) return;
+      setHealthConnected(connected);
+      if (!connected) return;
+      setHealthLoading(true);
+      try {
+        const items = await loadRecentHealthWorkouts(4);
+        if (!cancelled) setHealthWorkouts(items);
+      } catch {
+        // The dedicated Apple Health screen explains permissions and empty
+        // history, while Home stays fast and uncluttered.
+      } finally {
+        if (!cancelled) setHealthLoading(false);
+      }
+    };
+    loadHealthWorkouts();
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
@@ -104,6 +131,42 @@ export default function FuelHomeScreen({ navigation }: any) {
     setRevealTarget(true);
   };
 
+  const useHealthWorkoutForNextPlan = (item: HealthWorkout) => {
+    setActivityType(item.activityType);
+    setDuration(item.durationMinutes);
+    setIntensity("moderate");
+    setHeartRateZones([]);
+    scrollRef.current?.scrollTo({ y: 110, animated: true });
+  };
+
+  const recoverFromHealthWorkout = (item: HealthWorkout) => {
+    if (!profile.bodyWeightKg) {
+      return Alert.alert("Add your weight once", "Strictly needs it to personalize a recovery meal.", [{ text: "Not now", style: "cancel" }, { text: "Add weight", onPress: () => setEditingField("weight") }]);
+    }
+    const open = (intensityChoice: WorkoutIntensity) => {
+      createWorkout({
+        activityType: item.activityType,
+        durationMinutes: item.durationMinutes,
+        startsInMinutes: 90,
+        bodyWeightKg: profile.bodyWeightKg!,
+        intensity: intensityChoice,
+        heartRateZones: [],
+        completedWorkout: {
+          source: "apple_health", id: item.id, completedAt: item.endDate, sourceName: item.sourceName,
+          distanceKm: item.distanceKm, activeCalories: item.activeCalories,
+          averageHeartRate: item.averageHeartRate, maxHeartRate: item.maxHeartRate,
+        },
+      });
+      navigation.navigate("PostWorkoutMeals");
+    };
+    Alert.alert("How hard did that session feel?", "Strictly uses the completed workout’s real duration and Health data. Your effort choice keeps the recovery plan personal.", [
+      { text: "Easy", onPress: () => open("easy") },
+      { text: "Moderate", onPress: () => open("moderate") },
+      { text: "Hard", onPress: () => open("hard") },
+      { text: "Cancel", style: "cancel" },
+    ]);
+  };
+
   const editorProps = () => {
     if (editingField === "weight") {
       return {
@@ -147,6 +210,10 @@ export default function FuelHomeScreen({ navigation }: any) {
       <Text style={styles.subhero}>Tell us the session. We’ll turn it into food you can actually use.</Text>
 
       <TouchableOpacity style={styles.raceMode} onPress={() => navigation.navigate("RaceMode")}><View style={styles.raceModeIcon}><Ionicons name="flag" size={21} color={strictlyColors.onLime} /></View><View style={styles.raceModeCopy}><View style={styles.raceModeTitleRow}><Text style={styles.raceModeTitle}>Race Mode</Text><Text style={styles.proBadge}>PRO</Text></View><Text style={styles.raceModeText}>Know the carbs, timing, and exact fuel to pack.</Text></View><Ionicons name={isPro ? "arrow-forward" : "lock-closed"} size={17} color={strictlyColors.textSoft} /></TouchableOpacity>
+
+      {appleHealthSupported() ? <View style={styles.healthContext}>
+        <View style={styles.healthContextHead}><View style={styles.healthContextTitleWrap}><View style={styles.healthContextIcon}><Ionicons name="heart" size={15} color={strictlyColors.white} /></View><View><Text style={styles.healthContextEyebrow}>APPLE HEALTH</Text><Text style={styles.healthContextTitle}>Train from what you actually did.</Text></View></View><TouchableOpacity onPress={() => navigation.navigate("HealthWorkouts")}><Text style={styles.healthContextLink}>{healthConnected ? "See all" : "Connect"}</Text></TouchableOpacity></View>
+        {!healthConnected ? <TouchableOpacity style={styles.healthConnect} onPress={() => navigation.navigate("HealthWorkouts")}><Text style={styles.healthConnectText}>Connect recent workouts for personalized recovery</Text><Ionicons name="arrow-forward" size={16} color={strictlyColors.onLime} /></TouchableOpacity> : healthLoading ? <Text style={styles.healthLoading}>Loading recent workouts…</Text> : !healthWorkouts.length ? <TouchableOpacity style={styles.healthConnect} onPress={() => navigation.navigate("HealthWorkouts")}><Text style={styles.healthConnectText}>Choose which Health workouts to share</Text><Ionicons name="arrow-forward" size={16} color={strictlyColors.onLime} /></TouchableOpacity> : healthWorkouts.slice(0, 2).map((item) => <View key={item.id} style={styles.healthWorkout}><View style={styles.healthWorkoutTop}><View style={styles.healthWorkoutCopy}><Text style={styles.healthWorkoutName}>{item.activityLabel}</Text><Text style={styles.healthWorkoutMeta}>{formatDuration(item.durationMinutes)}{item.averageHeartRate ? ` · avg ${Math.round(item.averageHeartRate)} bpm` : ""}{item.distanceKm ? ` · ${item.distanceKm.toFixed(1)} km` : ""}</Text></View><Text style={styles.healthWorkoutDate}>{new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(new Date(item.startDate))}</Text></View><View style={styles.healthActions}><TouchableOpacity style={styles.healthRecover} onPress={() => recoverFromHealthWorkout(item)}><Text style={styles.healthRecoverText}>Recovery</Text><Ionicons name="restaurant-outline" size={14} color={strictlyColors.onLime} /></TouchableOpacity><TouchableOpacity style={styles.healthPlan} onPress={() => useHealthWorkoutForNextPlan(item)}><Text style={styles.healthPlanText}>Plan similar</Text></TouchableOpacity></View></View>)}</View> : null}
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Your session</Text>
@@ -309,6 +376,27 @@ const styles = StyleSheet.create({
   raceModeIcon: { width: 44, height: 44, borderRadius: 15, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.lime }, raceModeCopy: { flex: 1 }, raceModeTitleRow: { flexDirection: "row", alignItems: "center", gap: 7 },
   raceModeTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 15 }, proBadge: { paddingHorizontal: 6, paddingVertical: 3, borderRadius: strictlyRadius.pill, overflow: "hidden", backgroundColor: strictlyColors.cream, fontFamily: strictlyType.mono, color: strictlyColors.accentText, fontSize: 7, letterSpacing: 0.8 },
   raceModeText: { marginTop: 3, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 10, lineHeight: 15 },
+  healthContext: { marginTop: 12, padding: 14, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
+  healthContextHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
+  healthContextTitleWrap: { flex: 1, flexDirection: "row", alignItems: "center", gap: 9 },
+  healthContextIcon: { width: 31, height: 31, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: "#E64A55" },
+  healthContextEyebrow: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 7, letterSpacing: 0.8 },
+  healthContextTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 13, marginTop: 2 },
+  healthContextLink: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.accentText, fontSize: 11 },
+  healthConnect: { minHeight: 40, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 12, paddingHorizontal: 11, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.cream },
+  healthConnectText: { flex: 1, fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 10 },
+  healthLoading: { marginTop: 12, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 10 },
+  healthWorkout: { paddingTop: 11, marginTop: 11, borderTopWidth: 1, borderTopColor: strictlyColors.border },
+  healthWorkoutTop: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 8 },
+  healthWorkoutCopy: { flex: 1 },
+  healthWorkoutName: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 12 },
+  healthWorkoutMeta: { marginTop: 3, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 9 },
+  healthWorkoutDate: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 8 },
+  healthActions: { flexDirection: "row", gap: 7, marginTop: 9 },
+  healthRecover: { flex: 1, height: 36, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, borderRadius: strictlyRadius.small, backgroundColor: strictlyColors.lime },
+  healthRecoverText: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.onLime, fontSize: 10 },
+  healthPlan: { flex: 1, height: 36, alignItems: "center", justifyContent: "center", borderRadius: strictlyRadius.small, backgroundColor: strictlyColors.surfaceMuted },
+  healthPlanText: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 10 },
 
   activeWrap: { marginTop: 20, marginBottom: 4 },
   resultLabel: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 8, letterSpacing: 1.3, marginBottom: 9 },

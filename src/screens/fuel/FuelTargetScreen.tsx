@@ -108,16 +108,6 @@ export default function FuelTargetScreen({ navigation }: any) {
         ) : null}
       </View>
 
-      <View style={styles.recovery}>
-        <View style={styles.recoveryIcon}><Ionicons name="restaurant-outline" size={20} color={strictlyColors.onLime} /></View>
-        <View style={styles.recoveryCopy}>
-          <Text style={styles.recoveryEyebrow}>AFTER THE WORKOUT</Text>
-          <Text style={styles.recoveryTitle}>Plan a real recovery meal</Text>
-          <Text style={styles.recoveryText}>Complete meals with carbohydrate and protein portions adjusted for this session.</Text>
-        </View>
-        <TouchableOpacity style={styles.recoveryAction} onPress={() => navigation.navigate("PostWorkoutMeals")}><Ionicons name="arrow-forward" size={18} color={strictlyColors.onLime} /></TouchableOpacity>
-      </View>
-
       <Text style={styles.disclaimer}>
         Strictly provides general sports-fuelling guidance, not medical advice. Individual needs and gastrointestinal tolerance vary.
       </Text>
@@ -162,14 +152,6 @@ const styles = StyleSheet.create({
   timelineTime: { width: 36, fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 9 },
   timelineDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: strictlyColors.lime },
   timelineGrams: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 11 },
-
-  recovery: { flexDirection: "row", alignItems: "center", gap: 12, padding: 16, marginTop: 12, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
-  recoveryIcon: { width: 42, height: 42, borderRadius: 15, backgroundColor: strictlyColors.lime, alignItems: "center", justifyContent: "center" },
-  recoveryCopy: { flex: 1 },
-  recoveryEyebrow: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 7, letterSpacing: 1 },
-  recoveryTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 14, marginTop: 3 },
-  recoveryText: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 10, lineHeight: 15, marginTop: 3 },
-  recoveryAction: { width: 36, height: 36, borderRadius: 18, backgroundColor: strictlyColors.lime, alignItems: "center", justifyContent: "center" },
 
   disclaimer: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 10, lineHeight: 15, marginTop: 18 },
 });
