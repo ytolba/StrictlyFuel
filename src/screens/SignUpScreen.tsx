@@ -13,12 +13,14 @@ import {
   TouchableWithoutFeedback,
   KeyboardAvoidingView,
   Platform,
+  Linking,
 } from "react-native";
 import { useAuth } from "../contexts/AuthContext";
 import { NavigationProp } from "@react-navigation/native";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { APPLE_SIGN_IN_ENABLED } from "../config/authFeatures";
 import { strictlyColors, strictlyRadius, strictlyType } from "../theme/strictlyTheme";
+import { LEGAL_URLS } from "../config/monetization";
 
 interface SignUpScreenProps {
   navigation: NavigationProp<any>;
@@ -230,6 +232,8 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({ navigation }) => {
                     </TouchableOpacity>
                   </>
                 )}
+
+                <Text style={styles.legalCopy}>By creating an account, you agree to the <Text style={styles.legalLink} onPress={() => Linking.openURL(LEGAL_URLS.terms)}>Terms of Service</Text> and acknowledge the <Text style={styles.legalLink} onPress={() => Linking.openURL(LEGAL_URLS.privacy)}>Privacy Policy</Text>.</Text>
               </View>
 
               <View style={styles.footer}>
@@ -280,6 +284,8 @@ const styles = StyleSheet.create({
     borderColor: strictlyColors.border,
     borderRadius: strictlyRadius.xlarge,
   },
+  legalCopy: { marginTop: 16, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 10, lineHeight: 15, textAlign: "center" },
+  legalLink: { fontFamily: strictlyType.sansMedium, color: strictlyColors.text, fontWeight: "700", textDecorationLine: "underline" },
 
   errorBanner: {
     flexDirection: "row",

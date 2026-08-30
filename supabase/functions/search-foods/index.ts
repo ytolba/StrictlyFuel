@@ -48,18 +48,12 @@ function classify(food: NormalizedFood) {
 
 const usdaNutrient = (food: any, id: number) => number(food.foodNutrients?.find((item: any) => item.nutrientId === id)?.value);
 
-async function searchUsda(query: string, apiKey: string): Promise<NormalizedFood[]> {
-  const response = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${encodeURIComponent(apiKey)}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query, pageSize: 18, dataType: ["Foundation", "SR Legacy", "Survey (FNDDS)", "Branded"] }),
-    signal: AbortSignal.timeout(8000),
-  });
-  if (!response.ok) throw new Error(`USDA search returned ${response.status}`);
-  const payload = await response.json();
-  return (payload.foods || []).map((food: any) => ({
+function normalizeUsdaFood(food: any): NormalizedFood {
+  const barcode = String(food.gtinUpc || "").replace(/\D/g, "") || undefined;
+  return {
     source_id: "usda",
     source_product_id: String(food.fdcId),
+    barcode,
     name: String(food.description || "Unnamed food"),
     brand: food.brandOwner || food.brandName || undefined,
     category: food.foodCategory || undefined,
@@ -71,7 +65,47 @@ async function searchUsda(query: string, apiKey: string): Promise<NormalizedFood
     sugar_per_100g: usdaNutrient(food, 2000),
     sodium_mg_per_100g: usdaNutrient(food, 1093),
     raw_source_data: food,
-  }));
+  };
+}
+
+async function searchUsda(query: string, apiKey: string): Promise<NormalizedFood[]> {
+  const response = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${encodeURIComponent(apiKey)}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query, pageSize: 18, dataType: ["Foundation", "SR Legacy", "Survey (FNDDS)", "Branded"] }),
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!response.ok) throw new Error(`USDA search returned ${response.status}`);
+  const payload = await response.json();
+  return (payload.foods || []).map(normalizeUsdaFood);
+}
+
+async function lookupUsdaBarcode(candidates: string[], apiKey: string): Promise<NormalizedFood[]> {
+  // FoodData Central search can contain historical versions of one branded
+  // product. Request recent records first, then accept only exact GTIN/UPC
+  // variants so a numeric description cannot produce a false match.
+  for (const candidate of candidates) {
+    const response = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${encodeURIComponent(apiKey)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        query: candidate,
+        pageSize: 40,
+        dataType: ["Branded"],
+        sortBy: "publishedDate",
+        sortOrder: "desc",
+      }),
+      signal: AbortSignal.timeout(9000),
+    });
+    if (!response.ok) continue;
+    const payload = await response.json();
+    const matched = (payload.foods || []).find((food: any) => {
+      const code = String(food.gtinUpc || "").replace(/\D/g, "");
+      return barcodeCandidates(code).some((value) => candidates.includes(value));
+    });
+    if (matched) return [normalizeUsdaFood(matched)];
+  }
+  return [];
 }
 
 async function searchOpenFoodFacts(query: string): Promise<NormalizedFood[]> {
@@ -137,6 +171,15 @@ async function lookupOpenFoodFactsBarcode(barcode: string): Promise<NormalizedFo
   return [];
 }
 
+function expandUpce(value: string) {
+  if (!/^\d{8}$/.test(value)) return null;
+  const [numberSystem, d1, d2, d3, d4, d5, d6, check] = value;
+  if (d6 === "0" || d6 === "1" || d6 === "2") return `${numberSystem}${d1}${d2}${d6}0000${d3}${d4}${d5}${check}`;
+  if (d6 === "3") return `${numberSystem}${d1}${d2}${d3}00000${d4}${d5}${check}`;
+  if (d6 === "4") return `${numberSystem}${d1}${d2}${d3}${d4}00000${d5}${check}`;
+  return `${numberSystem}${d1}${d2}${d3}${d4}${d5}0000${d6}${check}`;
+}
+
 function barcodeCandidates(value: string) {
   const normalized = value.replace(/\D/g, "").slice(0, 18);
   const values = new Set<string>([normalized]);
@@ -144,7 +187,26 @@ function barcodeCandidates(value: string) {
   // camera scanners return the opposite form. Query both before going online.
   if (normalized.length === 12) values.add(`0${normalized}`);
   if (normalized.length === 13 && normalized.startsWith("0")) values.add(normalized.slice(1));
+  const expanded = expandUpce(normalized);
+  if (expanded) {
+    values.add(expanded);
+    values.add(`0${expanded}`);
+  }
   return [...values].filter((candidate) => candidate.length >= 8);
+}
+
+async function cacheBarcodeAliases(admin: any, candidates: string[], foodId: string, source: string) {
+  await admin.from("food_barcode_aliases").upsert(
+    candidates.map((barcode) => ({ barcode, food_id: foodId, source })),
+    { onConflict: "barcode" },
+  );
+}
+
+async function recordBarcodeMiss(admin: any, barcode: string) {
+  // This RPC is added by the matching migration. Keep misses non-fatal so an
+  // app deployed moments before its migration still returns a clean no-match.
+  const { error } = await admin.rpc("record_food_barcode_miss", { p_barcode: barcode });
+  if (error && !/does not exist/i.test(error.message)) console.error("barcode miss tracking failed", error.message);
 }
 
 function defaultPortion(food: NormalizedFood) {
@@ -207,22 +269,38 @@ Deno.serve(async (request) => {
         }
       }
       let external: NormalizedFood[] = [];
+      let provider: "open_food_facts" | "usda" = "open_food_facts";
       for (const candidate of candidates) {
         external = await lookupOpenFoodFactsBarcode(candidate);
         if (external.length) break;
       }
-      if (!external.length) return Response.json({ foods: [], source: "open_food_facts", cached: false }, { headers: corsHeaders });
+      const usdaKey = Deno.env.get("USDA_FDC_API_KEY");
+      if (!external.length && usdaKey) {
+        external = await lookupUsdaBarcode(candidates, usdaKey);
+        provider = "usda";
+      }
+      if (!external.length) {
+        await recordBarcodeMiss(admin, normalizedBarcode);
+        return Response.json({ foods: [], source: usdaKey ? "usda+open_food_facts" : "open_food_facts", cached: false }, { headers: corsHeaders });
+      }
       const rows = external.map((food) => {
         const classification = classify(food);
-        return { ...food, carb_speed_tier_id: classification.tier, carb_speed_confidence: classification.confidence, carb_speed_reason: classification.reason, data_quality_score: 68, is_verified: false };
+        return {
+          ...food,
+          carb_speed_tier_id: classification.tier,
+          carb_speed_confidence: classification.confidence,
+          carb_speed_reason: classification.reason,
+          data_quality_score: food.source_id === "usda" ? 88 : 68,
+          is_verified: food.source_id === "usda",
+        };
       });
       const { data: stored, error: storeError } = await admin.from("foods").upsert(rows, { onConflict: "source_id,source_product_id" }).select(foodSelect);
       if (storeError) throw storeError;
       await cacheDefaultPortions(admin, stored || [], external);
       if (stored?.[0]?.id) {
-        await admin.from("food_barcode_aliases").upsert(candidates.map((candidate) => ({ barcode: candidate, food_id: stored[0].id, source: "open_food_facts" })), { onConflict: "barcode" });
+        await cacheBarcodeAliases(admin, [...new Set([...candidates, ...external.flatMap((food) => barcodeCandidates(food.barcode || ""))])], stored[0].id, provider);
       }
-      return Response.json({ foods: stored || [], source: "open_food_facts", cached: false }, { headers: corsHeaders });
+      return Response.json({ foods: stored || [], source: provider, cached: false }, { headers: corsHeaders });
     }
     if (normalizedQuery.length < 2) return Response.json({ error: "Enter at least two characters." }, { status: 400, headers: corsHeaders });
 

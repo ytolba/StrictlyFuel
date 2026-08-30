@@ -36,6 +36,9 @@ export type MealAnalysis = {
   confidence: number;
   needsUserInput: boolean;
   followUpQuestion: string;
+  followUpOptions: string[];
+  uncertainItemIds: string[];
+  refinementToken: string;
   assumptions: string[];
   warnings: string[];
   disclaimer: string;

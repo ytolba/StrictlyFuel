@@ -54,8 +54,10 @@ const schema = {
     hasReliableScaleReference: { type: "boolean" },
     needsUserInput: { type: "boolean" },
     followUpQuestion: { type: "string" },
+    followUpOptions: { type: "array", items: { type: "string" }, maxItems: 4 },
+    uncertainItemIds: { type: "array", items: { type: "string" }, maxItems: 4 },
   },
-  required: ["mealName", "items", "confidence", "uncertaintyPercent", "hasReliableScaleReference", "needsUserInput", "followUpQuestion"],
+  required: ["mealName", "items", "confidence", "uncertaintyPercent", "hasReliableScaleReference", "needsUserInput", "followUpQuestion", "followUpOptions", "uncertainItemIds"],
 };
 
 const INSTRUCTIONS = [
@@ -64,7 +66,10 @@ const INSTRUCTIONS = [
   "Never invent oil, butter, sauce, sugar or recipe ingredients that are not visible.",
   "lookupQuery: a short generic nutrition-database query, including cooked/raw state when visible.",
   "fallbackNutritionPer100g is a conservative last resort and is discarded whenever the app finds catalog data.",
-  "Do not calculate totals. Ask one follow-up question only when portion uncertainty materially changes the result, otherwise return an empty string.",
+  "Do not calculate totals.",
+  "Set needsUserInput only when the identity of a meaningful food is below 65 confidence, its portion is below 58, or the meal-level uncertainty exceeds 35 percent.",
+  "When user input is needed, ask exactly one short question about the single uncertainty that would most change calories or carbohydrates. Give 2 to 4 short, mutually exclusive answer options and list the affected item ids.",
+  "When confidence is adequate, return an empty followUpQuestion and empty followUpOptions and uncertainItemIds arrays.",
 ].join(" ");
 
 const number = (value: unknown, max: number) => Math.min(max, Math.max(0, Number(value) || 0));
@@ -72,6 +77,46 @@ const round = (value: number, precision = 0) => {
   const factor = 10 ** precision;
   return Math.round(value * factor) / factor;
 };
+
+const encoder = new TextEncoder();
+const base64Url = (value: Uint8Array | string) => {
+  const text = typeof value === "string" ? value : String.fromCharCode(...value);
+  return btoa(text).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+};
+
+function decodeBase64Url(value: string) {
+  const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+  return atob(normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "="));
+}
+
+async function imageFingerprint(image: string) {
+  const digest = await crypto.subtle.digest("SHA-256", encoder.encode(image));
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function hmacKey(secret: string) {
+  return crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]);
+}
+
+async function createRefinementToken(userId: string, image: string, secret: string) {
+  const payload = base64Url(JSON.stringify({ userId, image: await imageFingerprint(image), expiresAt: Date.now() + 10 * 60_000 }));
+  const signature = new Uint8Array(await crypto.subtle.sign("HMAC", await hmacKey(secret), encoder.encode(payload)));
+  return `${payload}.${base64Url(signature)}`;
+}
+
+async function validRefinementToken(token: string, userId: string, image: string, secret: string) {
+  try {
+    const [payload, signature] = token.split(".");
+    if (!payload || !signature) return false;
+    const signatureBytes = Uint8Array.from(decodeBase64Url(signature), (character) => character.charCodeAt(0));
+    const valid = await crypto.subtle.verify("HMAC", await hmacKey(secret), signatureBytes, encoder.encode(payload));
+    if (!valid) return false;
+    const decoded = JSON.parse(decodeBase64Url(payload));
+    return decoded.userId === userId && decoded.expiresAt > Date.now() && decoded.image === await imageFingerprint(image);
+  } catch {
+    return false;
+  }
+}
 
 function normalize(raw: any) {
   const reliableScale = raw.hasReliableScaleReference === true;
@@ -94,14 +139,33 @@ function normalize(raw: any) {
   }) : [];
   const uncertaintyPercent = Math.max(number(raw.uncertaintyPercent, 65) || 28, reliableScale ? 10 : 24);
   const confidence = Math.min(number(raw.confidence, 100), 100 - uncertaintyPercent, reliableScale ? 92 : 78);
+  const uncertainItems = items.filter((item: any) => item.foodConfidence < 65 || item.portionConfidence < 58);
+  const needsUserInput = Boolean(raw.needsUserInput) || uncertaintyPercent > 35 || uncertainItems.length > 0;
+  const rawIds = Array.isArray(raw.uncertainItemIds) ? raw.uncertainItemIds.map(String) : [];
+  const uncertainItemIds = [...new Set([...rawIds, ...uncertainItems.map((item: any) => item.id)])]
+    .filter((id) => items.some((item: any) => item.id === id))
+    .slice(0, 4);
+  const lowest = [...items].sort((a: any, b: any) => Math.min(a.foodConfidence, a.portionConfidence) - Math.min(b.foodConfidence, b.portionConfidence))[0];
+  const defaultQuestion = lowest
+    ? lowest.foodConfidence < lowest.portionConfidence
+      ? `What is the food shown as ${lowest.name}?`
+      : `About how much ${lowest.name} was on the plate?`
+    : "What was the approximate size of this meal?";
+  const fallbackOptions = lowest?.foodConfidence < lowest?.portionConfidence
+    ? []
+    : ["Small serving", "Medium serving", "Large serving"];
   return {
     mealName: String(raw.mealName || "Estimated meal").slice(0, 100),
     items,
     confidence: round(confidence),
     uncertaintyPercent: round(uncertaintyPercent),
     hasReliableScaleReference: reliableScale,
-    needsUserInput: Boolean(raw.needsUserInput) || items.some((item: any) => item.portionConfidence < 65),
-    followUpQuestion: String(raw.followUpQuestion || (!reliableScale ? "What size was the plate or bowl, and roughly how much of the largest food did you serve?" : "")).slice(0, 180),
+    needsUserInput,
+    followUpQuestion: needsUserInput ? String(raw.followUpQuestion || defaultQuestion).slice(0, 180) : "",
+    followUpOptions: needsUserInput
+      ? (Array.isArray(raw.followUpOptions) ? raw.followUpOptions : fallbackOptions).map((value: unknown) => String(value).slice(0, 48)).filter(Boolean).slice(0, 4)
+      : [],
+    uncertainItemIds: needsUserInput ? uncertainItemIds : [],
     // Retained for the client type; no longer requested from the model.
     assumptions: [] as string[],
     warnings: [] as string[],
@@ -115,18 +179,24 @@ Deno.serve(async (request) => {
     const apiKey = Deno.env.get("OPENAI_API_KEY");
     if (!apiKey) return Response.json({ error: "Meal analysis has not been configured yet." }, { status: 503, headers: corsHeaders });
 
-    const { imageBase64, context = "" } = await request.json();
+    const { imageBase64, context = "", refinementToken = "" } = await request.json();
     const image = String(imageBase64 || "");
     if (!image || image.length > 8_000_000) return Response.json({ error: "Use one compressed meal photo under 6 MB." }, { status: 400, headers: corsHeaders });
 
-    const credit = await consumeAiCredit(request, "scan");
-    if (!credit) return Response.json({ error: "We could not verify your scan allowance. Please sign in and try again." }, { status: 401, headers: corsHeaders });
-    if (!credit.allowed) return limitReachedResponse(credit);
+    const userId = await callerId(request);
+    if (!userId) return Response.json({ error: "Sign in before scanning a meal." }, { status: 401, headers: corsHeaders });
+    const signingSecret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    const isRefinement = Boolean(signingSecret && refinementToken && await validRefinementToken(String(refinementToken), userId, image, signingSecret));
+    if (!isRefinement) {
+      const credit = await consumeAiCredit(request, "scan");
+      if (!credit) return Response.json({ error: "We could not verify your scan allowance. Please sign in and try again." }, { status: 401, headers: corsHeaders });
+      if (!credit.allowed) return limitReachedResponse(credit);
+    }
 
     const result = await callVision({
       feature: "meal_vision",
       request,
-      userId: await callerId(request),
+      userId,
       apiKey,
       instructions: INSTRUCTIONS,
       userText: `Identify and portion every visible food. Workout context: ${String(context).slice(0, 300) || "none"}.`,
@@ -140,7 +210,8 @@ Deno.serve(async (request) => {
     if (!result.ok) {
       return Response.json({ error: "The meal estimate could not finish. Please try the photo again." }, { status: 502, headers: corsHeaders });
     }
-    return Response.json(normalize(JSON.parse(result.text)), { headers: corsHeaders });
+    const nextToken = signingSecret ? await createRefinementToken(userId, image, signingSecret) : "";
+    return Response.json({ ...normalize(JSON.parse(result.text)), refinementToken: nextToken }, { headers: corsHeaders });
   } catch (error) {
     console.error(error);
     return Response.json({ error: error instanceof Error ? error.message : "Meal analysis failed." }, { status: 500, headers: corsHeaders });

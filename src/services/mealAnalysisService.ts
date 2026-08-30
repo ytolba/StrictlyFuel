@@ -33,8 +33,8 @@ async function resolveItem(item: any) {
   return { ...item, food, nutritionMatchConfidence: Math.min(sourceConfidence, food.dataQualityScore || sourceConfidence) };
 }
 
-export async function analyzeMealPhoto(imageBase64: string, context = ""): Promise<MealAnalysis> {
-  const { data, error } = await supabase.functions.invoke("analyze-meal", { body: { imageBase64, context } });
+export async function analyzeMealPhoto(imageBase64: string, context = "", refinementToken = ""): Promise<MealAnalysis> {
+  const { data, error } = await supabase.functions.invoke("analyze-meal", { body: { imageBase64, context, refinementToken } });
   if (error) await throwFunctionError(error, data, "Meal analysis is unavailable. Please try again.");
   if (data?.error) throw new Error(data.error);
   if (!Array.isArray(data?.items)) throw new Error("The meal estimate returned an unexpected result.");

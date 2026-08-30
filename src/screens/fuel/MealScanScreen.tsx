@@ -45,6 +45,7 @@ export default function MealScanScreen({ navigation }: any) {
   const [loading, setLoading] = useState(false);
   const [context, setContext] = useState("");
   const [editingId, setEditingId] = useState<string>();
+  const [clarificationAnswered, setClarificationAnswered] = useState(false);
 
   // Every vision call costs a scan from the weekly allowance, so a double tap
   // must not buy two. `loading` is React state and lands a frame too late.
@@ -73,6 +74,8 @@ export default function MealScanScreen({ navigation }: any) {
     setPhotoUri(result.assets[0].uri);
     setAnalysis(undefined);
     setItems([]);
+    setContext("");
+    setClarificationAnswered(false);
     setLoading(true);
     try {
       const prepared = await ImageManipulator.manipulateAsync(result.assets[0].uri, [{ resize: { width: 1600 } }], { compress: 0.82, format: ImageManipulator.SaveFormat.JPEG, base64: true });
@@ -103,20 +106,14 @@ export default function MealScanScreen({ navigation }: any) {
   const refine = async () => {
     if (!base64 || !context.trim()) return;
     if (visionInFlight.current) return;
-    if (!canScan) {
-      return Alert.alert(
-        "Weekly scans used up",
-        "Refining re-reads the photo, so it uses a scan. Your allowance resets Monday.",
-        [{ text: "Not now", style: "cancel" }, { text: "See Pro", onPress: () => navigation.getParent()?.navigate("Paywall") }]
-      );
-    }
     visionInFlight.current = true;
     setLoading(true);
     try {
-      const next = await analyzeMealPhoto(base64, `User confirmed: ${context.trim()}`);
+      const workoutContext = workout ? `Upcoming workout: ${workout.activityType}, ${workout.durationMinutes} minutes, starts in ${workout.startsInMinutes} minutes. ` : "";
+      const next = await analyzeMealPhoto(base64, `${workoutContext}User confirmed: ${context.trim()}`, analysis?.refinementToken || "");
       setAnalysis(next);
       setItems(detectedIngredients(next));
-      await consumeScan();
+      setClarificationAnswered(true);
     } catch (error: any) {
       if (isAiLimitError(error)) {
         await refreshUsage();
@@ -164,7 +161,8 @@ export default function MealScanScreen({ navigation }: any) {
         <View style={styles.items}>{items.map((item) => <View key={item.id} style={styles.item}><View style={styles.itemCopy}><Text style={styles.itemName}>{item.food.name}</Text><Text style={styles.itemMeta}>{item.food.servingLabel} · food {item.foodConfidence}% · portion {item.portionConfidence}%</Text><Text style={styles.sourceMeta}>{item.food.source === "ai_estimate" ? "AI nutrition fallback" : `${item.food.source.toUpperCase()} nutrition match · ${item.nutritionMatchConfidence}%`}</Text></View><TouchableOpacity style={styles.gramsButton} onPress={() => setEditingId(item.id)}><Text style={styles.grams}>{Math.round(item.grams)}g</Text><Ionicons name="create-outline" size={12} color={strictlyColors.textSoft} /></TouchableOpacity><TouchableOpacity onPress={() => setItems((current) => current.filter((row) => row.id !== item.id))}><Ionicons name="close-circle" size={21} color={strictlyColors.textSoft} /></TouchableOpacity></View>)}</View>
         <TouchableOpacity style={styles.editFoods} onPress={() => { setIngredients(items); navigation.getParent()?.navigate("BuildMeal", { suggestedName: analysis.mealName }); }}><Ionicons name="add-circle-outline" size={17} color={strictlyColors.text} /><Text style={styles.editFoodsText}>Add or replace a food</Text></TouchableOpacity>
         {nutritionWarnings.length ? <View style={styles.warning}><Ionicons name="alert-circle-outline" size={18} color={strictlyColors.clay} /><Text style={styles.warningText}>Strictly corrected an inconsistent calorie value from the matched nutrition record. Review the affected food before logging.</Text></View> : null}
-        {analysis.followUpQuestion ? <View style={styles.followup}><Text style={styles.followupQuestion}>{analysis.followUpQuestion}</Text><TextInput value={context} onChangeText={setContext} placeholder="Add portion or preparation details" placeholderTextColor={strictlyColors.textSoft} style={styles.contextInput} /><TouchableOpacity disabled={!context.trim()} onPress={refine} style={[styles.refine, !context.trim() && styles.disabled]}><Text style={styles.refineText}>Refine estimate</Text></TouchableOpacity></View> : null}
+        {analysis.needsUserInput && analysis.followUpQuestion ? <View style={styles.followup}><View style={styles.followupHead}><Ionicons name="help-circle-outline" size={19} color={strictlyColors.clay} /><View style={styles.followupCopy}><Text style={styles.followupLabel}>ONE QUICK CHECK</Text><Text style={styles.followupQuestion}>{analysis.followUpQuestion}</Text></View></View>{analysis.followUpOptions?.length ? <View style={styles.followupOptions}>{analysis.followUpOptions.map((option) => <TouchableOpacity key={option} onPress={() => setContext(option)} style={[styles.followupOption, context === option && styles.followupOptionActive]}><Text style={[styles.followupOptionText, context === option && styles.followupOptionTextActive]}>{option}</Text></TouchableOpacity>)}</View> : null}<TextInput value={context} onChangeText={setContext} placeholder="Or type a more exact answer" placeholderTextColor={strictlyColors.textSoft} style={styles.contextInput} /><TouchableOpacity disabled={!context.trim()} onPress={refine} style={[styles.refine, !context.trim() && styles.disabled]}><Text style={styles.refineText}>Update my estimate</Text></TouchableOpacity><Text style={styles.refineNote}>This rechecks the original photo using your answer.</Text></View> : null}
+        {clarificationAnswered && !analysis.needsUserInput ? <View style={styles.confidenceImproved}><Ionicons name="checkmark-circle" size={18} color={strictlyColors.lime} /><Text style={styles.confidenceImprovedText}>Estimate updated with your answer.</Text></View> : null}
         <TouchableOpacity style={styles.primary} onPress={confirm}><Text style={styles.primaryText}>Confirm foods and score</Text><Ionicons name="arrow-forward" size={18} color={strictlyColors.onLime} /></TouchableOpacity>
         <TouchableOpacity style={styles.secondary} onPress={() => { setPhotoUri(undefined); setAnalysis(undefined); setItems([]); }}><Text style={styles.secondaryText}>Retake photo</Text></TouchableOpacity>
         <Text style={styles.disclaimer}>{analysis.disclaimer} Digestion classes are practical meal-planning estimates, not direct measurements.</Text>
@@ -210,10 +208,21 @@ const styles = StyleSheet.create({
   warning: { flexDirection: "row", gap: 9, padding: 13, marginTop: 9, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.dangerSurface },
   warningText: { flex: 1, fontFamily: strictlyType.sans, color: strictlyColors.text, fontSize: 10, lineHeight: 15 },
   followup: { padding: 14, backgroundColor: strictlyColors.cream, borderRadius: strictlyRadius.large, marginTop: 12 },
+  followupHead: { flexDirection: "row", alignItems: "flex-start", gap: 9 },
+  followupCopy: { flex: 1 },
+  followupLabel: { fontFamily: strictlyType.mono, color: strictlyColors.clay, fontSize: 8, letterSpacing: 0.9, marginBottom: 4 },
   followupQuestion: { fontFamily: strictlyType.sansMedium, color: strictlyColors.text, fontSize: 12, lineHeight: 18 },
+  followupOptions: { flexDirection: "row", flexWrap: "wrap", gap: 7, marginTop: 11 },
+  followupOption: { minHeight: 38, justifyContent: "center", paddingHorizontal: 12, borderRadius: strictlyRadius.pill, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.borderStrong },
+  followupOptionActive: { backgroundColor: strictlyColors.lime, borderColor: strictlyColors.lime },
+  followupOptionText: { fontFamily: strictlyType.sansMedium, color: strictlyColors.text, fontSize: 10, fontWeight: "700" },
+  followupOptionTextActive: { color: strictlyColors.onLime },
   contextInput: { minHeight: 46, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.borderStrong, borderRadius: strictlyRadius.medium, paddingHorizontal: 12, marginTop: 9, fontFamily: strictlyType.sans, color: strictlyColors.text },
   refine: { alignItems: "center", padding: 12, backgroundColor: strictlyColors.ink, borderRadius: strictlyRadius.medium, marginTop: 8 },
   refineText: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.white, fontSize: 12 },
+  refineNote: { marginTop: 7, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 9, textAlign: "center" },
+  confidenceImproved: { flexDirection: "row", alignItems: "center", gap: 7, padding: 12, marginTop: 10, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.surfaceMuted },
+  confidenceImprovedText: { fontFamily: strictlyType.sansMedium, color: strictlyColors.text, fontSize: 10, fontWeight: "700" },
   disabled: { opacity: 0.4 },
   disclaimer: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 9, lineHeight: 14, marginTop: 11 },
 });

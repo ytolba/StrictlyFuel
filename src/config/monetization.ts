@@ -149,8 +149,8 @@ export const PLAN_COPY = {
 } as const;
 
 export const LEGAL_URLS = {
-  terms: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
-  privacy: "https://strictlyfuel.app/privacy",
+  terms: "https://strictlyinc.com/terms",
+  privacy: "https://strictlyinc.com/privacy",
 } as const;
 
 export const PRO_BENEFITS = [
