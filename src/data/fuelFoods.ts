@@ -1,5 +1,6 @@
 import type { FuelFood } from "../types/fuel";
 import { EXPANDED_CARB_FOODS } from "./expandedCarbFoods";
+import { POST_WORKOUT_FOODS } from "./postWorkoutFoods";
 
 const food = (
   id: string,
@@ -70,7 +71,11 @@ const CORE_FUEL_FOODS: FuelFood[] = [
 ];
 
 const coreIds = new Set(CORE_FUEL_FOODS.map((item) => item.id));
-export const FUEL_FOODS: FuelFood[] = [...CORE_FUEL_FOODS, ...EXPANDED_CARB_FOODS.filter((item) => !coreIds.has(item.id))];
+export const FUEL_FOODS: FuelFood[] = [
+  ...CORE_FUEL_FOODS,
+  ...EXPANDED_CARB_FOODS.filter((item) => !coreIds.has(item.id)),
+  ...POST_WORKOUT_FOODS.filter((item) => !coreIds.has(item.id)),
+];
 
 export const foodById = (id: string) => FUEL_FOODS.find((item) => item.id === id);
 

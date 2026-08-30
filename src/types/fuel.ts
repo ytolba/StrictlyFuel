@@ -99,7 +99,7 @@ export type FuelFood = {
   name: string;
   aliases: string[];
   emoji: string;
-  category: "fruit" | "grain" | "bread" | "sports" | "dairy" | "protein" | "fat";
+  category: "fruit" | "vegetable" | "grain" | "bread" | "sports" | "dairy" | "protein" | "fat" | "sauce";
   carbSpeed: CarbSpeed;
   timing: string;
   defaultGrams: number;

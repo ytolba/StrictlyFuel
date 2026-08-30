@@ -1,0 +1,129 @@
+import type { ActivityType } from "../types/fuel";
+import type {
+  RecoveryCategory,
+  RecoveryIngredientBlueprint,
+  RecoveryIngredientRole,
+  RecoveryMealTemplate,
+} from "../types/recovery";
+
+type IngredientTuple = [
+  foodId: string,
+  grams: number,
+  role: RecoveryIngredientRole,
+  minGrams?: number,
+  maxGrams?: number,
+  incrementGrams?: number,
+];
+
+const training: ActivityType[] = [
+  "running", "trail_running", "cycling", "indoor_cycling", "mountain_biking", "swimming", "rowing",
+  "triathlon", "ironman_70_3", "ironman", "strength", "strength_training", "bodybuilding", "powerlifting",
+  "crossfit", "hyrox", "hiit", "soccer", "basketball", "general_cardio", "mixed_training", "endurance",
+];
+const endurance: ActivityType[] = [
+  "running", "trail_running", "cycling", "indoor_cycling", "mountain_biking", "swimming", "rowing",
+  "triathlon", "ironman_70_3", "ironman", "brick_workout", "hyrox", "endurance",
+];
+const strength: ActivityType[] = [
+  "strength", "strength_training", "bodybuilding", "powerlifting", "olympic_weightlifting", "calisthenics",
+  "crossfit", "hyrox", "hiit", "functional_fitness", "mixed_training",
+];
+
+const standard: RecoveryCategory[] = ["post_workout_standard", "post_workout_high_demand"];
+const broad: RecoveryCategory[] = ["post_workout_light", "post_workout_standard", "post_workout_high_demand"];
+const rapid: RecoveryCategory[] = ["post_workout_standard", "post_workout_high_demand", "post_workout_rapid_recovery"];
+
+const blueprint = (rows: IngredientTuple[]): RecoveryIngredientBlueprint[] => rows.map(
+  ([foodId, grams, role, minGrams, maxGrams, incrementGrams]) => ({
+    foodId,
+    grams,
+    role,
+    scalable: role === "carb" || role === "protein",
+    minGrams,
+    maxGrams,
+    incrementGrams,
+  })
+);
+
+const meal = (input: Omit<RecoveryMealTemplate, "id" | "portionScalable"> & { id: string }): RecoveryMealTemplate => ({
+  ...input,
+  id: `strictly-post-${input.id}`,
+  portionScalable: true,
+});
+
+const rice = (id: string, name: string, proteinId: string, proteinName: string, extras: IngredientTuple[], options: {
+  proteinGrams?: number;
+  riceId?: "jasmine-rice" | "white-rice" | "brown-rice";
+  riceGrams?: number;
+  dietaryTags: string[];
+  allergens?: string[];
+  categories?: RecoveryCategory[];
+  activities?: ActivityType[];
+  prep?: number;
+  cuisine?: string;
+}): RecoveryMealTemplate => {
+  const riceId = options.riceId || "jasmine-rice";
+  return meal({
+    id,
+    name,
+    description: `${proteinName}, rice, produce, and familiar toppings in one complete recovery bowl.`,
+    ingredients: blueprint([
+      [proteinId, options.proteinGrams || 142, "protein", 85, 227, 28],
+      [riceId, options.riceGrams || 240, "carb", 120, 480, 40],
+      ...extras,
+    ]),
+    instructions: ["Warm the protein and rice.", "Add the vegetables and finish with the listed toppings."],
+    prepMinutes: options.prep || 15,
+    difficulty: "easy",
+    cuisine: options.cuisine || "Bowl",
+    mealType: "lunch",
+    dietaryTags: options.dietaryTags,
+    allergens: options.allergens || [],
+    activityTypes: options.activities || training,
+    recoveryCategories: options.categories || standard,
+    primaryCarbFoodId: riceId,
+    primaryProteinFoodId: proteinId,
+  });
+};
+
+export const POST_WORKOUT_MEALS: RecoveryMealTemplate[] = [
+  rice("chicken-rice-bowl", "Chicken Rice Bowl", "chicken", "Grilled chicken", [["mixed-vegetables", 150, "produce"], ["salsa", 60, "topping"], ["avocado", 50, "fat"]], { dietaryTags: ["halal", "dairy-free", "gluten-free"], categories: standard }),
+  rice("rapid-chicken-rice-bowl", "Lean Chicken Rice Bowl", "chicken", "Grilled chicken", [["mixed-vegetables", 100, "produce"], ["salsa", 60, "topping"]], { dietaryTags: ["halal", "dairy-free", "gluten-free"], categories: rapid, activities: endurance, riceGrams: 280 }),
+  rice("chicken-burrito-bowl", "Chicken Burrito Bowl", "chicken", "Grilled chicken", [["black-beans", 80, "topping"], ["mixed-vegetables", 100, "produce"], ["salsa", 60, "topping"], ["avocado", 50, "fat"]], { dietaryTags: ["halal", "dairy-free", "gluten-free"], cuisine: "Mexican-inspired" }),
+  rice("turkey-rice-bowl", "Turkey Rice Bowl", "turkey-breast", "Roasted turkey", [["mixed-vegetables", 150, "produce"], ["salsa", 60, "topping"], ["avocado", 50, "fat"]], { dietaryTags: ["halal", "dairy-free", "gluten-free"], categories: rapid }),
+  rice("beef-rice-bowl", "Beef & Rice Bowl", "lean-ground-beef", "Lean ground beef", [["mixed-vegetables", 150, "produce"], ["salsa", 60, "topping"]], { dietaryTags: ["halal", "dairy-free", "gluten-free"], riceId: "white-rice" }),
+  rice("steak-rice-bowl", "Steak Rice Bowl", "sirloin-steak", "Lean sirloin steak", [["mixed-vegetables", 150, "produce"], ["salsa", 60, "topping"], ["avocado", 40, "fat"]], { dietaryTags: ["halal", "dairy-free", "gluten-free"] }),
+  rice("salmon-rice-bowl", "Salmon Rice Bowl", "salmon", "Salmon", [["broccoli", 120, "produce"], ["avocado", 40, "fat"]], { dietaryTags: ["pescatarian", "halal", "dairy-free", "gluten-free"], activities: endurance }),
+  rice("tofu-rice-bowl", "Tofu Rice Bowl", "firm-tofu", "Seared tofu", [["mixed-vegetables", 150, "produce"], ["salsa", 60, "topping"], ["avocado", 40, "fat"]], { dietaryTags: ["vegan", "vegetarian", "halal", "dairy-free", "gluten-free"], allergens: ["soy"] }),
+  rice("lentil-rice-bowl", "Lentil Rice Bowl", "lentils", "Lentils", [["spinach", 90, "produce"], ["salsa", 60, "topping"], ["olive-oil", 8, "fat"]], { proteinGrams: 220, dietaryTags: ["vegan", "vegetarian", "halal", "dairy-free", "gluten-free"], categories: broad }),
+  rice("black-bean-rice-bowl", "Black Bean Rice Bowl", "black-beans", "Black beans", [["mixed-vegetables", 150, "produce"], ["salsa", 60, "topping"], ["avocado", 50, "fat"]], { proteinGrams: 220, dietaryTags: ["vegan", "vegetarian", "halal", "dairy-free", "gluten-free"], categories: broad, cuisine: "Mexican-inspired" }),
+
+  meal({ id: "beef-sweet-potato-bowl", name: "Beef & Sweet Potato Bowl", description: "Lean ground beef with roasted sweet potato, vegetables, salsa, and avocado.", ingredients: blueprint([["lean-ground-beef", 142, "protein", 85, 227, 28], ["sweet-potato", 300, "carb", 180, 540, 45], ["mixed-vegetables", 150, "produce"], ["salsa", 60, "topping"], ["avocado", 50, "fat"]]), instructions: ["Roast the sweet potato until tender.", "Add the cooked beef, vegetables, salsa, and avocado."], prepMinutes: 25, difficulty: "easy", cuisine: "Bowl", mealType: "dinner", dietaryTags: ["halal", "dairy-free", "gluten-free"], allergens: [], activityTypes: training, recoveryCategories: standard, primaryCarbFoodId: "sweet-potato", primaryProteinFoodId: "lean-ground-beef" }),
+  meal({ id: "chicken-sweet-potato-plate", name: "Chicken, Sweet Potato & Broccoli", description: "A complete plate with grilled chicken, roasted sweet potato, broccoli, and olive oil.", ingredients: blueprint([["chicken", 142, "protein", 85, 227, 28], ["sweet-potato", 300, "carb", 180, 540, 45], ["broccoli", 120, "produce"], ["olive-oil", 10, "fat"]]), instructions: ["Roast the sweet potato and broccoli.", "Serve with grilled chicken and finish with olive oil and seasoning."], prepMinutes: 25, difficulty: "easy", cuisine: "American", mealType: "dinner", dietaryTags: ["halal", "dairy-free", "gluten-free"], allergens: [], activityTypes: training, recoveryCategories: standard, primaryCarbFoodId: "sweet-potato", primaryProteinFoodId: "chicken" }),
+  meal({ id: "steak-potatoes", name: "Steak & Roasted Potatoes", description: "Lean sirloin, roasted potatoes, broccoli, and a little olive oil.", ingredients: blueprint([["sirloin-steak", 142, "protein", 85, 227, 28], ["potato", 350, "carb", 200, 650, 50], ["broccoli", 120, "produce"], ["olive-oil", 10, "fat"]]), instructions: ["Roast the potatoes and broccoli.", "Slice the cooked steak and serve everything as one plate."], prepMinutes: 30, difficulty: "moderate", cuisine: "American", mealType: "dinner", dietaryTags: ["halal", "dairy-free", "gluten-free"], allergens: [], activityTypes: strength, recoveryCategories: standard, primaryCarbFoodId: "potato", primaryProteinFoodId: "sirloin-steak" }),
+  meal({ id: "salmon-potatoes", name: "Salmon, Potatoes & Vegetables", description: "Roasted salmon with potatoes and seasonal vegetables.", ingredients: blueprint([["salmon", 142, "protein", 113, 200, 28], ["potato", 350, "carb", 200, 650, 50], ["mixed-vegetables", 150, "produce"], ["olive-oil", 8, "fat"]]), instructions: ["Roast the potatoes and vegetables.", "Bake or pan-cook the salmon and serve together."], prepMinutes: 30, difficulty: "moderate", cuisine: "Mediterranean", mealType: "dinner", dietaryTags: ["pescatarian", "halal", "dairy-free", "gluten-free"], allergens: [], activityTypes: endurance, recoveryCategories: standard, primaryCarbFoodId: "potato", primaryProteinFoodId: "salmon" }),
+  meal({ id: "turkey-potato-plate", name: "Turkey & Roasted Potato Plate", description: "Roasted turkey breast with potatoes, vegetables, salsa, and avocado.", ingredients: blueprint([["turkey-breast", 142, "protein", 85, 227, 28], ["potato", 350, "carb", 200, 650, 50], ["mixed-vegetables", 150, "produce"], ["salsa", 60, "topping"], ["avocado", 40, "fat"]]), instructions: ["Roast the potatoes and vegetables.", "Add sliced turkey, salsa, and avocado."], prepMinutes: 25, difficulty: "easy", cuisine: "American", mealType: "dinner", dietaryTags: ["halal", "dairy-free", "gluten-free"], allergens: [], activityTypes: training, recoveryCategories: standard, primaryCarbFoodId: "potato", primaryProteinFoodId: "turkey-breast" }),
+  meal({ id: "black-bean-sweet-potato", name: "Black Bean & Sweet Potato Bowl", description: "Roasted sweet potato, black beans, vegetables, salsa, and avocado.", ingredients: blueprint([["black-beans", 220, "protein", 150, 340, 40], ["sweet-potato", 260, "carb", 180, 500, 45], ["mixed-vegetables", 150, "produce"], ["salsa", 60, "topping"], ["avocado", 50, "fat"]]), instructions: ["Roast the sweet potato and vegetables.", "Add warm black beans, salsa, and avocado."], prepMinutes: 25, difficulty: "easy", cuisine: "Mexican-inspired", mealType: "dinner", dietaryTags: ["vegan", "vegetarian", "halal", "dairy-free", "gluten-free"], allergens: [], activityTypes: training, recoveryCategories: broad, primaryCarbFoodId: "sweet-potato", primaryProteinFoodId: "black-beans" }),
+
+  meal({ id: "chicken-pasta", name: "Chicken Pasta", description: "Chicken breast, pasta, tomato sauce, spinach, and Parmesan.", ingredients: blueprint([["chicken", 142, "protein", 85, 227, 28], ["white-pasta", 260, "carb", 140, 500, 35], ["tomato-sauce", 125, "produce"], ["spinach", 90, "produce"], ["parmesan", 15, "topping"]]), instructions: ["Warm the tomato sauce with spinach.", "Toss with pasta, sliced chicken, and Parmesan."], prepMinutes: 20, difficulty: "easy", cuisine: "Italian-inspired", mealType: "dinner", dietaryTags: ["halal"], allergens: ["gluten", "dairy"], activityTypes: training, recoveryCategories: rapid, primaryCarbFoodId: "white-pasta", primaryProteinFoodId: "chicken" }),
+  meal({ id: "turkey-pasta", name: "Turkey Marinara Pasta", description: "Turkey breast, pasta, tomato sauce, spinach, and Parmesan.", ingredients: blueprint([["turkey-breast", 142, "protein", 85, 227, 28], ["white-pasta", 260, "carb", 140, 500, 35], ["tomato-sauce", 125, "produce"], ["spinach", 90, "produce"], ["parmesan", 15, "topping"]]), instructions: ["Warm the tomato sauce and spinach.", "Toss with pasta and sliced turkey, then add Parmesan."], prepMinutes: 20, difficulty: "easy", cuisine: "Italian-inspired", mealType: "dinner", dietaryTags: ["halal"], allergens: ["gluten", "dairy"], activityTypes: training, recoveryCategories: rapid, primaryCarbFoodId: "white-pasta", primaryProteinFoodId: "turkey-breast" }),
+  meal({ id: "beef-pasta", name: "Beef Marinara Pasta", description: "Lean ground beef, pasta, tomato sauce, spinach, and Parmesan.", ingredients: blueprint([["lean-ground-beef", 142, "protein", 85, 227, 28], ["white-pasta", 260, "carb", 140, 500, 35], ["tomato-sauce", 150, "produce"], ["spinach", 90, "produce"], ["parmesan", 15, "topping"]]), instructions: ["Brown the beef and add the tomato sauce and spinach.", "Toss with pasta and finish with Parmesan."], prepMinutes: 25, difficulty: "easy", cuisine: "Italian-inspired", mealType: "dinner", dietaryTags: ["halal"], allergens: ["gluten", "dairy"], activityTypes: strength, recoveryCategories: standard, primaryCarbFoodId: "white-pasta", primaryProteinFoodId: "lean-ground-beef" }),
+  meal({ id: "tuna-pasta", name: "Tuna Tomato Pasta", description: "Tuna, pasta, tomato sauce, spinach, and olive oil.", ingredients: blueprint([["tuna", 120, "protein", 90, 180, 30], ["white-pasta", 260, "carb", 140, 500, 35], ["tomato-sauce", 150, "produce"], ["spinach", 90, "produce"], ["olive-oil", 8, "fat"]]), instructions: ["Warm the tomato sauce with spinach.", "Fold in tuna and toss with pasta and olive oil."], prepMinutes: 18, difficulty: "easy", cuisine: "Mediterranean", mealType: "dinner", dietaryTags: ["pescatarian", "halal", "dairy-free"], allergens: ["gluten"], activityTypes: endurance, recoveryCategories: rapid, primaryCarbFoodId: "white-pasta", primaryProteinFoodId: "tuna" }),
+
+  meal({ id: "chicken-quinoa", name: "Chicken Quinoa Bowl", description: "Chicken breast with quinoa, roasted vegetables, avocado, and salsa.", ingredients: blueprint([["chicken", 142, "protein", 85, 227, 28], ["quinoa", 280, "carb", 185, 460, 45], ["mixed-vegetables", 150, "produce"], ["salsa", 60, "topping"], ["avocado", 40, "fat"]]), instructions: ["Warm the quinoa, chicken, and vegetables.", "Finish with salsa and avocado."], prepMinutes: 20, difficulty: "easy", cuisine: "Bowl", mealType: "lunch", dietaryTags: ["halal", "dairy-free", "gluten-free"], allergens: [], activityTypes: training, recoveryCategories: standard, primaryCarbFoodId: "quinoa", primaryProteinFoodId: "chicken" }),
+  meal({ id: "salmon-quinoa", name: "Salmon Quinoa Bowl", description: "Salmon, quinoa, spinach, roasted vegetables, and olive oil.", ingredients: blueprint([["salmon", 142, "protein", 113, 200, 28], ["quinoa", 280, "carb", 185, 460, 45], ["spinach", 90, "produce"], ["mixed-vegetables", 120, "produce"], ["olive-oil", 8, "fat"]]), instructions: ["Warm the quinoa and vegetables.", "Add cooked salmon and finish with olive oil and seasoning."], prepMinutes: 25, difficulty: "moderate", cuisine: "Mediterranean", mealType: "dinner", dietaryTags: ["pescatarian", "halal", "dairy-free", "gluten-free"], allergens: [], activityTypes: endurance, recoveryCategories: standard, primaryCarbFoodId: "quinoa", primaryProteinFoodId: "salmon" }),
+  meal({ id: "tofu-quinoa", name: "Tofu Quinoa Bowl", description: "Seared tofu with quinoa, spinach, roasted vegetables, and avocado.", ingredients: blueprint([["firm-tofu", 200, "protein", 150, 300, 30], ["quinoa", 280, "carb", 185, 460, 45], ["spinach", 90, "produce"], ["mixed-vegetables", 120, "produce"], ["avocado", 40, "fat"]]), instructions: ["Sear the tofu and warm the quinoa.", "Add vegetables, spinach, and avocado."], prepMinutes: 22, difficulty: "easy", cuisine: "Bowl", mealType: "dinner", dietaryTags: ["vegan", "vegetarian", "halal", "dairy-free", "gluten-free"], allergens: ["soy"], activityTypes: training, recoveryCategories: standard, primaryCarbFoodId: "quinoa", primaryProteinFoodId: "firm-tofu" }),
+
+  meal({ id: "beef-taco-rice-plate", name: "Beef Tacos with Rice", description: "Lean beef tacos with rice, salsa, vegetables, and avocado.", ingredients: blueprint([["lean-ground-beef", 142, "protein", 85, 227, 28], ["white-rice", 200, "carb", 120, 400, 40], ["corn-tortillas", 78, "topping"], ["salsa", 60, "topping"], ["mixed-vegetables", 100, "produce"], ["avocado", 40, "fat"]]), instructions: ["Fill warm tortillas with the beef, vegetables, and salsa.", "Serve with rice and avocado."], prepMinutes: 22, difficulty: "easy", cuisine: "Mexican-inspired", mealType: "dinner", dietaryTags: ["halal", "dairy-free", "gluten-free"], allergens: [], activityTypes: training, recoveryCategories: standard, primaryCarbFoodId: "white-rice", primaryProteinFoodId: "lean-ground-beef" }),
+  meal({ id: "chicken-taco-rice-plate", name: "Chicken Tacos with Rice", description: "Chicken tacos with rice, salsa, vegetables, and avocado.", ingredients: blueprint([["chicken", 142, "protein", 85, 227, 28], ["white-rice", 200, "carb", 120, 400, 40], ["corn-tortillas", 78, "topping"], ["salsa", 60, "topping"], ["mixed-vegetables", 100, "produce"], ["avocado", 40, "fat"]]), instructions: ["Fill warm tortillas with chicken, vegetables, and salsa.", "Serve with rice and avocado."], prepMinutes: 22, difficulty: "easy", cuisine: "Mexican-inspired", mealType: "dinner", dietaryTags: ["halal", "dairy-free", "gluten-free"], allergens: [], activityTypes: training, recoveryCategories: standard, primaryCarbFoodId: "white-rice", primaryProteinFoodId: "chicken" }),
+  meal({ id: "tofu-taco-rice-plate", name: "Tofu Tacos with Rice", description: "Seared tofu tacos with rice, salsa, vegetables, and avocado.", ingredients: blueprint([["firm-tofu", 200, "protein", 150, 300, 30], ["white-rice", 200, "carb", 120, 400, 40], ["corn-tortillas", 78, "topping"], ["salsa", 60, "topping"], ["mixed-vegetables", 100, "produce"], ["avocado", 40, "fat"]]), instructions: ["Fill warm tortillas with tofu, vegetables, and salsa.", "Serve with rice and avocado."], prepMinutes: 22, difficulty: "easy", cuisine: "Mexican-inspired", mealType: "dinner", dietaryTags: ["vegan", "vegetarian", "halal", "dairy-free", "gluten-free"], allergens: ["soy"], activityTypes: training, recoveryCategories: standard, primaryCarbFoodId: "white-rice", primaryProteinFoodId: "firm-tofu" }),
+
+  meal({ id: "turkey-sandwich", name: "Turkey Sandwich, Fruit & Yogurt", description: "A whole-grain turkey sandwich with spinach and avocado, plus fruit and Greek yogurt.", ingredients: blueprint([["turkey-breast", 120, "protein", 85, 180, 20], ["wholegrain-bread", 120, "carb", 80, 200, 40], ["spinach", 45, "produce"], ["avocado", 40, "fat"], ["apple", 182, "produce"], ["greek-yogurt", 120, "topping"]]), instructions: ["Build the sandwich with turkey, spinach, and avocado.", "Serve with the apple and yogurt."], prepMinutes: 8, difficulty: "easy", cuisine: "American", mealType: "lunch", dietaryTags: ["halal"], allergens: ["gluten", "dairy"], activityTypes: training, recoveryCategories: broad, primaryCarbFoodId: "wholegrain-bread", primaryProteinFoodId: "turkey-breast" }),
+  meal({ id: "tuna-potato-plate", name: "Tuna, Potato & Avocado Plate", description: "Tuna with roasted potatoes, vegetables, avocado, and salsa.", ingredients: blueprint([["tuna", 120, "protein", 90, 180, 30], ["potato", 350, "carb", 200, 650, 50], ["mixed-vegetables", 150, "produce"], ["avocado", 50, "fat"], ["salsa", 60, "topping"]]), instructions: ["Roast or warm the potatoes and vegetables.", "Serve with tuna, avocado, and salsa."], prepMinutes: 20, difficulty: "easy", cuisine: "Plate", mealType: "lunch", dietaryTags: ["pescatarian", "halal", "dairy-free", "gluten-free"], allergens: [], activityTypes: endurance, recoveryCategories: standard, primaryCarbFoodId: "potato", primaryProteinFoodId: "tuna" }),
+
+  meal({ id: "eggs-potatoes-toast", name: "Eggs, Potatoes, Toast & Fruit", description: "Eggs with roasted potatoes, whole-grain toast, spinach, and orange.", ingredients: blueprint([["whole-eggs", 150, "protein", 100, 200, 50], ["potato", 300, "carb", 170, 550, 50], ["wholegrain-bread", 40, "topping"], ["spinach", 90, "produce"], ["orange", 131, "produce"]]), instructions: ["Cook the eggs and warm the potatoes.", "Serve with toast, spinach, and orange."], prepMinutes: 20, difficulty: "easy", cuisine: "Breakfast", mealType: "breakfast", dietaryTags: ["vegetarian", "halal"], allergens: ["eggs", "gluten"], activityTypes: strength, recoveryCategories: standard, primaryCarbFoodId: "potato", primaryProteinFoodId: "whole-eggs" }),
+  meal({ id: "breakfast-recovery", name: "Egg & Oat Recovery Breakfast", description: "Eggs, oatmeal, berries, banana, and Greek yogurt as a complete breakfast.", ingredients: blueprint([["greek-yogurt", 200, "protein", 150, 300, 50], ["oats", 300, "carb", 180, 520, 40], ["whole-eggs", 100, "topping"], ["strictly-blueberries", 100, "produce"], ["banana", 118, "produce"]]), instructions: ["Prepare the oats and cook the eggs.", "Serve with yogurt, berries, and banana."], prepMinutes: 15, difficulty: "easy", cuisine: "Breakfast", mealType: "breakfast", dietaryTags: ["vegetarian", "halal"], allergens: ["eggs", "dairy", "gluten"], activityTypes: training, recoveryCategories: standard, primaryCarbFoodId: "oats", primaryProteinFoodId: "greek-yogurt" }),
+  meal({ id: "yogurt-recovery-bowl", name: "Greek Yogurt Recovery Bowl", description: "Greek yogurt with granola, banana, berries, and honey for a lighter recovery meal.", ingredients: blueprint([["greek-yogurt", 250, "protein", 170, 350, 50], ["strictly-granola", 70, "carb", 40, 130, 10], ["banana", 118, "produce"], ["strictly-blueberries", 100, "produce"], ["honey", 15, "topping"]]), instructions: ["Add yogurt to a bowl.", "Top with granola, banana, berries, and honey."], prepMinutes: 5, difficulty: "easy", cuisine: "Breakfast", mealType: "light_meal", dietaryTags: ["vegetarian", "halal"], allergens: ["dairy", "gluten"], activityTypes: training, recoveryCategories: broad, primaryCarbFoodId: "strictly-granola", primaryProteinFoodId: "greek-yogurt" }),
+  meal({ id: "cottage-cheese-oats", name: "Cottage Cheese Oat Bowl", description: "Oatmeal with cottage cheese, banana, berries, and maple syrup.", ingredients: blueprint([["cottage-cheese", 250, "protein", 180, 350, 40], ["oats", 300, "carb", 180, 520, 40], ["banana", 118, "produce"], ["strictly-blueberries", 100, "produce"], ["maple-syrup", 15, "topping"]]), instructions: ["Prepare the oats until soft.", "Add cottage cheese, banana, berries, and maple syrup."], prepMinutes: 8, difficulty: "easy", cuisine: "Breakfast", mealType: "breakfast", dietaryTags: ["vegetarian", "halal"], allergens: ["dairy", "gluten"], activityTypes: training, recoveryCategories: broad, primaryCarbFoodId: "oats", primaryProteinFoodId: "cottage-cheese" }),
+  meal({ id: "egg-rice-bowl", name: "Egg & Rice Breakfast Bowl", description: "Eggs over rice with spinach, salsa, and avocado.", ingredients: blueprint([["whole-eggs", 150, "protein", 100, 250, 50], ["white-rice", 240, "carb", 120, 480, 40], ["spinach", 90, "produce"], ["salsa", 60, "topping"], ["avocado", 40, "fat"]]), instructions: ["Warm the rice and spinach.", "Top with cooked eggs, salsa, and avocado."], prepMinutes: 15, difficulty: "easy", cuisine: "Breakfast", mealType: "breakfast", dietaryTags: ["vegetarian", "halal", "dairy-free", "gluten-free"], allergens: ["eggs"], activityTypes: training, recoveryCategories: standard, primaryCarbFoodId: "white-rice", primaryProteinFoodId: "whole-eggs" }),
+];

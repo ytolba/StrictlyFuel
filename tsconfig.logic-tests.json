@@ -11,14 +11,19 @@
   "include": [
     "tests/**/*.ts",
     "src/types/fuel.ts",
+    "src/types/recovery.ts",
+    "src/types/nutritionProfile.ts",
     "src/types/raceMode.ts",
     "src/data/races.ts",
     "src/data/fuelFoods.ts",
     "src/data/expandedCarbFoods.ts",
+    "src/data/postWorkoutFoods.ts",
+    "src/data/postWorkoutMeals.ts",
     "src/logic/nutritionEngine.ts",
     "src/logic/mealImprovement.ts",
     "src/logic/mealScore.ts",
     "src/logic/healthScore.ts",
-    "src/logic/raceFueling.ts"
+    "src/logic/raceFueling.ts",
+    "src/logic/recoveryNutrition.ts"
   ]
 }

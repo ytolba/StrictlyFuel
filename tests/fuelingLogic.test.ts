@@ -4,6 +4,9 @@ import { rankMealAdjustments } from "../src/logic/mealImprovement";
 import { calculateMealMacros, validateMacroCalories } from "../src/logic/nutritionEngine";
 import { buildRaceFuelPlan } from "../src/logic/raceFueling";
 import { raceById } from "../src/data/races";
+import { POST_WORKOUT_MEALS } from "../src/data/postWorkoutMeals";
+import { calculateRecoveryTarget, rankRecoveryMeals, scaleRecoveryMeal } from "../src/logic/recoveryNutrition";
+import { EMPTY_NUTRITION_PROFILE } from "../src/types/nutritionProfile";
 import type { FuelFood, FuelTarget, MealIngredient, WorkoutDraft } from "../src/types/fuel";
 
 const assert = (condition: unknown, message: string) => { if (!condition) throw new Error(message); };
@@ -66,4 +69,32 @@ const triPlan = buildRaceFuelPlan({ race: raceById("ironman_70_3"), durationMinu
 assert(triPlan.segments.length === 3 && triPlan.segments[0].rate === 0, "Triathlon must split swim, bike and run with no swim intake");
 assert((triPlan.segments.find((segment) => segment.kind === "bike")?.rate || 0) > (triPlan.segments.find((segment) => segment.kind === "run")?.rate || 0), "Long-course triathlon should place the higher tolerable intake on the bike");
 
-console.log("StrictlyFuel deterministic nutrition, meal-improvement and race-fueling scenarios passed.");
+assert(POST_WORKOUT_MEALS.length >= 30, "Recovery catalog should contain a substantial set of complete meals");
+for (const template of POST_WORKOUT_MEALS) {
+  assert(template.ingredients.some((item) => item.role === "protein"), `${template.name} needs a protein anchor`);
+  assert(template.ingredients.some((item) => item.role === "carb"), `${template.name} needs a carbohydrate anchor`);
+  assert(template.ingredients.some((item) => item.role === "produce"), `${template.name} needs produce`);
+}
+
+const recoveryWorkout = workout(0);
+const standardRecovery = calculateRecoveryTarget(recoveryWorkout, "standard");
+const rapidRecovery = calculateRecoveryTarget({ ...recoveryWorkout, durationMinutes: 150, intensity: "hard" }, "rapid");
+assert(rapidRecovery.carbs > standardRecovery.carbs, "Rapid recovery should raise carbohydrate priority after a demanding session");
+assert(standardRecovery.protein >= 20 && standardRecovery.protein <= 40, "Recovery protein should remain in a practical meal-sized range");
+
+const chickenRice = POST_WORKOUT_MEALS.find((item) => item.name === "Chicken Rice Bowl");
+assert(chickenRice, "Chicken Rice Bowl fixture should exist");
+const scaledChickenRice = scaleRecoveryMeal(chickenRice!, standardRecovery);
+const fixedBefore = chickenRice!.ingredients.filter((item) => ![chickenRice!.primaryCarbFoodId, chickenRice!.primaryProteinFoodId].includes(item.foodId));
+for (const fixed of fixedBefore) {
+  const after = scaledChickenRice.ingredients.find((item) => item.food.id === fixed.foodId);
+  assert(after?.grams === fixed.grams, `Scaling should not randomly change ${fixed.foodId}`);
+}
+
+const recoveryRecommendations = rankRecoveryMeals(POST_WORKOUT_MEALS, { workout: recoveryWorkout, window: "standard", profile: EMPTY_NUTRITION_PROFILE });
+assert(recoveryRecommendations.length >= 5, "A standard workout should return several recovery meals");
+assert(recoveryRecommendations[0].score.total >= 80, "Best recovery meal should closely fit its carbohydrate and protein targets");
+const veganRecovery = rankRecoveryMeals(POST_WORKOUT_MEALS, { workout: recoveryWorkout, window: "standard", profile: { ...EMPTY_NUTRITION_PROFILE, dietaryPatterns: ["vegan"] } });
+assert(veganRecovery.length > 0 && veganRecovery.every((item) => item.template.dietaryTags.includes("vegan")), "Vegan recovery recommendations must fail closed");
+
+console.log("StrictlyFuel deterministic nutrition, recovery-meal, meal-improvement and race-fueling scenarios passed.");

@@ -19,7 +19,10 @@ import type { ActivityType } from "../types/fuel";
  * whole catalog costs one query and no per-ingredient lookups.
  */
 
-const CACHE_KEY = "strictlyfuel:meal-templates:v1";
+// Keep pre-workout and recovery catalogs physically separated. Bumping the
+// cache key also prevents an older unscoped response from being reused after
+// the database begins serving post-workout templates.
+const CACHE_KEY = "strictlyfuel:pre-workout-meal-templates:v2";
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 type TemplateRow = {
@@ -110,6 +113,7 @@ export async function fetchMealTemplates(options: { force?: boolean } = {}): Pro
       .from("meal_templates")
       .select(TEMPLATE_COLUMNS)
       .eq("is_verified", true)
+      .eq("purpose", "pre_workout")
       .limit(500);
     if (error) throw error;
 

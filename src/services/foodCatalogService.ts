@@ -56,9 +56,9 @@ function relevance(food: FuelFood, query: string) {
   return score;
 }
 
-const categories: FuelFood["category"][] = ["fruit", "grain", "bread", "sports", "dairy", "protein", "fat"];
+const categories: FuelFood["category"][] = ["fruit", "vegetable", "grain", "bread", "sports", "dairy", "protein", "fat", "sauce"];
 const emoji: Record<FuelFood["category"], string> = {
-  fruit: "🍌", grain: "🍚", bread: "🍞", sports: "⚡", dairy: "🥛", protein: "🍗", fat: "🥜",
+  fruit: "🍌", vegetable: "🥦", grain: "🍚", bread: "🍞", sports: "⚡", dairy: "🥛", protein: "🍗", fat: "🥜", sauce: "🥣",
 };
 
 function toFuelFood(row: FoodRow): FuelFood {
