@@ -31,7 +31,11 @@
       "infoPlist": {
         "NSCameraUsageDescription": "StrictlyFuel uses the camera to photograph your meal or a product label so it can estimate the nutrition.",
         "NSPhotoLibraryUsageDescription": "StrictlyFuel needs access to your photos so you can pick an existing meal photo to analyse.",
+        "NSHealthShareUsageDescription": "StrictlyFuel reads workouts you choose to share so it can help you repeat and fuel similar sessions.",
         "ITSAppUsesNonExemptEncryption": false
+      },
+      "entitlements": {
+        "com.apple.developer.healthkit": true
       },
       "config": {
         "usesNonExemptEncryption": false

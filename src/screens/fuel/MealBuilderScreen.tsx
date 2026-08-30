@@ -23,6 +23,10 @@ export default function MealBuilderScreen({ navigation, route }: any) {
   const [searching, setSearching] = useState(false);
   const [editingId, setEditingId] = useState<string>();
   const macros = useMemo(() => calculateMealMacros(ingredients), [ingredients]);
+  const editingItem = ingredients.find((item) => item.id === editingId);
+  const amountPresets = editingItem
+    ? [0.5, 1, 1.5, 2].map((ratio) => Math.max(1, Math.round(editingItem.food.defaultGrams * ratio)))
+    : [50, 100, 150, 200];
 
   useEffect(() => {
     let active = true;
@@ -71,7 +75,7 @@ export default function MealBuilderScreen({ navigation, route }: any) {
     <View style={styles.macros}>{[["Calories", `${Math.round(macros.calories)}`], ["Protein", `${Math.round(macros.protein)}g`], ["Fat", `${Math.round(macros.fat)}g`], ["Fiber", `${Math.round(macros.fiber)}g`]].map(([label, value]) => <View key={label} style={styles.macro}><Text style={styles.macroValue}>{value}</Text><Text style={styles.macroLabel}>{label}</Text></View>)}</View>
     <TouchableOpacity style={[styles.primary, !ingredients.length && styles.disabled]} disabled={!ingredients.length} onPress={analyze}><Text style={styles.primaryText}>Score this meal</Text><Ionicons name="arrow-forward" size={18} color={strictlyColors.onLime} /></TouchableOpacity>
     <Text style={styles.source}>Results combine Strictly’s curated catalog with USDA FoodData Central and Open Food Facts. Package labels take priority for branded products.</Text>
-    {editingId ? <ValueEditorSheet visible label={ingredients.find((item) => item.id === editingId)?.food.name || "Food amount"} value={ingredients.find((item) => item.id === editingId)?.grams || 100} presets={[50, 100, 150, 200]} onClose={() => setEditingId(undefined)} onSave={(grams) => updateIngredient(editingId, { grams })} /> : null}
+    {editingId ? <ValueEditorSheet visible label={editingItem?.food.name || "Food amount"} value={editingItem?.grams || editingItem?.food.defaultGrams || 100} presets={amountPresets} helpText={editingItem ? `One serving is ${editingItem.food.servingLabel} (${Math.round(editingItem.food.defaultGrams)} g).` : undefined} onClose={() => setEditingId(undefined)} onSave={(grams) => updateIngredient(editingId, { grams })} /> : null}
   </ScreenShell>;
 }
 

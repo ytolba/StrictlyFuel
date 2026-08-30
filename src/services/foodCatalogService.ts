@@ -25,7 +25,11 @@ type FoodRow = {
   alcohol_per_100g?: number;
   data_quality_score?: number;
   is_verified?: boolean;
+  default_portion_label?: string;
+  default_portion_grams?: number;
 };
+
+type PortionRow = { food_id: string; label: string; gram_weight: number; is_default: boolean };
 
 const queryAliases: Record<string, string[]> = {
   rice: ["rice", "jasmine", "basmati"], oatmeal: ["oatmeal", "oats"], oats: ["oats", "oatmeal"],
@@ -59,6 +63,8 @@ const emoji: Record<FuelFood["category"], string> = {
 
 function toFuelFood(row: FoodRow): FuelFood {
   const category = categories.includes(row.category as FuelFood["category"]) ? row.category as FuelFood["category"] : "grain";
+  const servingGrams = Number(row.default_portion_grams);
+  const defaultGrams = Number.isFinite(servingGrams) && servingGrams > 0 ? servingGrams : 100;
   return {
     id: row.id,
     name: row.brand ? `${row.name} · ${row.brand}` : row.name,
@@ -67,8 +73,8 @@ function toFuelFood(row: FoodRow): FuelFood {
     category,
     carbSpeed: row.carb_speed_tier_id || "medium",
     timing: row.carb_speed_reason || "Practical digestion estimate",
-    defaultGrams: 100,
-    servingLabel: "100 g",
+    defaultGrams,
+    servingLabel: row.default_portion_label?.trim() || (defaultGrams === 100 ? "100 g" : `${Math.round(defaultGrams)} g serving`),
     per100g: {
       calories: Number(row.calories_per_100g) || 0,
       carbs: Number(row.carbs_per_100g) || 0,
@@ -89,6 +95,40 @@ function toFuelFood(row: FoodRow): FuelFood {
   };
 }
 
+async function addDefaultPortions(rows: FoodRow[]): Promise<FoodRow[]> {
+  const ids = [...new Set(rows.map((row) => row.id).filter(Boolean))];
+  if (!ids.length) return rows;
+  const { data, error } = await supabase
+    .from("food_portions")
+    .select("food_id,label,gram_weight,is_default")
+    .in("food_id", ids)
+    .order("is_default", { ascending: false });
+  if (error || !data?.length) return rows;
+  const byFood = new Map<string, PortionRow>();
+  (data as PortionRow[]).forEach((portion) => {
+    if (!byFood.has(portion.food_id)) byFood.set(portion.food_id, portion);
+  });
+  return rows.map((row) => {
+    const portion = byFood.get(row.id);
+    return portion ? { ...row, default_portion_label: portion.label, default_portion_grams: portion.gram_weight } : row;
+  });
+}
+
+const canonicalFoodKey = (food: FuelFood) => {
+  const name = food.name.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  return `${name}|${Math.round(food.per100g.carbs * 10)}|${Math.round(food.per100g.calories)}`;
+};
+
+function uniqueFoods(foods: FuelFood[]) {
+  const seen = new Set<string>();
+  return foods.filter((food) => {
+    const key = canonicalFoodKey(food);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 export async function searchFoodCatalog(query: string): Promise<FuelFood[]> {
   const local = searchFuelFoods(query);
   const normalized = query.trim();
@@ -96,14 +136,8 @@ export async function searchFoodCatalog(query: string): Promise<FuelFood[]> {
   try {
     const { data, error } = await supabase.functions.invoke("search-foods", { body: { query: normalized, limit: 25 } });
     if (error) throw error;
-    const remote = ((data?.foods || []) as FoodRow[]).map(toFuelFood);
-    const seen = new Set<string>();
-    return [...local, ...remote].filter((food) => {
-      const key = `${food.name.toLowerCase()}-${food.sourceId || food.id}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    }).map((food) => ({ food, score: relevance(food, normalized) }))
+    const remote = (await addDefaultPortions((data?.foods || []) as FoodRow[])).map(toFuelFood);
+    return uniqueFoods([...local, ...remote]).map((food) => ({ food, score: relevance(food, normalized) }))
       .filter(({ score, food }) => score >= 14 || food.source === "strictly")
       .sort((a, b) => b.score - a.score)
       .map(({ food }) => food)
@@ -118,5 +152,6 @@ export async function lookupFoodBarcode(barcode: string): Promise<FuelFood | nul
   if (normalized.length < 8) return null;
   const { data, error } = await supabase.functions.invoke("search-foods", { body: { barcode: normalized, limit: 5 } });
   if (error || !data?.foods?.length) return null;
-  return toFuelFood(data.foods[0] as FoodRow);
+  const [row] = await addDefaultPortions([data.foods[0] as FoodRow]);
+  return toFuelFood(row);
 }

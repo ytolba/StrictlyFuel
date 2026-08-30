@@ -9,6 +9,9 @@
 /* Begin PBXBuildFile section */
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		1AA74218D323BFD26071714C /* StrictlyOCR.m in Sources */ = {isa = PBXBuildFile; fileRef = DFCE9B4B0C3B65F4F69FD87C /* StrictlyOCR.m */; };
+		21AB001A32A0000000000001 /* StrictlyHealthKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21AB001A32A0000000000011 /* StrictlyHealthKit.swift */; };
+		21AB001A32A0000000000002 /* StrictlyHealthKit.m in Sources */ = {isa = PBXBuildFile; fileRef = 21AB001A32A0000000000012 /* StrictlyHealthKit.m */; };
+		21AB001A32A0000000000003 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 21AB001A32A0000000000013 /* HealthKit.framework */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
 		739AED208FF066CC71AF3995 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C99ABB3703DB7458BE49DAFE /* PrivacyInfo.xcprivacy */; };
 		8C61E3E50407DF2B1CAE9291 /* libPods-StrictlyFuel.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 59D24E8B7BE55C1773C9892D /* libPods-StrictlyFuel.a */; };
@@ -23,6 +26,9 @@
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = StrictlyFuel/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = StrictlyFuel/Info.plist; sourceTree = "<group>"; };
 		273E912CEC09F0D485C35F3C /* StrictlyOCR.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StrictlyFuel/StrictlyOCR.swift; sourceTree = "<group>"; };
+		21AB001A32A0000000000011 /* StrictlyHealthKit.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StrictlyFuel/StrictlyHealthKit.swift; sourceTree = "<group>"; };
+		21AB001A32A0000000000012 /* StrictlyHealthKit.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = StrictlyFuel/StrictlyHealthKit.m; sourceTree = "<group>"; };
+		21AB001A32A0000000000013 /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
 		59D24E8B7BE55C1773C9892D /* libPods-StrictlyFuel.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-StrictlyFuel.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		62F08070CFBE799AB9C3C389 /* Pods-StrictlyFuel.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-StrictlyFuel.release.xcconfig"; path = "Target Support Files/Pods-StrictlyFuel/Pods-StrictlyFuel.release.xcconfig"; sourceTree = "<group>"; };
 		A98C032CE0B8465599B52CD4 /* Pods-StrictlyFuel.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-StrictlyFuel.debug.xcconfig"; path = "Target Support Files/Pods-StrictlyFuel/Pods-StrictlyFuel.debug.xcconfig"; sourceTree = "<group>"; };
@@ -41,6 +47,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				21AB001A32A0000000000003 /* HealthKit.framework in Frameworks */,
 				8C61E3E50407DF2B1CAE9291 /* libPods-StrictlyFuel.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -60,6 +67,8 @@
 				C99ABB3703DB7458BE49DAFE /* PrivacyInfo.xcprivacy */,
 				273E912CEC09F0D485C35F3C /* StrictlyOCR.swift */,
 				DFCE9B4B0C3B65F4F69FD87C /* StrictlyOCR.m */,
+				21AB001A32A0000000000011 /* StrictlyHealthKit.swift */,
+				21AB001A32A0000000000012 /* StrictlyHealthKit.m */,
 			);
 			name = StrictlyFuel;
 			sourceTree = "<group>";
@@ -67,6 +76,7 @@
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				21AB001A32A0000000000013 /* HealthKit.framework */,
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
 				59D24E8B7BE55C1773C9892D /* libPods-StrictlyFuel.a */,
 			);
@@ -386,6 +396,8 @@
 				BC769406978668FA1CB60CE2 /* ExpoModulesProvider.swift in Sources */,
 				B1C7C235E8BDC55C886C0A40 /* StrictlyOCR.swift in Sources */,
 				1AA74218D323BFD26071714C /* StrictlyOCR.m in Sources */,
+				21AB001A32A0000000000001 /* StrictlyHealthKit.swift in Sources */,
+				21AB001A32A0000000000002 /* StrictlyHealthKit.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

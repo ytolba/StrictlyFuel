@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from "expo-camera";
 import * as ImagePicker from "expo-image-picker";
@@ -37,6 +37,8 @@ export default function FoodCaptureScreen({ navigation }: any) {
   const [photoUri, setPhotoUri] = useState<string>();
   const [label, setLabel] = useState<FoodLabelAnalysis>();
   const [numericKey, setNumericKey] = useState<NumericField>();
+  const [scannedBarcode, setScannedBarcode] = useState("");
+  const scanLock = useRef(false);
 
   const closeCapture = () => {
     if (navigation.canGoBack?.()) return navigation.goBack();
@@ -52,14 +54,16 @@ export default function FoodCaptureScreen({ navigation }: any) {
 
   const findBarcode = async (value: string) => {
     const barcode = value.replace(/\D/g, "");
-    if (barcode.length < 8 || loading) return;
+    if (barcode.length < 8 || loading || scanLock.current) return;
+    scanLock.current = true;
+    setScannedBarcode(barcode);
     setScanned(true); setLoading(true); setNotFound(false);
     try {
       const food = await lookupFoodBarcode(barcode);
       if (food) addAndReturn(food);
       else setNotFound(true);
     } catch { setNotFound(true); }
-    finally { setLoading(false); }
+    finally { setLoading(false); scanLock.current = false; }
   };
 
   const captureLabel = async () => {
@@ -99,11 +103,10 @@ export default function FoodCaptureScreen({ navigation }: any) {
     </> : null}
 
     {mode === "barcode" ? <>
-      {!permission?.granted ? <TouchableOpacity style={styles.primary} onPress={requestPermission}><Text style={styles.primaryText}>Allow camera access</Text></TouchableOpacity> :
+      {loading ? <View style={styles.barcodeLoading}><View style={styles.barcodePill}><Ionicons name="barcode-outline" size={18} color={strictlyColors.text} /><Text style={styles.barcodeValue}>{scannedBarcode}</Text></View><LoadingState title="Finding your product" messages={["Checking the exact barcode", "Loading its package serving", "Adding one serving to your meal"]} /><Text style={styles.loadingNote}>Keep this screen open for a moment. Strictly will return you to your meal when the match is ready.</Text></View> : !permission?.granted ? <TouchableOpacity style={styles.primary} onPress={requestPermission}><Text style={styles.primaryText}>Allow camera access</Text></TouchableOpacity> :
         <View style={styles.cameraWrap}><CameraView style={styles.camera} barcodeScannerSettings={{ barcodeTypes: ["ean13", "ean8", "upc_a", "upc_e", "code128"] }} onBarcodeScanned={scanned ? undefined : (event: BarcodeScanningResult) => findBarcode(event.data)} /><View pointerEvents="none" style={styles.scanFrame} /><Text style={styles.cameraHint}>Center the barcode inside the frame</Text></View>}
-      {loading ? <View style={styles.loadingCard}><LoadingState title="Looking up this product" messages={["Checking Strictly’s catalog", "Searching trusted product data", "Matching the exact barcode"]} /></View> : null}
       {notFound ? <View style={styles.notFound}><Text style={styles.notFoundTitle}>We don’t have this one yet</Text><Text style={styles.notFoundText}>Photograph its nutrition and ingredient label to add it for yourself and help the catalog grow.</Text><TouchableOpacity style={styles.primary} onPress={() => setMode("label")}><Text style={styles.primaryText}>Scan the package label</Text></TouchableOpacity><TouchableOpacity onPress={() => { setScanned(false); setNotFound(false); }} style={styles.tryAgain}><Text style={styles.tryAgainText}>Try barcode again</Text></TouchableOpacity></View> : null}
-      <View style={styles.manual}><Text style={styles.fieldLabel}>ENTER BARCODE</Text><View style={styles.manualRow}><TextInput value={manualBarcode} onChangeText={setManualBarcode} keyboardType="number-pad" placeholder="012345678901" placeholderTextColor={strictlyColors.textSoft} style={styles.manualInput} /><TouchableOpacity onPress={() => findBarcode(manualBarcode)} style={styles.go}><Ionicons name="arrow-forward" size={19} color={strictlyColors.onLime} /></TouchableOpacity></View></View>
+      {!loading ? <View style={styles.manual}><Text style={styles.fieldLabel}>ENTER BARCODE</Text><View style={styles.manualRow}><TextInput value={manualBarcode} onChangeText={setManualBarcode} keyboardType="number-pad" placeholder="012345678901" placeholderTextColor={strictlyColors.textSoft} style={styles.manualInput} /><TouchableOpacity onPress={() => findBarcode(manualBarcode)} style={styles.go}><Ionicons name="arrow-forward" size={19} color={strictlyColors.onLime} /></TouchableOpacity></View></View> : null}
     </> : null}
 
     {mode === "label" ? <>
@@ -135,6 +138,10 @@ const styles = StyleSheet.create({
   cameraWrap: { height: 390, overflow: "hidden", borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.ink }, camera: { flex: 1 },
   scanFrame: { position: "absolute", left: 34, right: 34, top: 112, height: 128, borderRadius: 18, borderWidth: 3, borderColor: strictlyColors.lime }, cameraHint: { position: "absolute", bottom: 22, alignSelf: "center", color: strictlyColors.white, fontFamily: strictlyType.sansMedium, fontSize: 12 },
   loadingCard: { marginTop: 12, backgroundColor: strictlyColors.surface, borderRadius: strictlyRadius.large }, notFound: { padding: 18, marginTop: 12, backgroundColor: strictlyColors.surface, borderRadius: strictlyRadius.large, borderWidth: 1, borderColor: strictlyColors.border },
+  barcodeLoading: { minHeight: 420, alignItems: "center", justifyContent: "center", paddingHorizontal: 18, backgroundColor: strictlyColors.surface, borderRadius: strictlyRadius.large, borderWidth: 1, borderColor: strictlyColors.border },
+  barcodePill: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 13, height: 38, borderRadius: strictlyRadius.pill, backgroundColor: strictlyColors.cream },
+  barcodeValue: { fontFamily: strictlyType.mono, color: strictlyColors.text, fontSize: 10, letterSpacing: 0.8 },
+  loadingNote: { maxWidth: 270, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 17, textAlign: "center" },
   notFoundTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 18 }, notFoundText: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 12, lineHeight: 18, marginTop: 6 },
   primary: { minHeight: 54, paddingHorizontal: 18, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.lime, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 15 }, primaryText: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.onLime, fontSize: 13 },
   tryAgain: { alignItems: "center", padding: 13 }, tryAgainText: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 12 },

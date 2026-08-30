@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from "react";
 import { ActivityIndicator, Alert, Linking, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { CustomerInfo, PurchasesPackage } from "react-native-purchases";
 import { useSubscription } from "../../provider/RevenuCatProvider";
 import { getRevenueCatUI } from "../../lib/revenueCatUI";
@@ -11,6 +12,7 @@ import { strictlyColors, strictlyRadius, strictlyType } from "../../theme/strict
 type PlanKey = "yearly" | "monthly";
 
 export default function PaywallScreen({ navigation }: any) {
+  const insets = useSafeAreaInsets();
   const {
     isPro,
     billingAvailable,
@@ -36,6 +38,8 @@ export default function PaywallScreen({ navigation }: any) {
   const [selected, setSelected] = useState<PlanKey>("yearly");
   const [busy, setBusy] = useState(false);
   const hasMonthlyPlan = Boolean(monthlyPackage);
+  const close = () => navigation.canGoBack?.() ? navigation.goBack() : navigation.navigate("Main");
+  const closeButton = <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close subscription page" hitSlop={12} onPress={close} style={styles.closeButton}><Ionicons name="close" size={23} color={strictlyColors.text} /></TouchableOpacity>;
 
   const packFor = (plan: PlanKey): PurchasesPackage | undefined => (plan === "yearly" ? yearlyPackage : monthlyPackage);
 
@@ -90,32 +94,35 @@ export default function PaywallScreen({ navigation }: any) {
       // The provider's customerInfo listener already fires here; this call just
       // makes sure the screen closes against fresh state.
       if (!customerInfo) await refreshCustomerInfo();
-      navigation.goBack();
+      close();
     },
     [navigation, refreshCustomerInfo]
   );
 
   if (useRemotePaywall && RevenueCatUI) {
     return (
-      <RevenueCatUI.Paywall
-        style={styles.remotePaywall}
-        options={currentOffering ? { offering: currentOffering } : undefined}
-        onPurchaseCompleted={onRemotePurchase}
-        onRestoreCompleted={onRemotePurchase}
-        onPurchaseError={({ error }: { error?: { message?: string } }) => {
-          Alert.alert("Purchase didn’t complete", error?.message || "Please try again.");
-        }}
-        onRestoreError={() => {
-          Alert.alert("Restore failed", "We couldn’t reach the App Store. Please try again.");
-        }}
-        onDismiss={() => navigation.goBack()}
-      />
+      <View style={styles.remoteWrap}>
+        <RevenueCatUI.Paywall
+          style={styles.remotePaywall}
+          options={currentOffering ? { offering: currentOffering } : undefined}
+          onPurchaseCompleted={onRemotePurchase}
+          onRestoreCompleted={onRemotePurchase}
+          onPurchaseError={({ error }: { error?: { message?: string } }) => {
+            Alert.alert("Purchase didn’t complete", error?.message || "Please try again.");
+          }}
+          onRestoreError={() => {
+            Alert.alert("Restore failed", "We couldn’t reach the App Store. Please try again.");
+          }}
+          onDismiss={close}
+        />
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close subscription page" hitSlop={14} onPress={close} style={[styles.remoteClose, { top: insets.top + 10 }]}><Ionicons name="close" size={24} color={strictlyColors.text} /></TouchableOpacity>
+      </View>
     );
   }
 
   if (isPro) {
     return (
-      <ScreenShell title="StrictlyFuel Pro" eyebrow="ACTIVE" back onBack={() => navigation.goBack()}>
+      <ScreenShell title="StrictlyFuel Pro" eyebrow="ACTIVE" action={closeButton}>
         <View style={styles.activeCard}>
           <Ionicons name="checkmark-circle" size={40} color={strictlyColors.accentText} />
           <Text style={styles.activeTitle}>Pro is active</Text>
@@ -141,7 +148,7 @@ export default function PaywallScreen({ navigation }: any) {
   }
 
   return (
-    <ScreenShell title="Fuel without limits" eyebrow="STRICTLYFUEL PRO" back onBack={() => navigation.goBack()}>
+    <ScreenShell title="Fuel without limits" eyebrow="STRICTLYFUEL PRO" action={closeButton}>
       <Text style={styles.intro}>
         You’ve used {scansUsed} of {scanLimit} AI meal scans this week. Pro lifts that to {SCAN_LIMITS.pro} a week and unlocks unlimited
         meal reshuffles.
@@ -234,7 +241,10 @@ export default function PaywallScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
+  remoteWrap: { flex: 1, backgroundColor: strictlyColors.background },
   remotePaywall: { flex: 1 },
+  remoteClose: { position: "absolute", right: 16, zIndex: 20, width: 46, height: 46, borderRadius: 23, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
+  closeButton: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
 
   intro: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 13, lineHeight: 20, marginBottom: 18 },
 

@@ -154,6 +154,7 @@ export const LEGAL_URLS = {
 } as const;
 
 export const PRO_BENEFITS = [
+  { icon: "flag-outline", title: "Race Mode", text: "Exact carb targets, packing lists and timed fueling for endurance races." },
   { icon: "camera-outline", title: "Unlimited meal scans", text: `${SCAN_LIMITS.pro} AI photo scans a week instead of ${SCAN_LIMITS.free}.` },
   { icon: "shuffle-outline", title: "Unlimited reshuffles", text: `Re-roll meal ideas ${RESHUFFLE_LIMITS.pro} times a week instead of ${RESHUFFLE_LIMITS.free}.` },
   { icon: "flash-outline", title: "No weekly ceiling mid-block", text: "Train twice a day through a hard block without running out of scans." },

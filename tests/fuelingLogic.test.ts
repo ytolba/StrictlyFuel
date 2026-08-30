@@ -2,6 +2,8 @@ import { FUEL_FOODS } from "../src/data/fuelFoods";
 import { calculateHealthScore } from "../src/logic/healthScore";
 import { rankMealAdjustments } from "../src/logic/mealImprovement";
 import { calculateMealMacros, validateMacroCalories } from "../src/logic/nutritionEngine";
+import { buildRaceFuelPlan } from "../src/logic/raceFueling";
+import { raceById } from "../src/data/races";
 import type { FuelFood, FuelTarget, MealIngredient, WorkoutDraft } from "../src/types/fuel";
 
 const assert = (condition: unknown, message: string) => { if (!condition) throw new Error(message); };
@@ -57,4 +59,11 @@ assert(calculateHealthScore(wholeMeal, calculateMealMacros(wholeMeal)).score >= 
 const gelMeal = [ingredient(food("carb-gel"), 64)];
 assert(calculateHealthScore(gelMeal, calculateMealMacros(gelMeal)).score < 65, "Highly formulated fuel should score lower for everyday health quality");
 
-console.log("StrictlyFuel deterministic nutrition and meal-improvement scenarios passed.");
+const halfPlan = buildRaceFuelPlan({ race: raceById("half_marathon"), durationMinutes: 120, bodyWeightKg: 75, gutTraining: "practiced", intervalMinutes: 30 });
+assert(halfPlan.totalTargetCarbs >= 60 && halfPlan.totalTargetCarbs <= 120, "Half-marathon plan should stay in a moderate carbohydrate range");
+assert(halfPlan.totalPackedCarbs >= halfPlan.totalTargetCarbs, "Race packing list should cover the calculated carbohydrate target");
+const triPlan = buildRaceFuelPlan({ race: raceById("ironman_70_3"), durationMinutes: 360, bodyWeightKg: 75, gutTraining: "practiced", intervalMinutes: 20 });
+assert(triPlan.segments.length === 3 && triPlan.segments[0].rate === 0, "Triathlon must split swim, bike and run with no swim intake");
+assert((triPlan.segments.find((segment) => segment.kind === "bike")?.rate || 0) > (triPlan.segments.find((segment) => segment.kind === "run")?.rate || 0), "Long-course triathlon should place the higher tolerable intake on the bike");
+
+console.log("StrictlyFuel deterministic nutrition, meal-improvement and race-fueling scenarios passed.");

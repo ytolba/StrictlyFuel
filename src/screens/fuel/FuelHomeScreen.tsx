@@ -3,6 +3,7 @@ import { Alert, LayoutChangeEvent, ScrollView, StyleSheet, Text, TouchableOpacit
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFuel } from "../../contexts/FuelContext";
 import { useAuth } from "../../contexts/AuthContext";
+import { useSubscription } from "../../provider/RevenuCatProvider";
 import { saveWorkout } from "../../services/fuelService";
 import { loadNutritionProfile, saveNutritionProfile } from "../../services/nutritionProfileService";
 import { EMPTY_NUTRITION_PROFILE, type NutritionProfile } from "../../types/nutritionProfile";
@@ -19,6 +20,7 @@ type EditingField = "duration" | "startsIn" | "weight";
 
 export default function FuelHomeScreen({ navigation }: any) {
   const { user } = useAuth();
+  const { isPro } = useSubscription();
   const { workout, target, createWorkout, recentActivities, favoriteActivities, toggleFavoriteActivity } = useFuel();
 
   const [activityType, setActivityType] = useState<ActivityType>(workout?.activityType || "running");
@@ -143,6 +145,8 @@ export default function FuelHomeScreen({ navigation }: any) {
 
       <Text style={styles.hero}>What are you training today?</Text>
       <Text style={styles.subhero}>Tell us the session. We’ll turn it into food you can actually use.</Text>
+
+      <TouchableOpacity style={styles.raceMode} onPress={() => navigation.navigate("RaceMode")}><View style={styles.raceModeIcon}><Ionicons name="flag" size={21} color={strictlyColors.onLime} /></View><View style={styles.raceModeCopy}><View style={styles.raceModeTitleRow}><Text style={styles.raceModeTitle}>Race Mode</Text><Text style={styles.proBadge}>PRO</Text></View><Text style={styles.raceModeText}>Know the carbs, timing, and exact fuel to pack.</Text></View><Ionicons name={isPro ? "arrow-forward" : "lock-closed"} size={17} color={strictlyColors.textSoft} /></TouchableOpacity>
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Your session</Text>
@@ -301,6 +305,10 @@ const styles = StyleSheet.create({
 
   hero: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 32, lineHeight: 36, letterSpacing: -1.2, maxWidth: 340 },
   subhero: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 14, lineHeight: 21, marginTop: 8, marginBottom: 4, maxWidth: 330 },
+  raceMode: { minHeight: 76, flexDirection: "row", alignItems: "center", gap: 11, padding: 13, marginTop: 14, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
+  raceModeIcon: { width: 44, height: 44, borderRadius: 15, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.lime }, raceModeCopy: { flex: 1 }, raceModeTitleRow: { flexDirection: "row", alignItems: "center", gap: 7 },
+  raceModeTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 15 }, proBadge: { paddingHorizontal: 6, paddingVertical: 3, borderRadius: strictlyRadius.pill, overflow: "hidden", backgroundColor: strictlyColors.cream, fontFamily: strictlyType.mono, color: strictlyColors.accentText, fontSize: 7, letterSpacing: 0.8 },
+  raceModeText: { marginTop: 3, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 10, lineHeight: 15 },
 
   activeWrap: { marginTop: 20, marginBottom: 4 },
   resultLabel: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 8, letterSpacing: 1.3, marginBottom: 9 },

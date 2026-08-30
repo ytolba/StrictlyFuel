@@ -14,6 +14,8 @@ import FuelProfileScreen from "../screens/fuel/FuelProfileScreen";
 import MealIdeasScreen from "../screens/fuel/MealIdeasScreen";
 import FuelSettingsScreen from "../screens/fuel/FuelSettingsScreen";
 import PaywallScreen from "../screens/fuel/PaywallScreen";
+import HealthWorkoutsScreen from "../screens/fuel/HealthWorkoutsScreen";
+import RaceModeScreen from "../screens/fuel/RaceModeScreen";
 import type { CommunityFilters, FuelPost } from "../types/fuel";
 import { strictlyColors } from "../theme/strictlyTheme";
 
@@ -32,6 +34,8 @@ export type AppStackParamList = {
   MealIdeas: undefined;
   Settings: undefined;
   Paywall: undefined;
+  HealthWorkouts: undefined;
+  RaceMode: undefined;
 };
 
 const Stack = createStackNavigator<AppStackParamList>();
@@ -58,5 +62,7 @@ export default function AppStackNavigator() {
     <Stack.Screen name="MealIdeas" component={MealIdeasScreen} />
     <Stack.Screen name="Settings" component={FuelSettingsScreen} />
     <Stack.Screen name="Paywall" component={PaywallScreen} options={{ presentation: "modal", ...TransitionPresets.ModalSlideFromBottomIOS }} />
+    <Stack.Screen name="HealthWorkouts" component={HealthWorkoutsScreen} />
+    <Stack.Screen name="RaceMode" component={RaceModeScreen} />
   </Stack.Navigator>;
 }

@@ -81,7 +81,7 @@ async function searchOpenFoodFacts(query: string): Promise<NormalizedFood[]> {
   url.searchParams.set("action", "process");
   url.searchParams.set("json", "1");
   url.searchParams.set("page_size", "18");
-  url.searchParams.set("fields", "code,product_name,brands,categories,image_front_small_url,nutriments");
+  url.searchParams.set("fields", "code,product_name,brands,categories,image_front_small_url,serving_size,serving_quantity,nutriments");
   const response = await fetch(url, {
     headers: { "User-Agent": "StrictlyFuel/1.0 (food-catalog@strictlyinc.com)" },
     signal: AbortSignal.timeout(8000),
@@ -114,7 +114,7 @@ async function lookupOpenFoodFactsBarcode(barcode: string): Promise<NormalizedFo
   const hosts = ["world.openfoodfacts.org", "us.openfoodfacts.org", "openfoodfacts.org"];
   for (const host of hosts) {
     try {
-      const response = await fetch(`https://${host}/api/v2/product/${encodeURIComponent(barcode)}.json?fields=code,product_name,brands,categories,image_front_small_url,nutriments`, {
+      const response = await fetch(`https://${host}/api/v2/product/${encodeURIComponent(barcode)}.json?fields=code,product_name,brands,categories,image_front_small_url,serving_size,serving_quantity,nutriments`, {
         headers: { "User-Agent": "StrictlyFuel/1.0 (food-catalog@strictlyinc.com)" }, signal: AbortSignal.timeout(8000),
       });
       if (!response.ok) continue;
@@ -147,6 +147,36 @@ function barcodeCandidates(value: string) {
   return [...values].filter((candidate) => candidate.length >= 8);
 }
 
+function defaultPortion(food: NormalizedFood) {
+  const raw = food.raw_source_data as any;
+  if (food.source_id === "open_food_facts") {
+    const grams = number(raw?.serving_quantity);
+    if (grams > 0 && grams <= 2500) return { grams, label: String(raw?.serving_size || `${grams} g`) };
+  }
+  const amount = number(raw?.servingSize);
+  const unit = String(raw?.servingSizeUnit || "").toLowerCase();
+  if (amount > 0 && amount <= 2500 && /^(g|gram|grams)$/.test(unit)) {
+    return { grams: amount, label: String(raw?.householdServingFullText || `${amount} g serving`) };
+  }
+  return null;
+}
+
+async function cacheDefaultPortions(admin: any, stored: any[], sourceFoods: NormalizedFood[]) {
+  const portions = stored.flatMap((saved) => {
+    const source = sourceFoods.find((food) => food.source_id === saved.source_id && food.source_product_id === saved.source_product_id);
+    const portion = source ? defaultPortion(source) : null;
+    return portion ? [{ food_id: saved.id, label: portion.label, amount: 1, unit: "serving", gram_weight: portion.grams, is_default: true, source_description: `${saved.source_id} package serving` }] : [];
+  });
+  if (portions.length) await admin.from("food_portions").upsert(portions, { onConflict: "food_id,label,amount,unit" });
+}
+
+async function hydrateCachedBarcodePortion(admin: any, stored: any, barcode: string) {
+  const { data: portions } = await admin.from("food_portions").select("id").eq("food_id", stored.id).limit(1);
+  if (portions?.length || stored.source_id !== "open_food_facts") return;
+  const fresh = await lookupOpenFoodFactsBarcode(barcode);
+  if (fresh.length) await cacheDefaultPortions(admin, [stored], fresh);
+}
+
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const startedAt = Date.now();
@@ -165,10 +195,16 @@ Deno.serve(async (request) => {
         const { data: alias } = await admin.from("food_barcode_aliases").select("food_id").eq("barcode", candidate).limit(1);
         if (alias?.[0]?.food_id) {
           const { data: aliased } = await admin.from("foods").select(foodSelect).eq("id", alias[0].food_id).limit(1);
-          if (aliased?.length) return Response.json({ foods: aliased, source: "catalog", cached: true }, { headers: corsHeaders });
+          if (aliased?.length) {
+            await hydrateCachedBarcodePortion(admin, aliased[0], candidate);
+            return Response.json({ foods: aliased, source: "catalog", cached: true }, { headers: corsHeaders });
+          }
         }
         const { data: saved } = await admin.from("foods").select(foodSelect).eq("barcode", candidate).limit(1);
-        if (saved?.length) return Response.json({ foods: saved, source: "catalog", cached: true }, { headers: corsHeaders });
+        if (saved?.length) {
+          await hydrateCachedBarcodePortion(admin, saved[0], candidate);
+          return Response.json({ foods: saved, source: "catalog", cached: true }, { headers: corsHeaders });
+        }
       }
       let external: NormalizedFood[] = [];
       for (const candidate of candidates) {
@@ -182,6 +218,7 @@ Deno.serve(async (request) => {
       });
       const { data: stored, error: storeError } = await admin.from("foods").upsert(rows, { onConflict: "source_id,source_product_id" }).select(foodSelect);
       if (storeError) throw storeError;
+      await cacheDefaultPortions(admin, stored || [], external);
       if (stored?.[0]?.id) {
         await admin.from("food_barcode_aliases").upsert(candidates.map((candidate) => ({ barcode: candidate, food_id: stored[0].id, source: "open_food_facts" })), { onConflict: "barcode" });
       }
@@ -223,8 +260,9 @@ Deno.serve(async (request) => {
     }).filter((food) => food.carbs_per_100g <= 100 && food.protein_per_100g <= 100 && food.fat_per_100g <= 100);
 
     if (rows.length) {
-      const { error: upsertError } = await admin.from("foods").upsert(rows, { onConflict: "source_id,source_product_id" });
+      const { data: storedFoods, error: upsertError } = await admin.from("foods").upsert(rows, { onConflict: "source_id,source_product_id" }).select("id,source_id,source_product_id");
       if (upsertError) console.error("Food cache upsert failed", upsertError.message);
+      else await cacheDefaultPortions(admin, storedFoods || [], external);
     }
 
     const { data: combined, error: combinedError } = await admin.rpc("search_food_catalog", { search_text: normalizedQuery, result_limit: Math.min(number(limit) || 25, 50) });
