@@ -38,9 +38,16 @@ export default function FoodCaptureScreen({ navigation }: any) {
   const [label, setLabel] = useState<FoodLabelAnalysis>();
   const [numericKey, setNumericKey] = useState<NumericField>();
 
+  const closeCapture = () => {
+    if (navigation.canGoBack?.()) return navigation.goBack();
+    const parent = navigation.getParent?.();
+    if (parent?.canGoBack?.()) return parent.goBack();
+    navigation.navigate("BuildMeal");
+  };
+
   const addAndReturn = (food: any) => {
     addIngredient({ food, grams: food.defaultGrams });
-    navigation.goBack();
+    closeCapture();
   };
 
   const findBarcode = async (value: string) => {
@@ -84,7 +91,7 @@ export default function FoodCaptureScreen({ navigation }: any) {
   };
 
   const title = mode === "barcode" ? "Scan barcode" : mode === "label" ? "Add from label" : "Add a packaged food";
-  return <ScreenShell title={title} eyebrow="FOOD CAPTURE" back onBack={() => mode === "choose" ? navigation.goBack() : setMode("choose")}>
+  return <ScreenShell title={title} eyebrow="FOOD CAPTURE" back onBack={() => mode === "choose" ? closeCapture() : setMode("choose")}>
     {mode === "choose" ? <>
       <Text style={styles.intro}>Use the fastest source available. You’ll always review the food before it enters your meal.</Text>
       <TouchableOpacity style={styles.choice} onPress={() => setMode("barcode")}><View style={styles.choiceIcon}><Ionicons name="barcode-outline" size={27} color={strictlyColors.onLime} /></View><View style={styles.choiceCopy}><Text style={styles.choiceTitle}>Scan a barcode</Text><Text style={styles.choiceText}>Find the exact packaged product and its listed macros.</Text></View><Ionicons name="chevron-forward" size={19} color={strictlyColors.text} /></TouchableOpacity>

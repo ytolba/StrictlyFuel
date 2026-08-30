@@ -31,7 +31,7 @@ Everything below has to match the constants in `src/config/monetization.ts`.
 | --- | --- |
 | Entitlement identifier | `strictlyfuel_pro` |
 | Package identifiers in the offering | `monthly`, `yearly` |
-| App Store product ids | `StrictlyFuel_Yearly` (live yearly product; add monthly when it exists) |
+| App Store product ids | `StrictlyFuel_Monthly`, `StrictlyFuel_Yearly` |
 | Offering | whichever is marked **Current** |
 
 1. **Product catalog → Products** — import the two subscriptions from App Store

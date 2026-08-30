@@ -57,7 +57,7 @@ export const RC_PACKAGE_IDS = {
 
 /** App Store Connect product identifiers attached to the packages above. */
 export const PRODUCT_IDS = {
-  monthly: "strictlyfuel_pro_monthly",
+  monthly: "StrictlyFuel_Monthly",
   // This must match the product identifier in App Store Connect exactly.
   yearly: "StrictlyFuel_Yearly",
 } as const;
