@@ -1,30 +1,33 @@
 import React from "react";
 import { StyleSheet, Text, View, type ViewStyle } from "react-native";
-import Svg, { Polygon } from "react-native-svg";
-import { strictlyColors, strictlyType } from "../theme/strictlyTheme";
+import Svg, { Circle, Path } from "react-native-svg";
+import { strictlyColors, strictlyDarkPalette, strictlyType } from "../theme/strictlyTheme";
 
 type BrandMarkProps = {
   size?: number;
+  /** True when the mark sits on the adaptive page; false on a fixed dark ground (splash, onboarding hero). */
   dark?: boolean;
   onCream?: boolean;
 };
 
-export const StrictlyMark = ({ size = 38, dark = true, onCream = false }: BrandMarkProps) => (
-  <Svg width={size * 0.88} height={size} viewBox="0 0 100 113.2">
-    <Polygon
-      points="61.4,0 100,0 82.6,16.4 68.5,16.5 25.1,55.5 25,63 33.1,63.3 65.7,34.4 93.2,34.2 93.3,63.7 38.6,113.2 0,113.2 17.4,96.8 31.5,96.7 74.9,57.7 75,50.2 66.9,49.9 34.3,78.8 6.8,79 6.7,49.5"
-      /**
-       * The mark is a solid silhouette, so its fill has to contrast with
-       * whatever is behind it. `paper` and `ink` are both close to the app's
-       * own surfaces, which is why the logo used to disappear on the sign-up
-       * and onboarding screens. `text` is the one token guaranteed to read
-       * against the page in either appearance; `onCream` covers the launch
-       * screen, which stays cream in both.
-       */
-      fill={onCream ? strictlyColors.onCreamLight : dark ? strictlyColors.text : strictlyColors.inverseText}
-    />
-  </Svg>
-);
+/** The StrictlyFuel lightning bolt and its accent dot, from the brand kit's 128-unit artboard. */
+const BOLT = "M72 17 30 68h31l-5 43 42-55H67z";
+const VIEWBOX = "26 13 84 102";
+const ASPECT = 84 / 102;
+
+export const StrictlyMark = ({ size = 38, dark = true, onCream = false }: BrandMarkProps) => {
+  // The bolt is the accent: lime on the dark grounds, the deep olive accent on
+  // light surfaces where lime would disappear. The dot takes the text color so
+  // the mark always carries one high-contrast element.
+  const bolt = onCream ? strictlyDarkPalette.onLime : dark ? strictlyColors.accentText : strictlyDarkPalette.lime;
+  const dot = onCream ? strictlyDarkPalette.onLime : dark ? strictlyColors.text : strictlyDarkPalette.text;
+  return (
+    <Svg width={size * ASPECT} height={size} viewBox={VIEWBOX} accessibilityLabel="StrictlyFuel">
+      <Path d={BOLT} fill={bolt} />
+      <Circle cx={98} cy={25} r={8} fill={dot} />
+    </Svg>
+  );
+};
 
 type BrandLockupProps = BrandMarkProps & {
   compact?: boolean;
@@ -41,11 +44,16 @@ export const StrictlyBrand = ({
   <View style={[styles.lockup, style]}>
     <StrictlyMark size={size} dark={dark} onCream={onCream} />
     {!compact && (
-      <View style={styles.wordmark}>
-        <Text style={[styles.strictly, (!dark || onCream) && styles.strictlyLight, onCream && styles.strictlyOnCream]}>
-          STRICTLY
-        </Text>
-      </View>
+      <Text
+        style={[
+          styles.wordmark,
+          { fontSize: Math.max(17, Math.round(size * 0.42)) },
+          !dark && styles.wordmarkOnDark,
+          onCream && styles.wordmarkOnCream,
+        ]}
+      >
+        StrictlyFuel
+      </Text>
     )}
   </View>
 );
@@ -54,23 +62,18 @@ const styles = StyleSheet.create({
   lockup: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 9,
+    gap: 10,
   },
   wordmark: {
-    flexDirection: "row",
-    alignItems: "baseline",
-  },
-  strictly: {
     color: strictlyColors.text,
     fontFamily: strictlyType.sansBold,
     fontWeight: "700",
-    fontSize: 18,
-    letterSpacing: 2.4,
+    letterSpacing: -0.4,
   },
-  strictlyLight: {
-    color: strictlyColors.inverseText,
+  wordmarkOnDark: {
+    color: strictlyDarkPalette.text,
   },
-  strictlyOnCream: {
-    color: strictlyColors.onCreamLight,
+  wordmarkOnCream: {
+    color: strictlyDarkPalette.onLime,
   },
 });

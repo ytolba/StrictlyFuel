@@ -46,6 +46,6 @@ const styles = StyleSheet.create({
   permission: { minHeight: 300, padding: 24, alignItems: "center", justifyContent: "center", borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface },
   permissionText: { marginTop: 10, color: strictlyColors.text, fontFamily: strictlyType.sans, fontSize: 12 },
   permissionButton: { height: 46, marginTop: 15, paddingHorizontal: 18, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.lime, alignItems: "center", justifyContent: "center" },
-  permissionButtonText: { color: strictlyColors.onLime, fontFamily: strictlyType.sansMedium, fontWeight: "800" },
+  permissionButtonText: { color: strictlyColors.onLime, fontFamily: strictlyType.sansMedium, fontWeight: "700" },
   cancelTextButton: { padding: 12 }, cancelText: { color: strictlyColors.textSoft, fontFamily: strictlyType.sansMedium },
 });

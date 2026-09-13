@@ -3,123 +3,120 @@ import { DynamicColorIOS, Platform } from "react-native";
 /**
  * StrictlyFuel design tokens.
  *
- * The app is brand-green first: the page itself is the deep brand green and
- * cards lift off it, rather than the old near-white sheet. Two rules keep this
- * readable everywhere:
+ * The app shares the Strictly product system with strictlyinc.com: a
+ * near-black ground, raised graphite surfaces with hairline borders, and one
+ * lime accent that carries the primary action and live data. Two rules keep
+ * this readable everywhere:
  *
- *   - `text` / `textSoft` are the ONLY text colors on dark surfaces.
+ *   - `text` / `textSoft` are the ONLY text colors on page and card surfaces.
  *   - `onLime` (and `onLimeSoft`) are the ONLY text/icon colors on lime,
- *     because lime is the one light surface in the system.
+ *     because lime is a fill, never a text color on light surfaces.
  */
 export const strictlyLightPalette = {
-  ink: "#123C2A",
-  inkSoft: "#20543B",
-  background: "#F2EAD7",
-  surface: "#FBF5E7",
-  surfaceMuted: "#E8DFC9",
-  cream: "#EDE3CD",
-  paper: "#FBF5E7",
-  lime: "#C9DA5B",
-  limeDim: "#AEBE48",
-  sage: "#6F8876",
-  text: "#143323",
-  textSoft: "#5F7565",
-  muted: "#7F8C81",
-  onLime: "#0A1C12",
-  onLimeSoft: "#2C4A32",
-  border: "#D7CDB8",
-  borderStrong: "#B8AD96",
-  line: "#D7CDB8",
-  good: "#287A48",
-  clay: "#B96D4F",
-  danger: "#B84B3D",
-  dangerSurface: "#F4D8CE",
-  white: "#FFF9EC",
-  black: "#0A1C12",
-  glass: "rgba(18, 60, 42, 0.90)",
-  inverseText: "#FFF9EC",
-  inverseTextSoft: "#DDE4D8",
-  overlaySubtle: "rgba(18,60,42,0.08)",
-  overlayLine: "rgba(255,249,236,0.14)",
-  scrim: "rgba(4,14,9,0.62)",
-  shadow: "#0A1C12",
-  inverseOverlay: "rgba(255,249,236,0.10)",
-  onAccentOverlay: "rgba(10,28,18,0.12)",
+  ink: "#08090A",
+  inkSoft: "#1A1D20",
+  background: "#F4F5F4",
+  surface: "#FFFFFF",
+  surfaceMuted: "#EBEDEB",
+  cream: "#EEF4DA",         // lime-tinted callout blocks
+  paper: "#FFFFFF",
+  lime: "#CDF564",
+  limeDim: "#B9E148",
+  sage: "#3F7A4C",
+  text: "#0B0C0D",
+  textSoft: "#4F5652",
+  muted: "#6A716D",
+  onLime: "#08090A",
+  onLimeSoft: "#2E3A12",
+  border: "#DEE1DF",
+  borderStrong: "#C4C8C5",
+  line: "#DEE1DF",
+  good: "#2B7A45",
+  clay: "#B4583A",
+  danger: "#B8392C",
+  dangerSurface: "#F8DDD8",
+  white: "#FFFFFF",
+  black: "#08090A",
+  glass: "rgba(8, 9, 10, 0.90)",
+  inverseText: "#F4F5F4",
+  inverseTextSoft: "#C9CECB",
+  overlaySubtle: "rgba(8,9,10,0.06)",
+  overlayLine: "rgba(255,255,255,0.14)",
+  scrim: "rgba(0,0,0,0.55)",
+  shadow: "#000000",
+  inverseOverlay: "rgba(255,255,255,0.10)",
+  onAccentOverlay: "rgba(8,9,10,0.12)",
 
   /**
-   * Lime is a *fill* colour. As a foreground it only works against the dark
-   * greens: on the cream surfaces of light mode #C9DA5B lands at 1.2–1.4:1,
-   * which is effectively invisible. `accentText` is the accent to use for
-   * text, icons and selection borders that sit on the page — it reads at
-   * 5.6:1 or better on every light surface and stays lime in dark mode.
+   * Lime is a *fill* colour. On the light surfaces #CDF564 lands near 1.3:1,
+   * so `accentText` is the accent for text, icons and selection borders on the
+   * page — 7:1 on white — and stays lime in dark mode.
    */
-  accentText: "#4C5C10",
+  accentText: "#4A5E0C",
 
-  /** Typed value color in text inputs (email/password, etc). Explicit near-black in light mode. */
-  fieldText: "#0A0A0A",
+  /** Typed value color in text inputs (email/password, etc). */
+  fieldText: "#0B0C0D",
 
-  /**
-   * Stable cream tokens used by artwork and other non-adaptive brand assets.
-   */
-  creamLight: "#F2EAD7",
-  onCreamLight: "#0A1C12",
+  /** Stable tokens used by artwork and other non-adaptive brand assets. */
+  creamLight: "#F4F5F4",
+  onCreamLight: "#08090A",
 } as const;
 
 export const strictlyDarkPalette = {
-  // Brand greens, darkest to lightest.
-  ink: "#0A1C12",           // deepest — high-emphasis cards, and content on lime
-  inkSoft: "#15301F",       // inset wells inside dark cards
-  background: "#102A1C",    // the page
-  surface: "#1A3A28",       // cards
-  surfaceMuted: "#234A33",  // chips, inputs, secondary fills
-  cream: "#1E4230",         // tinted callout blocks (a dark green, despite the name)
-  paper: "#1A3A28",
+  // Grounds, darkest to lightest.
+  ink: "#050607",           // deepest — high-emphasis cards, and content on lime
+  inkSoft: "#0C0E10",       // inset wells inside dark cards
+  background: "#08090A",    // the page
+  surface: "#101214",       // cards
+  surfaceMuted: "#181B1E",  // chips, inputs, secondary fills
+  cream: "#141A10",         // lime-tinted callout blocks
+  paper: "#101214",
 
   // Accent.
-  lime: "#D8E66B",
-  limeDim: "#AEBC4E",
-  sage: "#9BB89F",
+  lime: "#CDF564",
+  limeDim: "#B9E148",
+  sage: "#8FE3A0",
 
   // Text.
-  text: "#F4EBD7",
-  textSoft: "#C5BDAA",
-  muted: "#7E9384",
-  onLime: "#0A1C12",        // text/icons sitting on a lime surface
-  onLimeSoft: "#2C4A32",
+  text: "#F4F5F4",
+  textSoft: "#A2AAA6",
+  muted: "#838B87",
+  onLime: "#08090A",        // text/icons sitting on a lime surface
+  onLimeSoft: "#2E3A12",
 
   // Lines.
-  border: "#2B5138",
-  borderStrong: "#3B6749",
-  line: "#2B5138",
+  border: "#1F2326",
+  borderStrong: "#2E3337",
+  line: "#1F2326",
 
   // Status.
-  good: "#7FC98A",
-  clay: "#E08A6E",
+  good: "#8FE3A0",
+  clay: "#F0A080",
   danger: "#FF8A7A",
-  dangerSurface: "#3A1F1C",
+  dangerSurface: "#2A1614",
 
   // Absolutes.
-  white: "#FFF9EC",
-  black: "#0A0A0A",
-  glass: "rgba(8, 22, 14, 0.88)",
-  inverseText: "#FFF9EC",
-  inverseTextSoft: "#C5BDAA",
-  overlaySubtle: "rgba(255,249,236,0.08)",
-  overlayLine: "rgba(255,249,236,0.14)",
-  scrim: "rgba(4,14,9,0.72)",
-  shadow: "#050A07",
-  inverseOverlay: "rgba(255,249,236,0.10)",
-  onAccentOverlay: "rgba(10,28,18,0.12)",
+  white: "#FFFFFF",
+  black: "#000000",
+  glass: "rgba(8, 9, 10, 0.88)",
+  inverseText: "#F4F5F4",
+  inverseTextSoft: "#A2AAA6",
+  overlaySubtle: "rgba(255,255,255,0.06)",
+  overlayLine: "rgba(255,255,255,0.12)",
+  scrim: "rgba(0,0,0,0.72)",
+  shadow: "#000000",
+  inverseOverlay: "rgba(255,255,255,0.08)",
+  onAccentOverlay: "rgba(8,9,10,0.12)",
 
-  /** Accent foreground. On the dark greens lime already reads at 7–11:1. */
-  accentText: "#D8E66B",
+  /** Accent foreground. On the near-black grounds lime reads at 14:1+. */
+  accentText: "#CDF564",
 
-  /** Typed value color in text inputs (email/password, etc). Explicit warm beige in dark mode. */
-  fieldText: "#E9D8B4",
+  /** Typed value color in text inputs (email/password, etc). */
+  fieldText: "#F4F5F4",
 
-  /** Stable cream tokens used by artwork and other non-adaptive brand assets. */
-  creamLight: "#F2EAD7",
-  onCreamLight: "#0A1C12",
+  /** Stable tokens used by artwork and other non-adaptive brand assets. */
+  creamLight: "#F4F5F4",
+  onCreamLight: "#08090A",
 } as const;
 
 export type StrictlyPalette = { [K in keyof typeof strictlyDarkPalette]: string };
@@ -156,7 +153,7 @@ export const semanticColors = {
  */
 export const scoreColors = {
   excellent: "#8FE3A0",
-  good: "#D8E66B",
+  good: "#CDF564",
   fair: "#F0B860",
   poor: "#F08C72",
 } as const;
@@ -180,7 +177,7 @@ export const onScoreColor = strictlyColors.ink;
  */
 export const carbSpeedColors = {
   fast: "#F5C451",   // amber — burns quickly
-  medium: "#D8E66B", // lime  — the brand middle
+  medium: "#CDF564", // lime  — the brand middle
   slow: "#6FB8C9",   // teal  — slow release
   unknown: "#A8AAA3", // neutral — evidence is incomplete
 } as const;
@@ -196,15 +193,20 @@ export const strictlyRadius = {
   small: 8,
   medium: 12,
   large: 16,
-  xlarge: 22,
+  xlarge: 20,
   pill: 999,
 } as const;
 
+/**
+ * San Francisco carries the whole UI. `mono` used to set small tracked labels
+ * in Menlo; labels are quiet wayfinding, not code, so they share the system
+ * face and rely on weight and size instead.
+ */
 export const strictlyType = {
   sans: "System",
   sansMedium: "System",
   sansBold: "System",
-  mono: "Menlo",
+  mono: "System",
 } as const;
 
 /** Layout constants for the docked bottom tab bar. */

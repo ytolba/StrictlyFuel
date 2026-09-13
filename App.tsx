@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
     color: strictlyDarkPalette.inverseText,
     fontFamily: strictlyType.mono,
     fontWeight: "600",
-    fontSize: 10,
+    fontSize: 11,
     letterSpacing: 2.4,
   },
 });

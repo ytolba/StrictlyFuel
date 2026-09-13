@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
     borderColor: strictlyColors.border,
     borderRadius: strictlyRadius.xlarge,
   },
-  legalCopy: { marginTop: 16, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 10, lineHeight: 15, textAlign: "center" },
+  legalCopy: { marginTop: 16, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 15, textAlign: "center" },
   legalLink: { fontFamily: strictlyType.sansMedium, color: strictlyColors.text, fontWeight: "700", textDecorationLine: "underline" },
 
   errorBanner: {

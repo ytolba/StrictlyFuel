@@ -8,7 +8,7 @@
     "icon": "./assets/icon.png",
     "splash": {
       "image": "./assets/branding/strictly-splash.png",
-      "backgroundColor": "#102A1C",
+      "backgroundColor": "#08090A",
       "resizeMode": "contain"
     },
     "scheme": "strictlyfuel",
@@ -17,7 +17,7 @@
       "package": "com.strictlyfuel.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
-        "backgroundColor": "#1D3B2A"
+        "backgroundColor": "#08090A"
       },
       "permissions": [
         "CAMERA",

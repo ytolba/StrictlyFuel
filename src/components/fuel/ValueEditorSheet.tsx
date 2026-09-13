@@ -175,18 +175,18 @@ const styles = StyleSheet.create({
   handle: { width: 42, height: 4, borderRadius: 2, backgroundColor: strictlyColors.borderStrong, alignSelf: "center", marginBottom: 18 },
   head: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
   headCopy: { flex: 1 },
-  eyebrow: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 8, letterSpacing: 1.2 },
-  title: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 21, marginTop: 4 },
+  eyebrow: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 11, letterSpacing: 0.3 },
+  title: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 21, marginTop: 4 },
   close: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.surfaceMuted },
 
   unitSwitch: { flexDirection: "row", gap: 6, padding: 4, marginTop: 16, borderRadius: strictlyRadius.pill, backgroundColor: strictlyColors.surfaceMuted },
   unitOption: { flex: 1, height: 40, alignItems: "center", justifyContent: "center", borderRadius: strictlyRadius.pill },
   unitOptionActive: { backgroundColor: strictlyColors.lime },
   unitText: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.textSoft, fontSize: 12 },
-  unitTextActive: { color: strictlyColors.onLime, fontWeight: "900" },
+  unitTextActive: { color: strictlyColors.onLime, fontWeight: "700" },
 
   inputWrap: { height: 80, flexDirection: "row", alignItems: "center", gap: 8, marginTop: 14, paddingHorizontal: 18, backgroundColor: strictlyColors.background, borderRadius: strictlyRadius.large, borderWidth: 2, borderColor: strictlyColors.accentText },
-  input: { flex: 1, fontFamily: strictlyType.sansMedium, fontWeight: "900", fontSize: 34, color: strictlyColors.text },
+  input: { flex: 1, fontFamily: strictlyType.sansMedium, fontWeight: "700", fontSize: 34, color: strictlyColors.text },
   unit: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 13 },
   help: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 16, marginTop: 10 },
 
@@ -195,5 +195,5 @@ const styles = StyleSheet.create({
   presetText: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 11 },
 
   save: { height: 56, marginTop: 18, backgroundColor: strictlyColors.lime, borderRadius: strictlyRadius.medium, alignItems: "center", justifyContent: "center" },
-  saveText: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.onLime, fontSize: 14 },
+  saveText: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.onLime, fontSize: 14 },
 });

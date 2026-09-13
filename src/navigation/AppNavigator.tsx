@@ -79,7 +79,7 @@ export default function AppNavigator() {
             fontFamily: "System",
           },
           bold: {
-            fontWeight: "900",
+            fontWeight: "700",
             fontFamily: "System",
           },
         },

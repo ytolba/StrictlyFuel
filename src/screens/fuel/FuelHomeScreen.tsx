@@ -10,6 +10,7 @@ import { DEFAULT_ACTIVITIES, getActivity, supportsHeartRateZones } from "../../d
 import { formatDuration } from "../../logic/mealTiming";
 import type { ActivityType, HeartRateZone, WorkoutIntensity } from "../../types/fuel";
 import { ScreenShell } from "../../components/fuel/ScreenShell";
+import { StrictlyBrand } from "../../components/StrictlyBrand";
 import { FuelTargetCard } from "../../components/fuel/FuelTargetCard";
 import { ValueEditorSheet, DURATION_UNITS, WEIGHT_UNITS } from "../../components/fuel/ValueEditorSheet";
 import { ActivityPickerSheet } from "../../components/fuel/ActivityPickerSheet";
@@ -181,10 +182,7 @@ export default function FuelHomeScreen({ navigation, route }: any) {
   return (
     <ScreenShell scrollRef={scrollRef}>
       <View style={styles.brandRow}>
-        <View>
-          <Text style={styles.brand}>STRICTLY</Text>
-          <Text style={styles.brandSub}>FUEL THE WORK.</Text>
-        </View>
+        <StrictlyBrand size={26} />
         <TouchableOpacity onPress={() => navigation.navigate("Profile")} style={styles.avatar} accessibilityLabel="Your profile">
           <Text style={styles.avatarText}>{(user?.firstName || "A").slice(0, 1).toUpperCase()}</Text>
         </TouchableOpacity>
@@ -372,86 +370,84 @@ export default function FuelHomeScreen({ navigation, route }: any) {
 
 const styles = StyleSheet.create({
   brandRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 8, marginBottom: 20 },
-  brand: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 20, letterSpacing: -0.5 },
-  brandSub: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 8, letterSpacing: 1.4, marginTop: 2 },
-  avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: strictlyColors.surfaceMuted, alignItems: "center", justifyContent: "center" },
-  avatarText: { color: strictlyColors.accentText, fontFamily: strictlyType.sansMedium, fontWeight: "800" },
+  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: strictlyColors.surfaceMuted, borderWidth: 1, borderColor: strictlyColors.border, alignItems: "center", justifyContent: "center" },
+  avatarText: { color: strictlyColors.accentText, fontFamily: strictlyType.sansMedium, fontWeight: "700" },
 
-  hero: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 32, lineHeight: 36, letterSpacing: -1.2, maxWidth: 340 },
+  hero: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 32, lineHeight: 36, letterSpacing: -1.2, maxWidth: 340 },
   subhero: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 14, lineHeight: 21, marginTop: 8, marginBottom: 4, maxWidth: 330 },
   raceMode: { minHeight: 76, flexDirection: "row", alignItems: "center", gap: 11, padding: 13, marginTop: 14, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
   raceModeIcon: { width: 44, height: 44, borderRadius: 15, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.lime }, raceModeCopy: { flex: 1 },
-  raceModeTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 15 },
-  raceModeText: { marginTop: 3, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 10, lineHeight: 15 },
+  raceModeTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 15 },
+  raceModeText: { marginTop: 3, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 15 },
   healthContext: { marginTop: 14, padding: 13, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
   healthContextHead: { flexDirection: "row", alignItems: "center", gap: 11 },
   healthContextIcon: { width: 40, height: 40, flexShrink: 0, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: "#E64A55" },
   healthContextCopy: { flex: 1, minWidth: 0 },
-  healthContextEyebrow: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 7, letterSpacing: 0.8 },
-  healthContextTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 13, marginTop: 2 },
-  healthContextDetail: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 10, lineHeight: 14, marginTop: 3 },
+  healthContextEyebrow: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 11, letterSpacing: 0.3 },
+  healthContextTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 13, marginTop: 2 },
+  healthContextDetail: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 14, marginTop: 3 },
   healthWorkoutList: { marginTop: 13, gap: 7 },
   healthWorkout: { minHeight: 54, paddingHorizontal: 12, flexDirection: "row", alignItems: "center", gap: 10, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.surfaceMuted },
   healthWorkoutCopy: { flex: 1 },
-  healthWorkoutTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 12 },
-  healthWorkoutMeta: { marginTop: 3, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 9 },
+  healthWorkoutTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 12 },
+  healthWorkoutMeta: { marginTop: 3, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11 },
   healthWorkoutAction: { minHeight: 31, paddingHorizontal: 10, flexDirection: "row", alignItems: "center", gap: 5, borderRadius: strictlyRadius.pill, backgroundColor: strictlyColors.lime },
-  healthWorkoutActionText: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.onLime, fontSize: 9 },
+  healthWorkoutActionText: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.onLime, fontSize: 11 },
   healthContextFooter: { minHeight: 42, marginTop: 8, paddingHorizontal: 4, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  healthContextFooterText: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 10 },
+  healthContextFooterText: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 11 },
 
   activeWrap: { marginTop: 20, marginBottom: 4 },
-  resultLabel: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 8, letterSpacing: 1.3, marginBottom: 9 },
+  resultLabel: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 11, letterSpacing: 0.3, marginBottom: 9 },
   activeFooter: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, height: 44, marginTop: 8, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.lime },
-  activeFooterText: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.onLime, fontSize: 13 },
+  activeFooterText: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.onLime, fontSize: 13 },
 
   card: { padding: 16, marginTop: 18, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, borderRadius: strictlyRadius.large },
-  cardTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 17, marginBottom: 16 },
-  stepLabel: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 8, letterSpacing: 1.3, marginBottom: 9 },
+  cardTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 17, marginBottom: 16 },
+  stepLabel: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 11, letterSpacing: 0.3, marginBottom: 9 },
 
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 7 },
   chip: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 40, paddingHorizontal: 12, borderRadius: strictlyRadius.pill, backgroundColor: strictlyColors.surfaceMuted },
   chipActive: { backgroundColor: strictlyColors.lime },
   chipText: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.textSoft, fontSize: 12 },
-  chipTextActive: { color: strictlyColors.onLime, fontWeight: "900" },
+  chipTextActive: { color: strictlyColors.onLime, fontWeight: "700" },
   chipMore: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 40, paddingHorizontal: 12, borderRadius: strictlyRadius.pill, borderWidth: 1, borderColor: strictlyColors.borderStrong },
   chipMoreText: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 12 },
   chosen: { fontFamily: strictlyType.sans, color: strictlyColors.accentText, fontSize: 11, marginTop: 9 },
 
   pairRow: { flexDirection: "row", gap: 9, marginTop: 18 },
   pair: { flex: 1, minHeight: 76, justifyContent: "center", paddingHorizontal: 14, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.surfaceMuted },
-  pairLabel: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 7, letterSpacing: 1.1 },
-  pairValue: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 18, marginTop: 5 },
+  pairLabel: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 11, letterSpacing: 0.3 },
+  pairValue: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 18, marginTop: 5 },
   pairIcon: { position: "absolute", top: 12, right: 12 },
 
   segment: { flexDirection: "row", gap: 6, marginBottom: 4 },
   segmentItem: { flex: 1, height: 44, alignItems: "center", justifyContent: "center", borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.surfaceMuted },
   segmentActive: { backgroundColor: strictlyColors.lime },
   segmentText: { fontFamily: strictlyType.sansMedium, color: strictlyColors.textSoft, fontSize: 12, textTransform: "capitalize" },
-  segmentTextActive: { color: strictlyColors.onLime, fontWeight: "900" },
+  segmentTextActive: { color: strictlyColors.onLime, fontWeight: "700" },
 
   zoneBlock: { marginTop: 17 },
   zoneHeading: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
   zoneHeadingCopy: { flex: 1 },
-  zoneHelp: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 10, marginTop: -4, marginBottom: 9 },
-  zoneClear: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.accentText, fontSize: 10 },
+  zoneHelp: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11, marginTop: -4, marginBottom: 9 },
+  zoneClear: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.accentText, fontSize: 11 },
   zoneRow: { flexDirection: "row", gap: 7 },
   zone: { flex: 1, height: 43, borderRadius: strictlyRadius.medium, borderWidth: 1, borderColor: strictlyColors.border, backgroundColor: strictlyColors.surfaceMuted, alignItems: "center", justifyContent: "center" },
   zoneActive: { backgroundColor: strictlyColors.lime, borderColor: strictlyColors.lime },
-  zoneNumber: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 10, fontWeight: "700" },
-  zoneNumberActive: { color: strictlyColors.onLime, fontWeight: "900" },
-  zoneSummary: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 9, lineHeight: 14, marginTop: 7 },
+  zoneNumber: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 11, fontWeight: "700" },
+  zoneNumberActive: { color: strictlyColors.onLime, fontWeight: "700" },
+  zoneSummary: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 14, marginTop: 7 },
 
   weightLine: { height: 48, flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 },
   weightText: { flex: 1, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 12 },
-  weightEdit: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.accentText, fontSize: 11 },
+  weightEdit: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.accentText, fontSize: 11 },
 
   primary: { height: 56, backgroundColor: strictlyColors.lime, borderRadius: strictlyRadius.medium, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 9, marginTop: 4 },
-  primaryText: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.onLime, fontSize: 14 },
+  primaryText: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.onLime, fontSize: 14 },
 
   discover: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 68, paddingHorizontal: 15, marginTop: 12, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
   discoverIcon: { width: 40, height: 40, borderRadius: 14, backgroundColor: strictlyColors.surfaceMuted, alignItems: "center", justifyContent: "center" },
   discoverCopy: { flex: 1 },
-  discoverTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 14 },
+  discoverTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 14 },
   discoverText: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11, marginTop: 3 },
 });
