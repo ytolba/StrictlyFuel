@@ -22,11 +22,21 @@ const slug = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-").
 const label = (foodId: string) => foodById(foodId)?.name.replace(/^Cooked /, "").replace(/^Low-fat /, "") || foodId.replace(/^strictly-/, "").replace(/-/g, " ");
 const tagsFor = (ids: string[]) => {
   const dairy = ids.some((id) => /yogurt|milk|kefir/.test(id));
-  return ["vegetarian", "halal", ...(!dairy ? ["vegan", "dairy-free"] : [])];
+  const meat = ids.some((id) => /chicken|turkey|beef|steak|salmon|tuna/.test(id));
+  const eggs = ids.some((id) => /egg/.test(id));
+  return [
+    "halal",
+    ...(!meat ? ["vegetarian"] : []),
+    ...(!meat && !eggs && !dairy ? ["vegan"] : []),
+    ...(!dairy ? ["dairy-free"] : []),
+  ];
 };
 const allergensFor = (ids: string[]) => [
   ...(ids.some((id) => /bagel|bread|oats|oatmeal|cereal|pancake|waffle|pasta/.test(id)) ? ["gluten"] : []),
   ...(ids.some((id) => /yogurt|milk|kefir/.test(id)) ? ["dairy"] : []),
+  ...(ids.some((id) => /egg/.test(id)) ? ["eggs"] : []),
+  ...(ids.some((id) => /peanut/.test(id)) ? ["peanuts"] : []),
+  ...(ids.some((id) => /tofu/.test(id)) ? ["soy"] : []),
 ];
 const template = (family: string, name: string, ingredients: Array<[string, number]>, idealTimingMinutes: number, prepMinutes: number, instructions: string[], activityTypes = allTraining, minWorkoutMinutes = 30): CuratedMealTemplate => {
   const ids = ingredients.map(([id]) => id);
@@ -107,7 +117,26 @@ const griddleMeals = ["strictly-pancakes", "strictly-waffles"].flatMap((base) =>
   )
 );
 
-export const CURATED_MEAL_TEMPLATES: CuratedMealTemplate[] = [...oatmealMeals, ...creamOfRiceMeals, ...breadMeals, ...yogurtBowls, ...cerealBowls, ...riceBowls, ...pastaMeals, ...smoothies, ...griddleMeals, ...quickFuel];
+/**
+ * Deliberately authored complete meals. These are distinct meals an athlete
+ * would actually prepare, not Cartesian fruit/sweetener permutations.
+ */
+const featuredCompleteMeals: CuratedMealTemplate[] = [
+  template("featured", "Banana Berry Overnight Oats", [["strictly-overnight-oats", 220], ["greek-yogurt", 120], ["banana", 118], ["strictly-blueberries", 80], ["honey", 15]], 135, 5, ["Stir the oats and yogurt together the night before.", "Top with banana, blueberries, and honey before eating."], allTraining, 45),
+  template("featured", "Banana Yogurt Oat Bowl", [["oats", 260], ["greek-yogurt", 150], ["banana", 118], ["honey", 15]], 120, 8, ["Prepare the oats until soft.", "Add yogurt, sliced banana, and honey."], allTraining, 45),
+  template("featured", "Eggs, Toast and Banana Breakfast", [["whole-eggs", 100], ["white-bread", 84], ["banana", 118], ["fruit-juice", 180]], 150, 10, ["Cook the eggs and toast the bread.", "Serve with banana and a small glass of juice."], allTraining, 60),
+  template("featured", "Egg and Rice Breakfast Bowl", [["whole-eggs", 100], ["jasmine-rice", 240], ["spinach", 45], ["salsa", 40]], 150, 12, ["Warm the rice and spinach.", "Top with cooked eggs and salsa."], allTraining, 60),
+  template("featured", "Chicken Rice and Pineapple Bowl", [["chicken", 90], ["jasmine-rice", 260], ["pineapple", 120]], 165, 12, ["Warm the chicken and rice.", "Serve with pineapple and keep added fat light."], endurance, 75),
+  template("featured", "Turkey Rice and Orange Plate", [["turkey-breast", 90], ["white-rice", 260], ["orange", 131]], 165, 12, ["Warm the turkey and rice.", "Serve with the orange on the side."], allTraining, 60),
+  template("featured", "Chicken Marinara Pasta", [["chicken", 90], ["white-pasta", 260], ["tomato-sauce", 100]], 180, 15, ["Warm the chicken and tomato sauce.", "Toss with pasta and season simply."], endurance, 75),
+  template("featured", "Berry Pancake Yogurt Plate", [["strictly-pancakes", 130], ["greek-yogurt", 120], ["strictly-strawberries", 120], ["maple-syrup", 18]], 135, 10, ["Warm the pancakes.", "Serve with yogurt, strawberries, and maple syrup."], allTraining, 45),
+  template("featured", "Banana Waffle Yogurt Plate", [["strictly-waffles", 130], ["greek-yogurt", 120], ["banana", 118], ["maple-syrup", 18]], 135, 10, ["Warm the waffles.", "Serve with yogurt, banana, and maple syrup."], allTraining, 45),
+  template("featured", "English Muffin, Banana and Honey", [["strictly-english-muffin", 65], ["banana", 118], ["honey", 18], ["fruit-juice", 180]], 75, 4, ["Toast the English muffin and add honey.", "Serve with banana and juice."], allTraining, 30),
+  template("featured", "Bagel, Yogurt and Banana", [["bagel", 95], ["greek-yogurt", 120], ["banana", 118], ["honey", 12]], 105, 5, ["Toast the bagel if preferred.", "Serve with yogurt, banana, and honey."], allTraining, 45),
+  template("featured", "Pretzel, Banana and Applesauce Snack", [["strictly-plain-pretzel", 65], ["banana", 118], ["applesauce", 122]], 45, 2, ["Portion the pretzel and applesauce.", "Eat with the banana as a light pre-workout snack."], endurance, 30),
+];
+
+export const CURATED_MEAL_TEMPLATES: CuratedMealTemplate[] = [...featuredCompleteMeals, ...oatmealMeals, ...creamOfRiceMeals, ...breadMeals, ...yogurtBowls, ...cerealBowls, ...riceBowls, ...pastaMeals, ...smoothies, ...griddleMeals, ...quickFuel];
 
 export const ingredientsForTemplate = (meal: CuratedMealTemplate): MealIngredient[] => meal.ingredients.flatMap((item, index) => {
   const food = foodById(item.foodId);

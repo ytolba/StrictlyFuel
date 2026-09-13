@@ -17,10 +17,10 @@ import {
   configureFonts,
 } from "react-native-paper";
 import { StrictlyBrand } from "./src/components/StrictlyBrand";
-import { strictlyLightPalette, strictlyRadius, strictlyType } from "./src/theme/strictlyTheme";
+import { strictlyDarkPalette, strictlyRadius, strictlyType } from "./src/theme/strictlyTheme";
 import { StrictlyAppearanceProvider, useStrictlyAppearance } from "./src/contexts/AppearanceContext";
 
-const SPLASH_BG_COLOR = "#F2EAD7";
+const SPLASH_BG_COLOR = strictlyDarkPalette.background;
 
 // Create a font configuration; note that we rely on our fonts and set the "medium" variant's fontWeight to undefined.
 const fontConfig: any = {
@@ -117,7 +117,7 @@ const AppContent: React.FC = () => {
             },
           ]}
         >
-          <StrictlyBrand size={64} onCream />
+          <StrictlyBrand size={64} dark={false} />
           <Text style={styles.splashTagline}>FUEL THE WORK.</Text>
         </Animated.View>
       )}
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
   },
   splashTagline: {
     marginTop: 18,
-    color: strictlyLightPalette.inkSoft,
+    color: strictlyDarkPalette.inverseText,
     fontFamily: strictlyType.mono,
     fontWeight: "600",
     fontSize: 10,

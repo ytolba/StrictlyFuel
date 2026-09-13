@@ -4,6 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { NavigationContainer } from "@react-navigation/native";
 import * as Linking from "expo-linking";
 import { useAuth } from "../contexts/AuthContext";
+import ResetPasswordScreen from "../screens/ResetPasswordScreen";
 import AuthStackNavigator from "./AuthStackNavigator";
 import AppStackNavigator from "./AppStackNavigator";
 import OnboardingStackNavigator from "./OnboardingStackNavigator";
@@ -13,7 +14,7 @@ import { useStrictlyAppearance } from "../contexts/AppearanceContext";
 
 export default function AppNavigator() {
   const { palette, resolvedMode } = useStrictlyAppearance();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isPasswordRecovery } = useAuth();
   const [isFirstLaunch, setIsFirstLaunch] = useState<boolean | null>(null);
   const linking = {
     prefixes: [
@@ -25,9 +26,14 @@ export default function AppNavigator() {
         Main: "",
         FuelTarget: "fuel-target",
         BuildMeal: "build-meal",
-        NotFound: "*", // Catch-all for unknown deep links
       },
     },
+    // Authentication callbacks are consumed by AuthContext. Allowing React
+    // Navigation to parse them as screen paths creates an invalid NotFound
+    // navigation before the recovery state has been established.
+    filter: (url: string) =>
+      !url.startsWith("strictlyfuel://auth/callback") &&
+      !url.startsWith("strictlyfuel://reset-password"),
   };
 
   useEffect(() => {
@@ -79,7 +85,9 @@ export default function AppNavigator() {
         },
       }}
     >
-      {user ? (
+      {isPasswordRecovery ? (
+        <ResetPasswordScreen />
+      ) : user ? (
         <AppStackNavigator />
       ) : isFirstLaunch ? (
         <OnboardingStackNavigator />

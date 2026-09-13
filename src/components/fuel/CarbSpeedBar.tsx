@@ -2,13 +2,14 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { carbSpeedMeta, strictlyColors, strictlyRadius, strictlyType } from "../../theme/strictlyTheme";
 
-const ORDER = ["fast", "medium", "slow"] as const;
+const ORDER = ["fast", "medium", "slow", "unknown"] as const;
 type Speed = (typeof ORDER)[number];
 
 export type CarbSpeedBarProps = {
   fast: number;
   medium: number;
   slow: number;
+  unknown?: number;
   /** Compact renders just the bar plus a single inline legend line. */
   compact?: boolean;
   /** Shows the one-line explanation of what each speed means. */
@@ -19,11 +20,11 @@ export type CarbSpeedBarProps = {
   onDark?: boolean;
 };
 
-const valueFor = (speed: Speed, fast: number, medium: number, slow: number) =>
-  speed === "fast" ? fast : speed === "medium" ? medium : slow;
+const valueFor = (speed: Speed, fast: number, medium: number, slow: number, unknown: number) =>
+  speed === "fast" ? fast : speed === "medium" ? medium : speed === "slow" ? slow : unknown;
 
-export function CarbSpeedBar({ fast, medium, slow, compact = false, showHints = false, target, onDark = false }: CarbSpeedBarProps) {
-  const total = fast + medium + slow;
+export function CarbSpeedBar({ fast, medium, slow, unknown = 0, compact = false, showHints = false, target, onDark = false }: CarbSpeedBarProps) {
+  const total = fast + medium + slow + unknown;
   const safeTotal = Math.max(1, total);
 
   return (
@@ -33,7 +34,7 @@ export function CarbSpeedBar({ fast, medium, slow, compact = false, showHints = 
           <View style={styles.barEmpty} />
         ) : (
           ORDER.map((speed) => {
-            const value = valueFor(speed, fast, medium, slow);
+            const value = valueFor(speed, fast, medium, slow, unknown);
             if (value <= 0) return null;
             return <View key={speed} style={{ flex: value / safeTotal, backgroundColor: carbSpeedMeta[speed].color }} />;
           })
@@ -43,7 +44,8 @@ export function CarbSpeedBar({ fast, medium, slow, compact = false, showHints = 
       {compact ? (
         <View style={styles.inlineLegend}>
           {ORDER.map((speed) => {
-            const value = valueFor(speed, fast, medium, slow);
+            const value = valueFor(speed, fast, medium, slow, unknown);
+            if (speed === "unknown" && value <= 0) return null;
             return (
               <View key={speed} style={styles.inlineItem}>
                 <View style={[styles.dot, { backgroundColor: carbSpeedMeta[speed].color }]} />
@@ -57,9 +59,10 @@ export function CarbSpeedBar({ fast, medium, slow, compact = false, showHints = 
       ) : (
         <View style={styles.rows}>
           {ORDER.map((speed) => {
-            const value = valueFor(speed, fast, medium, slow);
+            const value = valueFor(speed, fast, medium, slow, unknown);
             const share = Math.round((value / safeTotal) * 100);
-            const goal = target ? valueFor(speed, target.fast, target.medium, target.slow) : null;
+            const goal = speed === "unknown" ? null : target ? valueFor(speed, target.fast, target.medium, target.slow, 0) : null;
+            if (speed === "unknown" && value <= 0) return null;
             const delta = goal === null ? 0 : Math.round(value - goal);
             return (
               <View key={speed} style={[styles.row, onDark && styles.rowOnDark]}>

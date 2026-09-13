@@ -10,7 +10,7 @@ qualify; nothing else in the app makes a model call.
 
 | Feature | Model | Input | Output | Frequency | Is AI required? |
 | --- | --- | --- | --- | --- | --- |
-| Meal photo scan (`analyze-meal`) | `gpt-5.6-luna` | 1 image at `detail: high` + ~40 tokens of workout context | ~8 short fields per food, ≤16 foods | Once per scan; refine is opt-in and costs a scan | **Yes.** Recognising foods on a plate and judging portion size is not derivable from structured data. |
+| Meal photo scan (`analyze-meal`) | `gpt-5.6-terra` | 1–2 images at `detail: high` + short workout context | Identity, state, count, portion interval and confidence per food, ≤16 foods | Once per scan; a second angle is included in the same request | **Yes.** Recognising foods on a plate and judging portion size is not derivable from structured data. |
 | Label photo scan (`analyze-food-label`) | `gpt-5.6-luna` | 1 image at `detail: high` + ~30 tokens | ~20 short fields | Once per contributed product | **Yes.** Reading printed nutrition panels off a package is OCR plus interpretation. |
 
 Everything below runs with **zero tokens**:
@@ -31,20 +31,29 @@ Routing lives in `supabase/functions/_shared/ai.ts`.
 
 - **No model** — anything deterministic. This is the default and covers most of
   the app.
-- **Cheapest current-generation vision model** — both scan features. A smaller
-  previous-generation model costs marginally less per token but reads portions
-  and small print worse, and a wrong gram estimate costs more in corrections
-  than it saves.
-- **Stronger model** — not used. Introduce one only with evidence that the
-  cheaper model is unreliable for a specific task.
+- **Balanced frontier vision model** — meal scans. Portion errors dominate the
+  final macro error, so this path favors accuracy and uses medium reasoning.
+- **Cost-sensitive vision model** — printed-label capture, where deterministic
+  OCR and label validation do most of the work.
 
 Override per feature with `OPENAI_MEAL_MODEL` / `OPENAI_LABEL_MODEL` to trial a
 different model without a redeploy.
 
 ## What is sent
 
-Only what the task needs: one image and a short context string. No user
-profile, no history, no meal database, no full objects.
+Only what the task needs: one or two views of the same meal and a short context
+string. No user profile, history, meal database or full objects are sent.
+
+The model does not calculate the final macros. It returns generic food
+identities, dry/cooked state, visible counts, point estimates, realistic gram
+intervals, and explicit confirmation flags. The client resolves those foods
+against verified nutrition records and performs all arithmetic deterministically.
+
+Dense or visually ambiguous quantities such as nut butter, honey, syrup, oil,
+dry oats and granola are never treated as settled from appearance alone. The
+athlete is offered one optional high-impact question. They can answer it, edit
+the food amount directly, or continue with Strictly's visual estimate. Skipping
+the question preserves the original confidence and wider macro range.
 
 Output is limited to fields a screen actually renders. `visualEvidence`,
 `preparation`, `assumptions` and `warnings` were previously required by the
@@ -57,8 +66,8 @@ the response, and they are gone.
   spend two credits.
 - Editing a portion recalculates macros in code; it never re-runs vision.
 - Re-opening a saved scan reads the stored meal; it never re-runs vision.
-- Refine is an explicit, labelled action that re-reads the photo with the user's
-  correction, and says up front that it costs a scan.
+- Refinement uses a signed, short-lived token for the same image evidence, so a
+  correction can be applied without consuming another user scan allowance.
 - `callVision` retries once, and only on 5xx / 429 / timeout. A 4xx is never
   retried — it would re-upload the image to fail identically.
 

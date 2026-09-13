@@ -117,6 +117,7 @@ export default function MealIdeasScreen({ navigation }: any) {
           fast={meal.macros.fastCarbs}
           medium={meal.macros.mediumCarbs}
           slow={meal.macros.slowCarbs}
+          unknown={meal.macros.unclassifiedCarbs}
         />
 
         <View style={styles.timing}>

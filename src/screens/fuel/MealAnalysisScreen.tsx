@@ -34,6 +34,7 @@ export default function MealAnalysisScreen({ navigation, route }: any) {
 
   const fuelTint = scoreColor(meal.score.total);
   const healthTint = scoreColor(health.score);
+  const availableCarbs = meal.macros.availableCarbs ?? meal.macros.carbs;
 
   const doneButton = (
     <TouchableOpacity style={styles.done} onPress={goHome} hitSlop={8} accessibilityLabel="Done, back to home">
@@ -68,14 +69,21 @@ export default function MealAnalysisScreen({ navigation, route }: any) {
         <Text style={styles.fitLabel}>FOR THIS WORKOUT</Text>
         <Text style={styles.fitText}>{meal.name}</Text>
         <Text style={styles.fitCarbs}>
-          {Math.round(meal.macros.carbs)} g <Text style={styles.fitUnit}>of {target.carbTarget} g target</Text>
+          {Math.round(availableCarbs)} g <Text style={styles.fitUnit}>of {target.carbTarget} g available-carb target</Text>
         </Text>
         <CarbSpeedBar
           fast={meal.macros.fastCarbs}
           medium={meal.macros.mediumCarbs}
           slow={meal.macros.slowCarbs}
+          unknown={meal.macros.unclassifiedCarbs}
           target={{ fast: target.fastCarbs, medium: target.mediumCarbs, slow: target.slowCarbs }}
         />
+        {meal.score.provisional ? (
+          <View style={styles.confidenceNote}>
+            <Ionicons name="alert-circle-outline" size={15} color={strictlyColors.clay} />
+            <Text style={styles.confidenceText}>Availability confidence {meal.score.confidence ?? 0}%. Confirm unclassified foods for a firmer score.</Text>
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.eatCard}>
@@ -105,13 +113,13 @@ export default function MealAnalysisScreen({ navigation, route }: any) {
             <Ionicons name="leaf-outline" size={19} color={strictlyColors.onLime} />
           </View>
         </View>
-        <Text style={styles.healthNote}>{health.note} This is separate from your Fuel Score and never changes it.</Text>
+        <Text style={styles.healthNote}>{health.note} This rating only looks at ingredient quality. Calories, portion size, meal size, and workout fit do not change it.</Text>
 
         {health.suggestions.length ? (
           <>
             <TouchableOpacity style={styles.improve} onPress={() => setShowImprove((current) => !current)} accessibilityRole="button">
               <Ionicons name={showImprove ? "chevron-up" : "sparkles-outline"} size={16} color={strictlyColors.text} />
-              <Text style={styles.improveText}>{showImprove ? "Hide suggestions" : "How do I improve this?"}</Text>
+              <Text style={styles.improveText}>{showImprove ? "Hide flagged ingredients" : "See what lowered it"}</Text>
             </TouchableOpacity>
             {showImprove ? (
               <View style={styles.suggestions}>
@@ -131,7 +139,7 @@ export default function MealAnalysisScreen({ navigation, route }: any) {
             ) : null}
           </>
         ) : (
-          <Text style={styles.healthClean}>No obvious improvements — this is already a well-balanced plate.</Text>
+          <Text style={styles.healthClean}>No ingredient-quality flags were found in the available ingredient lists.</Text>
         )}
       </View>
 
@@ -166,14 +174,14 @@ export default function MealAnalysisScreen({ navigation, route }: any) {
 
       <TouchableOpacity style={styles.home} onPress={goHome}>
         <Ionicons name="home-outline" size={17} color={strictlyColors.textSoft} />
-        <Text style={styles.homeText}>Back to today</Text>
+        <Text style={styles.homeText}>Back to preworkout</Text>
       </TouchableOpacity>
 
       <Text style={styles.disclaimer}>
         {meal.isEstimate
           ? "Estimated values came from a photograph. Confirmed foods and measured quantities produce more reliable totals. "
           : ""}
-        Fuel Score reflects workout-fuelling suitability for this session and timing window. Neither rating is medical advice.
+        Fuel Score reflects workout-fuelling suitability for this session and timing window. Fast, medium, and slow values are practical whole-meal availability estimates, not measured digestion rates or glycaemic-index claims. Neither rating is medical advice.
       </Text>
     </ScreenShell>
   );
@@ -200,6 +208,8 @@ const styles = StyleSheet.create({
   fitText: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 17, marginTop: 8 },
   fitCarbs: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 28, marginTop: 7, marginBottom: 12 },
   fitUnit: { fontFamily: strictlyType.sans, fontWeight: "400", color: strictlyColors.textSoft, fontSize: 11 },
+  confidenceNote: { flexDirection: "row", alignItems: "flex-start", gap: 7, marginTop: 11, padding: 10, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.surfaceMuted },
+  confidenceText: { flex: 1, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 10, lineHeight: 15 },
 
   eatCard: { flexDirection: "row", alignItems: "center", gap: 12, padding: 16, marginTop: 10, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.ink },
   eatIcon: { width: 44, height: 44, borderRadius: 16, backgroundColor: strictlyColors.inkSoft, alignItems: "center", justifyContent: "center" },

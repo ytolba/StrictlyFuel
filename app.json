@@ -7,7 +7,8 @@
     "userInterfaceStyle": "automatic",
     "icon": "./assets/icon.png",
     "splash": {
-      "backgroundColor": "#F2EAD7",
+      "image": "./assets/branding/strictly-splash.png",
+      "backgroundColor": "#102A1C",
       "resizeMode": "contain"
     },
     "scheme": "strictlyfuel",
@@ -26,12 +27,14 @@
     },
     "ios": {
       "bundleIdentifier": "com.strictlyfuel.app",
-      "buildNumber": "10",
+      "buildNumber": "16",
       "supportsTablet": false,
       "infoPlist": {
         "NSCameraUsageDescription": "StrictlyFuel uses the camera to photograph your meal or a product label so it can estimate the nutrition.",
         "NSPhotoLibraryUsageDescription": "StrictlyFuel needs access to your photos so you can pick an existing meal photo to analyse.",
+        "NSPhotoLibraryAddUsageDescription": "StrictlyFuel saves the fuel cards you create to your photo library when you ask it to.",
         "NSHealthShareUsageDescription": "StrictlyFuel reads workouts you choose to share so it can help you repeat and fuel similar sessions.",
+        "NSHealthUpdateUsageDescription": "StrictlyFuel only reads workouts you choose to share and does not write data to Apple Health.",
         "ITSAppUsesNonExemptEncryption": false
       },
       "entitlements": {
@@ -65,6 +68,14 @@
         {
           "photosPermission": "StrictlyFuel needs access to your photos so you can pick an existing meal photo to analyse.",
           "cameraPermission": "StrictlyFuel uses the camera to photograph your meal or a product label so it can estimate the nutrition."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "StrictlyFuel needs access to your photos so you can choose a meal image.",
+          "savePhotosPermission": "StrictlyFuel saves the fuel cards you create to your photo library when you ask it to.",
+          "isAccessMediaLocationEnabled": false
         }
       ]
     ],

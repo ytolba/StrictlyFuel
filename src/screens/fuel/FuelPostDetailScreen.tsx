@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { COMMUNITY_SEED } from "../../data/communitySeed";
 import { useFuel } from "../../contexts/FuelContext";
 import { useAuth } from "../../contexts/AuthContext";
-import { removeSavedCommunityMeal, saveCommunityMeal } from "../../services/fuelService";
+import { blockCommunityUser, removeSavedCommunityMeal, reportCommunityPost, saveCommunityMeal } from "../../services/fuelService";
 import { ScreenShell } from "../../components/fuel/ScreenShell";
 import { CarbSpeedBar } from "../../components/fuel/CarbSpeedBar";
 import { strictlyColors, strictlyRadius, strictlyType } from "../../theme/strictlyTheme";
@@ -24,16 +24,43 @@ export default function FuelPostDetailScreen({ navigation, route }: any) {
     importPostMeal(post);
     navigation.navigate("BuildMeal");
   };
+  const canModerate = Boolean(user?.uid && !post.isDemo && post.userId !== user.uid);
+  const report = () => Alert.alert("Report this post", "Choose the reason that best fits.", [
+    { text: "Cancel", style: "cancel" },
+    ...["Spam", "Unsafe advice", "Misleading", "Harassment"].map((reason) => ({
+      text: reason,
+      onPress: async () => {
+        try {
+          await reportCommunityPost(user!.uid, post.id, reason.toLowerCase().replace(/ /g, "_"));
+          Alert.alert("Report received", "Thanks. This post has been sent for review.");
+        } catch {
+          Alert.alert("Couldn’t send report", "Please check your connection and try again.");
+        }
+      },
+    })),
+  ]);
+  const block = () => Alert.alert("Block this athlete?", `You will no longer see posts from @${post.username}.`, [
+    { text: "Cancel", style: "cancel" },
+    { text: "Block", style: "destructive", onPress: async () => {
+      try {
+        await blockCommunityUser(user!.uid, post.userId);
+        navigation.goBack();
+      } catch {
+        Alert.alert("Couldn’t block athlete", "Please check your connection and try again.");
+      }
+    } },
+  ]);
   return <ScreenShell title="Pre-workout fuel" back onBack={() => navigation.goBack()}>
     {post.meal.imageUri ? <Image source={{ uri: post.meal.imageUri }} style={styles.photo} /> : <View style={styles.placeholder}><Text style={styles.emoji}>{post.meal.ingredients.slice(0, 5).map((item: any) => item.food.emoji).join("  ")}</Text></View>}
-    <View style={styles.author}><View style={styles.avatar}><Text style={styles.avatarText}>{post.username[0].toUpperCase()}</Text></View><View><Text style={styles.username}>@{post.username}</Text><Text style={styles.context}>{post.workout.activityType} · {post.workout.durationMinutes} min · {post.workout.startsInMinutes} min before</Text></View></View>
+    <View style={styles.author}><View style={styles.avatar}><Text style={styles.avatarText}>{post.username[0].toUpperCase()}</Text></View><View style={styles.authorCopy}><View style={styles.authorNameRow}><Text style={styles.username}>@{post.username}</Text>{post.isDemo ? <Text style={styles.example}>STRICTLY EXAMPLE</Text> : null}</View><Text style={styles.context}>{post.workout.activityType} · {post.workout.durationMinutes} min · {post.workout.startsInMinutes} min before</Text></View></View>
     <Text style={styles.name}>{post.meal.name}</Text>
     {post.caption ? <Text style={styles.caption}>{post.caption}</Text> : null}
-    {post.visibility.macros ? <View style={styles.fuel}><View style={styles.fuelTop}><View><Text style={styles.fuelLabel}>CARBOHYDRATES</Text><Text style={styles.carbs}>{Math.round(post.meal.macros.carbs)}g</Text></View><View style={styles.score}><Text style={styles.scoreValue}>{post.meal.score.total}</Text><Text style={styles.scoreLabel}>STRICTLY SCORE</Text></View></View><CarbSpeedBar fast={post.meal.macros.fastCarbs} medium={post.meal.macros.mediumCarbs} slow={post.meal.macros.slowCarbs} /><View style={styles.macros}><Text style={styles.macro}>{Math.round(post.meal.macros.protein)}g protein</Text><Text style={styles.macro}>{Math.round(post.meal.macros.fat)}g fat</Text><Text style={styles.macro}>{Math.round(post.meal.macros.fiber)}g fiber</Text></View></View> : null}
+    {post.visibility.macros ? <View style={styles.fuel}><View style={styles.fuelTop}><View><Text style={styles.fuelLabel}>CARBOHYDRATES</Text><Text style={styles.carbs}>{Math.round(post.meal.macros.carbs)}g</Text></View><View style={styles.score}><Text style={styles.scoreValue}>{post.meal.score.total}</Text><Text style={styles.scoreLabel}>STRICTLY SCORE</Text></View></View><CarbSpeedBar fast={post.meal.macros.fastCarbs} medium={post.meal.macros.mediumCarbs} slow={post.meal.macros.slowCarbs} unknown={post.meal.macros.unclassifiedCarbs} /><View style={styles.macros}><Text style={styles.macro}>{Math.round(post.meal.macros.protein)}g protein</Text><Text style={styles.macro}>{Math.round(post.meal.macros.fat)}g fat</Text><Text style={styles.macro}>{Math.round(post.meal.macros.fiber)}g fiber</Text></View></View> : null}
     {post.visibility.ingredients ? <><Text style={styles.sectionTitle}>What’s in it</Text><View style={styles.ingredients}>{post.meal.ingredients.map((item: any) => <View key={item.id} style={styles.ingredient}><Text style={styles.ingredientName}>{item.food.emoji}  {item.food.name}</Text><Text style={styles.ingredientAmount}>{Math.round(item.grams)} g</Text></View>)}</View></> : null}
-    <View style={styles.useful}><Text style={styles.usefulValue}>{post.saves + (saved ? 1 : 0)}</Text><Text style={styles.usefulLabel}>athletes saved this</Text><View style={styles.utilityDivider} /><Text style={styles.usefulValue}>{post.copies}</Text><Text style={styles.usefulLabel}>copied it</Text></View>
+    {!post.isDemo ? <View style={styles.useful}><Text style={styles.usefulValue}>{post.saves + (saved ? 1 : 0)}</Text><Text style={styles.usefulLabel}>athletes saved this</Text><View style={styles.utilityDivider} /><Text style={styles.usefulValue}>{post.copies}</Text><Text style={styles.usefulLabel}>copied it</Text></View> : <View style={styles.exampleNote}><Ionicons name="information-circle-outline" size={17} color={strictlyColors.accentText} /><Text style={styles.exampleNoteText}>This is an example meal from Strictly, not a live athlete post.</Text></View>}
     <TouchableOpacity style={styles.copy} onPress={copy}><Ionicons name="copy-outline" size={18} color={strictlyColors.onLime} /><Text style={styles.copyText}>Adapt to my {target?.carbTarget || "fuel"} g target</Text></TouchableOpacity>
     <TouchableOpacity style={styles.save} onPress={save}><Ionicons name={saved ? "bookmark" : "bookmark-outline"} size={18} color={strictlyColors.text} /><Text style={styles.saveText}>{saved ? "Saved to My Fuel" : "Save meal"}</Text></TouchableOpacity>
+    {canModerate ? <View style={styles.safety}><TouchableOpacity style={styles.safetyAction} onPress={report}><Ionicons name="flag-outline" size={16} color={strictlyColors.textSoft} /><Text style={styles.safetyText}>Report post</Text></TouchableOpacity><TouchableOpacity style={styles.safetyAction} onPress={block}><Ionicons name="person-remove-outline" size={16} color={strictlyColors.danger} /><Text style={[styles.safetyText, styles.safetyTextDanger]}>Block athlete</Text></TouchableOpacity></View> : null}
   </ScreenShell>;
 }
 
@@ -42,10 +69,12 @@ const styles = StyleSheet.create({
   placeholder: { height: 190, backgroundColor: strictlyColors.cream, borderRadius: strictlyRadius.large, alignItems: "center", justifyContent: "center" },
   emoji: { fontSize: 34, letterSpacing: 8 },
   author: { flexDirection: "row", gap: 10, alignItems: "center", marginTop: 15 },
+  authorCopy: { flex: 1 }, authorNameRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 7 },
   avatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: strictlyColors.ink, alignItems: "center", justifyContent: "center" },
   avatarText: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.lime },
   username: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 12 },
   context: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 9, marginTop: 3, textTransform: "capitalize" },
+  example: { paddingHorizontal: 7, paddingVertical: 4, overflow: "hidden", borderRadius: strictlyRadius.pill, backgroundColor: strictlyColors.cream, fontFamily: strictlyType.mono, color: strictlyColors.accentText, fontSize: 6, letterSpacing: 0.7 },
   name: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 29, letterSpacing: -0.8, marginTop: 19 },
   caption: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 13, lineHeight: 20, marginTop: 7 },
   fuel: { padding: 17, backgroundColor: strictlyColors.ink, borderRadius: strictlyRadius.large, marginTop: 16 },
@@ -63,6 +92,8 @@ const styles = StyleSheet.create({
   ingredientName: { fontFamily: strictlyType.sansMedium, color: strictlyColors.text, fontSize: 12 },
   ingredientAmount: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 9 },
   useful: { flexDirection: "row", alignItems: "baseline", gap: 5, padding: 15, backgroundColor: strictlyColors.cream, borderRadius: strictlyRadius.medium, marginTop: 13 },
+  exampleNote: { marginTop: 13, padding: 13, flexDirection: "row", alignItems: "center", gap: 8, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.cream },
+  exampleNoteText: { flex: 1, fontFamily: strictlyType.sans, color: strictlyColors.text, fontSize: 10, lineHeight: 15 },
   usefulValue: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 16 },
   usefulLabel: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 9 },
   utilityDivider: { width: 1, height: 20, backgroundColor: strictlyColors.borderStrong, marginHorizontal: 5 },
@@ -70,4 +101,8 @@ const styles = StyleSheet.create({
   copyText: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.onLime },
   save: { height: 50, flexDirection: "row", gap: 8, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, borderRadius: strictlyRadius.medium, marginTop: 8 },
   saveText: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 12 },
+  safety: { marginTop: 12, paddingTop: 10, flexDirection: "row", justifyContent: "center", gap: 18, borderTopWidth: 1, borderTopColor: strictlyColors.border },
+  safetyAction: { minHeight: 42, flexDirection: "row", alignItems: "center", gap: 6 },
+  safetyText: { fontFamily: strictlyType.sansMedium, color: strictlyColors.textSoft, fontSize: 10 },
+  safetyTextDanger: { color: strictlyColors.danger },
 });

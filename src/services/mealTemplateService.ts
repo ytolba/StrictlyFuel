@@ -22,7 +22,7 @@ import type { ActivityType } from "../types/fuel";
 // Keep pre-workout and recovery catalogs physically separated. Bumping the
 // cache key also prevents an older unscoped response from being reused after
 // the database begins serving post-workout templates.
-const CACHE_KEY = "strictlyfuel:pre-workout-meal-templates:v2";
+const CACHE_KEY = "strictlyfuel:pre-workout-meal-templates:v3";
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 type TemplateRow = {

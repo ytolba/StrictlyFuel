@@ -66,7 +66,7 @@ export type ActivityType =
 
 export type WorkoutIntensity = "easy" | "moderate" | "hard";
 export type HeartRateZone = 1 | 2 | 3 | 4 | 5;
-export type CarbSpeed = "fast" | "medium" | "slow";
+export type CarbSpeed = "fast" | "medium" | "slow" | "unknown";
 export type DataSource = "strictly" | "usda" | "label" | "open_food_facts" | "ai_estimate";
 
 export type WorkoutDraft = {
@@ -103,6 +103,8 @@ export type FuelTarget = {
   intraWorkout: { required: boolean; lowPerHour: number; highPerHour: number; note: string };
   timingLabel: string;
   rationale: string;
+  /** Versioned because the practical availability model will evolve with evidence and user feedback. */
+  availabilityModelVersion?: string;
 };
 
 export type FuelFood = {
@@ -112,15 +114,22 @@ export type FuelFood = {
   emoji: string;
   category: "fruit" | "vegetable" | "grain" | "bread" | "sports" | "dairy" | "protein" | "fat" | "sauce";
   carbSpeed: CarbSpeed;
+  /** Confidence in the practical carb-speed classification, separate from macro accuracy. */
+  carbSpeedConfidence?: number;
+  carbSpeedReason?: string;
   timing: string;
   defaultGrams: number;
   servingLabel: string;
+  /** Printed package ingredients when a catalog or captured label provides them. */
+  ingredientsText?: string;
   per100g: {
     calories: number;
     carbs: number;
     protein: number;
     fat: number;
     fiber: number;
+    /** Total sugars, only when the source explicitly supplies it. */
+    sugar?: number;
     /** Optional detailed carbohydrates. Only populated when the source provides them. */
     solubleFiber?: number;
     insolubleFiber?: number;
@@ -144,6 +153,12 @@ export type MealIngredient = {
   portionConfidence?: number;
   nutritionMatchConfidence?: number;
   estimated?: boolean;
+  /** Identifier from the vision result, retained while the athlete reviews a scan. */
+  analysisItemId?: string;
+  /** Plausible visual portion interval before the athlete confirms the amount. */
+  gramsRange?: [number, number];
+  /** Dense, hidden, or otherwise high-impact amounts must be reviewed before scoring. */
+  requiresQuantityConfirmation?: boolean;
 };
 
 export type MealMacros = {
@@ -155,6 +170,12 @@ export type MealMacros = {
   fastCarbs: number;
   mediumCarbs: number;
   slowCarbs: number;
+  /** Carbohydrate that could not be assigned responsibly from available evidence. */
+  unclassifiedCarbs: number;
+  /** Carbohydrate counted toward workout fuel after excluding non-fuelling polyols/allulose. */
+  availableCarbs?: number;
+  /** Confidence in the fast/medium/slow estimate, not in the macro totals. */
+  carbSpeedConfidence?: number;
 };
 
 export type ScoreComponent = {
@@ -171,6 +192,10 @@ export type MealScore = {
   headline: string;
   summary: string;
   components: ScoreComponent[];
+  /** Confidence in the availability portion of the score. */
+  confidence?: number;
+  /** True when the athlete should confirm foods before relying on the availability split. */
+  provisional?: boolean;
 };
 
 export type MealFix = {

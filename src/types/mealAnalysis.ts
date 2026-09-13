@@ -6,6 +6,15 @@ export type MealAnalysisItem = {
   lookupQuery: string;
   portionDescription: string;
   estimatedGrams: number;
+  portionLowerGrams: number;
+  portionUpperGrams: number;
+  portionBasis: "count" | "package" | "geometry" | "user" | "unknown";
+  detectedCount: number;
+  detectedUnit: "piece" | "slice" | "tbsp" | "tsp" | "cup" | "unknown";
+  requiresQuantityConfirmation: boolean;
+  quantityQuestion: string;
+  quantityOptions: string[];
+  foodState: "raw" | "dry" | "cooked" | "prepared" | "unknown";
   foodConfidence: number;
   portionConfidence: number;
   visualEvidence: string;
@@ -34,6 +43,11 @@ export type MealAnalysis = {
   totals: { calories: number; carbs: number; protein: number; fat: number; fiber: number };
   ranges: { calories: [number, number]; carbs: [number, number]; protein: [number, number]; fat: [number, number]; fiber: [number, number] };
   confidence: number;
+  uncertaintyPercent: number;
+  hasReliableScaleReference: boolean;
+  imageCount: number;
+  captureQuality: "good" | "usable" | "poor";
+  captureIssues: string[];
   needsUserInput: boolean;
   followUpQuestion: string;
   followUpOptions: string[];

@@ -4,10 +4,14 @@ const clamp = (value: number, min: number, max: number) => Math.min(max, Math.ma
 export function calculateMealTiming(macros: MealMacros, workout: WorkoutDraft) {
   const sizeMinutes = clamp(macros.calories / 8, 10, 55);
   const burdenMinutes = clamp(macros.fat * 1.5 + macros.fiber * 2.2 + Math.max(0, macros.protein - 15) * 0.5, 0, 70);
-  const fastShare = macros.carbs > 0 ? macros.fastCarbs / macros.carbs : 0;
-  const speedAdjustment = fastShare >= 0.6 ? -15 : fastShare <= 0.2 ? 15 : 0;
+  const classified = macros.fastCarbs + macros.mediumCarbs + macros.slowCarbs;
+  // Smooth ordered availability index: 0 = fast center, 0.5 = medium, 1 = slow.
+  // This avoids a 15-minute jump when a meal crosses an arbitrary share cutoff.
+  const availabilityIndex = classified > 0 ? (macros.mediumCarbs * 0.5 + macros.slowCarbs) / classified : 0.5;
+  const speedAdjustment = clamp((availabilityIndex - 0.42) * 42, -15, 24);
+  const uncertaintyAdjustment = (macros.carbSpeedConfidence ?? 100) < 65 ? 5 : 0;
   const activityAdjustment = /running|hyrox|crossfit|soccer|basketball|combat|boxing|wrestling/.test(workout.activityType) ? 10 : 0;
-  const bestMinutes = Math.round(clamp(35 + sizeMinutes + burdenMinutes + speedAdjustment + activityAdjustment, 25, 210) / 5) * 5;
+  const bestMinutes = Math.round(clamp(35 + sizeMinutes + burdenMinutes + speedAdjustment + uncertaintyAdjustment + activityAdjustment, 25, 210) / 5) * 5;
   const low = Math.max(15, bestMinutes - 15);
   const high = bestMinutes + 15;
   const eatInMinutes = Math.max(0, workout.startsInMinutes - bestMinutes);

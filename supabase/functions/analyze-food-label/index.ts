@@ -14,7 +14,7 @@ const labelSchema = {
     sugarAlcoholType: { type: "string", enum: ["erythritol", "mannitol", "isomalt", "lactitol", "maltitol", "xylitol", "sorbitol", "hydrogenated_starch_hydrolysates", "unknown"] },
     allulosePerServing: { type: "number" },
     sodiumMgPerServing: { type: "number" }, ingredientsText: { type: "string" },
-    carbSpeed: { type: "string", enum: ["fast", "medium", "slow"] }, carbSpeedReason: { type: "string" },
+    carbSpeed: { type: "string", enum: ["fast", "medium", "slow", "unknown"] }, carbSpeedReason: { type: "string" },
     confidence: { type: "integer", minimum: 0, maximum: 100 }, needsCorrection: { type: "boolean" },
   },
   required: ["productName", "brand", "barcode", "servingLabel", "servingGrams", "caloriesPerServing", "carbsPerServing", "proteinPerServing", "fatPerServing", "fiberPerServing", "sugarPerServing", "sugarAlcoholsPerServing", "sugarAlcoholType", "allulosePerServing", "sodiumMgPerServing", "ingredientsText", "carbSpeed", "carbSpeedReason", "confidence", "needsCorrection"],
@@ -29,7 +29,7 @@ const LABEL_INSTRUCTIONS = [
   "Extract only text and nutrition values visible on this package. Never guess a missing number and convert nothing.",
   "Use 0 for an unreadable numeric field and set needsCorrection true.",
   "Record sugar alcohols and allulose only when printed; name a sugar alcohol type only when the label states it, otherwise unknown.",
-  "Classify carb speed practically from visible ingredients, fiber, fat and food structure. It is an estimate.",
+  "Classify carb speed only when visible ingredients, sugars, fiber, fat, and food structure provide strong evidence. Use unknown instead of guessing.",
 ].join(" ");
 
 const safeNumber = (value: unknown, max = 10000) => Math.min(max, Math.max(0, Number(value) || 0));
@@ -66,7 +66,7 @@ Deno.serve(async (request) => {
         source_id: "label", source_product_id: sourceProductId, barcode: String(food.barcode || "").replace(/\D/g, "") || null,
         name: String(food.productName || "Contributed product").slice(0, 140), brand: String(food.brand || "").slice(0, 100) || null,
         description: String(food.ingredientsText || "").slice(0, 1500) || null, category: "packaged food",
-        carb_speed_tier_id: ["fast", "medium", "slow"].includes(food.carbSpeed) ? food.carbSpeed : "medium",
+        carb_speed_tier_id: ["fast", "medium", "slow", "unknown"].includes(food.carbSpeed) ? food.carbSpeed : "unknown",
         carb_speed_confidence: Math.min(70, safeNumber(food.confidence, 100)), carb_speed_reason: String(food.carbSpeedReason || "Estimated from the package label.").slice(0, 240),
         calories_per_100g: safeNumber(food.caloriesPerServing) * factor, carbs_per_100g: safeNumber(food.carbsPerServing) * factor,
         protein_per_100g: safeNumber(food.proteinPerServing) * factor, fat_per_100g: safeNumber(food.fatPerServing) * factor,

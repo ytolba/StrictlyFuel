@@ -5,7 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-const foodSelect = "id,source_id,source_product_id,barcode,name,brand,category,image_url,carb_speed_tier_id,carb_speed_reason,calories_per_100g,carbs_per_100g,protein_per_100g,fat_per_100g,fiber_per_100g,soluble_fiber_per_100g,insoluble_fiber_per_100g,sugar_alcohols_per_100g,sugar_alcohol_type,allulose_per_100g,alcohol_per_100g,sugar_per_100g,sodium_mg_per_100g,data_quality_score,is_verified";
+const foodSelect = "id,source_id,source_product_id,barcode,name,brand,description,category,image_url,carb_speed_tier_id,carb_speed_confidence,carb_speed_reason,calories_per_100g,carbs_per_100g,protein_per_100g,fat_per_100g,fiber_per_100g,soluble_fiber_per_100g,insoluble_fiber_per_100g,sugar_alcohols_per_100g,sugar_alcohol_type,allulose_per_100g,alcohol_per_100g,sugar_per_100g,sodium_mg_per_100g,data_quality_score,is_verified";
 
 type NormalizedFood = {
   source_id: "usda" | "open_food_facts";
@@ -13,6 +13,7 @@ type NormalizedFood = {
   barcode?: string;
   name: string;
   brand?: string;
+  description?: string;
   category?: string;
   image_url?: string;
   calories_per_100g: number;
@@ -36,14 +37,36 @@ const number = (value: unknown) => {
 const normalizeQuery = (value: unknown) => String(value || "").trim().toLowerCase().replace(/\s+/g, " ").slice(0, 120);
 
 function classify(food: NormalizedFood) {
-  const text = `${food.name} ${food.brand || ""} ${food.category || ""}`.toLowerCase();
-  if (/gel|sports drink|electrolyte|honey|maple syrup|juice|rice cake|white bread/.test(text)) {
-    return { tier: "fast", confidence: 82, reason: "Lower-fiber or liquid/concentrated carbohydrate source." };
+  const carbs = number(food.carbs_per_100g);
+  const fiber = Math.min(carbs, number(food.fiber_per_100g));
+  const fat = number(food.fat_per_100g);
+  const protein = number(food.protein_per_100g);
+  const sugar = Math.min(carbs, number(food.sugar_per_100g));
+  const name = String(food.name || "").toLowerCase();
+  if (carbs < 1) return { tier: "unknown", confidence: 100, reason: "No meaningful carbohydrate to classify." };
+  if (/\b(candy|gumm(?:y|ies)|sour belts?|candy belts?|fruit chews?|licorice|jelly beans?|hard candy|marshmallows?|energy gels?|sports drinks?|honey|maple syrup|corn syrup|glucose syrup|dextrose|maltodextrin|juice|soda|soft drink|jam|jelly)\b/.test(name)) {
+    if (/\b(chocolate|cookie|biscuit|cake|pastry|donut|ice cream)\b/.test(name) || fat >= 12) {
+      return { tier: "medium", confidence: 86, reason: "Concentrated sugar is mixed with substantial fat or a heavier dessert structure." };
+    }
+    return { tier: "fast", confidence: 95, reason: "Concentrated sugar or sports fuel with little intact food structure." };
   }
-  if (/oat|whole grain|brown rice|quinoa|bran|legume|bean|sweet potato|peanut|nut butter/.test(text) || food.fiber_per_100g >= 5 || food.fat_per_100g >= 12) {
-    return { tier: "slow", confidence: 78, reason: "Higher fiber, fat, or intact food structure may increase digestion time." };
+  if (/\b(chocolate|cookie|biscuit|cake|pastry|donut|ice cream)\b/.test(name)) return { tier: "medium", confidence: 84, reason: "Sugar is combined with fat, protein, or a mixed baked-food structure." };
+  if (/\b(oats?|oatmeal|whole grain|whole wheat|brown rice|quinoa|barley|bran|beans?|lentils?|legumes?|chickpeas?|sweet potato|nuts?|nut butter|peanut butter)\b/.test(name)) return { tier: "slow", confidence: 88, reason: "Intact structure, fiber, or fat generally makes this a slower practical carb source." };
+  if (/\b(white rice|white bread|bagels?|rice cakes?|pretzels?|cream of rice|corn flakes?|rice cereal|pasta|noodles?)\b/.test(name)) return { tier: "medium", confidence: 86, reason: "Refined starch with moderate practical availability in a normal serving." };
+  if (/\b(banana|apples?|oranges?|berries|grapes?|mango|pineapple|fruit)\b/.test(name)) return { tier: "medium", confidence: 82, reason: "Whole-fruit structure makes availability more gradual than juice or candy." };
+  if (sugar > 0) {
+    const digestible = Math.max(1, carbs - fiber - number(food.sugar_alcohols_per_100g) - number(food.allulose_per_100g));
+    const sugarShare = sugar / digestible;
+    if (sugarShare >= 0.65 && fiber < 3) {
+      return fat >= 10 || protein >= 10
+        ? { tier: "medium", confidence: 82, reason: "Mostly sugar, with fat or protein slowing the mixed food." }
+        : { tier: "fast", confidence: 90, reason: "Most digestible carbohydrate is sugar and the food is low in fiber and fat." };
+    }
+    if (fiber >= 6) return { tier: "slow", confidence: 78, reason: "High-fiber profile without dominant sugar." };
+    if (fat >= 10 || protein >= 12 || fiber >= 3) return { tier: "medium", confidence: 74, reason: "Mixed nutrient profile suggests a middle-speed practical estimate." };
+    return { tier: "medium", confidence: 68, reason: "Printed sugar and macros support a middle-speed estimate." };
   }
-  return { tier: "medium", confidence: 62, reason: "Moderate practical digestion estimate pending product-specific review." };
+  return { tier: "unknown", confidence: 0, reason: "Not enough product-specific evidence to classify carb speed without guessing." };
 }
 
 const usdaNutrient = (food: any, id: number) => number(food.foodNutrients?.find((item: any) => item.nutrientId === id)?.value);
@@ -56,6 +79,7 @@ function normalizeUsdaFood(food: any): NormalizedFood {
     barcode,
     name: String(food.description || "Unnamed food"),
     brand: food.brandOwner || food.brandName || undefined,
+    description: food.ingredients || undefined,
     category: food.foodCategory || undefined,
     calories_per_100g: usdaNutrient(food, 1008),
     carbs_per_100g: usdaNutrient(food, 1005),
@@ -115,9 +139,9 @@ async function searchOpenFoodFacts(query: string): Promise<NormalizedFood[]> {
   url.searchParams.set("action", "process");
   url.searchParams.set("json", "1");
   url.searchParams.set("page_size", "18");
-  url.searchParams.set("fields", "code,product_name,brands,categories,image_front_small_url,serving_size,serving_quantity,nutriments");
+  url.searchParams.set("fields", "code,product_name,brands,categories,ingredients_text,image_front_small_url,serving_size,serving_quantity,nutriments");
   const response = await fetch(url, {
-    headers: { "User-Agent": "StrictlyFuel/1.0 (food-catalog@strictlyinc.com)" },
+    headers: { "User-Agent": "StrictlyFuel/1.0 (getstrictly@gmail.com)" },
     signal: AbortSignal.timeout(8000),
   });
   if (!response.ok) throw new Error(`Open Food Facts returned ${response.status}`);
@@ -128,6 +152,7 @@ async function searchOpenFoodFacts(query: string): Promise<NormalizedFood[]> {
     barcode: String(food.code),
     name: String(food.product_name),
     brand: food.brands || undefined,
+    description: food.ingredients_text || undefined,
     category: food.categories?.split(",")[0] || undefined,
     image_url: food.image_front_small_url || undefined,
     calories_per_100g: number(food.nutriments?.["energy-kcal_100g"]),
@@ -148,8 +173,8 @@ async function lookupOpenFoodFactsBarcode(barcode: string): Promise<NormalizedFo
   const hosts = ["world.openfoodfacts.org", "us.openfoodfacts.org", "openfoodfacts.org"];
   for (const host of hosts) {
     try {
-      const response = await fetch(`https://${host}/api/v2/product/${encodeURIComponent(barcode)}.json?fields=code,product_name,brands,categories,image_front_small_url,serving_size,serving_quantity,nutriments`, {
-        headers: { "User-Agent": "StrictlyFuel/1.0 (food-catalog@strictlyinc.com)" }, signal: AbortSignal.timeout(8000),
+      const response = await fetch(`https://${host}/api/v2/product/${encodeURIComponent(barcode)}.json?fields=code,product_name,brands,categories,ingredients_text,image_front_small_url,serving_size,serving_quantity,nutriments`, {
+        headers: { "User-Agent": "StrictlyFuel/1.0 (getstrictly@gmail.com)" }, signal: AbortSignal.timeout(8000),
       });
       if (!response.ok) continue;
       const payload = await response.json();
@@ -157,7 +182,7 @@ async function lookupOpenFoodFactsBarcode(barcode: string): Promise<NormalizedFo
       if (!food?.code || !food?.product_name) continue;
       return [{
     source_id: "open_food_facts", source_product_id: String(food.code), barcode: String(food.code),
-    name: String(food.product_name), brand: food.brands || undefined, category: food.categories?.split(",")[0] || undefined,
+    name: String(food.product_name), brand: food.brands || undefined, description: food.ingredients_text || undefined, category: food.categories?.split(",")[0] || undefined,
     image_url: food.image_front_small_url || undefined, calories_per_100g: number(food.nutriments?.["energy-kcal_100g"]),
     carbs_per_100g: number(food.nutriments?.carbohydrates_100g), protein_per_100g: number(food.nutriments?.proteins_100g),
     fat_per_100g: number(food.nutriments?.fat_100g), fiber_per_100g: number(food.nutriments?.fiber_100g),

@@ -1,4 +1,5 @@
 import type { FoodLabelAnalysis } from "../types/foodCapture";
+import { classifyCarbSpeed } from "../logic/nutritionEngine";
 
 const n = (value: string | undefined) => {
   if (!value) return 0;
@@ -51,7 +52,16 @@ export function parseNutritionLabelText(rawText: string): FoodLabelAnalysis {
     ? lines.slice(ingredientsIndex).join(" ").replace(/^.*?ingredients?\s*[:\-]\s*/i, "").split(/\bcontains?:/i)[0].trim()
     : "";
   const barcode = (text.match(/\b\d{8,14}\b/g) || []).sort((a, b) => b.length - a.length)[0] || "";
-  const speed: FoodLabelAnalysis["carbSpeed"] = fiber >= 5 || fat >= 12 ? "slow" : /juice|drink|gel|honey|syrup|sugar|maltodextrin/i.test(`${text} ${ingredientsText}`) ? "fast" : "medium";
+  const servingFactor = grams > 0 ? 100 / grams : 1;
+  const classification = classifyCarbSpeed({
+    name: firstMeaningful(lines, servingIndex >= 0 ? servingIndex : Math.min(3, lines.length)),
+    ingredientsText,
+    per100g: {
+      calories: calories * servingFactor, carbs: carbs * servingFactor, protein: protein * servingFactor,
+      fat: fat * servingFactor, fiber: fiber * servingFactor, sugar: sugar * servingFactor,
+      sugarAlcohols: sugarAlcohols * servingFactor, allulose: allulose * servingFactor,
+    },
+  });
   const present = [grams, calories, carbs, protein, fat].filter((value) => value > 0).length;
   const confidence = Math.min(96, 42 + present * 9 + (ingredientsText ? 6 : 0) + (barcode ? 4 : 0));
   return {
@@ -59,8 +69,8 @@ export function parseNutritionLabelText(rawText: string): FoodLabelAnalysis {
     servingLabel, servingGrams: grams, caloriesPerServing: calories, carbsPerServing: carbs, proteinPerServing: protein,
     fatPerServing: fat, fiberPerServing: fiber, sugarPerServing: sugar, sugarAlcoholsPerServing: sugarAlcohols,
     sugarAlcoholType: (ingredientsText.match(/(erythritol|mannitol|isomalt|lactitol|maltitol|xylitol|sorbitol)/i)?.[1]?.toLowerCase() as FoodLabelAnalysis["sugarAlcoholType"]) || "unknown",
-    allulosePerServing: allulose, sodiumMgPerServing: sodium, ingredientsText, carbSpeed: speed,
-    carbSpeedReason: speed === "fast" ? "Lower-fiber or concentrated carbohydrate source." : speed === "slow" ? "Higher fiber or fat may increase digestion time." : "Practical middle-speed estimate from the printed label.",
+    allulosePerServing: allulose, sodiumMgPerServing: sodium, ingredientsText, carbSpeed: classification.tier,
+    carbSpeedReason: classification.reason,
     confidence, needsCorrection: !grams || !calories || !carbs || !protein || !fat,
   };
 }

@@ -3,7 +3,6 @@ import { Linking, StyleSheet, Text, TouchableOpacity, View } from "react-native"
 import { Ionicons } from "@expo/vector-icons";
 import { ScreenShell } from "../../components/fuel/ScreenShell";
 import { ValueEditorSheet, DURATION_UNITS } from "../../components/fuel/ValueEditorSheet";
-import { useSubscription } from "../../provider/RevenuCatProvider";
 import { loadNutritionProfile } from "../../services/nutritionProfileService";
 import { RACES, raceById } from "../../data/races";
 import { buildRaceFuelPlan, RACE_FUELING_SOURCES } from "../../logic/raceFueling";
@@ -14,7 +13,6 @@ import { strictlyColors, strictlyRadius, strictlyType } from "../../theme/strict
 const clock = (minutes: number) => `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, "0")}`;
 
 export default function RaceModeScreen({ navigation }: any) {
-  const { isPro } = useSubscription();
   const [raceId, setRaceId] = useState<RaceKind>("half_marathon");
   const race = raceById(raceId);
   const [duration, setDuration] = useState(race.defaultMinutes);
@@ -32,11 +30,7 @@ export default function RaceModeScreen({ navigation }: any) {
     setRaceId(id); setDuration(next.defaultMinutes); setGenerated(false);
   };
 
-  if (!isPro) return <ScreenShell title="Race Mode" eyebrow="STRICTLYFUEL PRO" back onBack={() => navigation.goBack()}>
-    <View style={styles.locked}><View style={styles.lockIcon}><Ionicons name="flag" size={29} color={strictlyColors.onLime} /></View><Text style={styles.lockTitle}>Race day, mapped out.</Text><Text style={styles.lockText}>Build an event-specific carbohydrate target, exact packing list, and timed fuel schedule across the bike and run.</Text><View style={styles.lockList}>{["Half and full marathons", "Cycling and ultra-distance events", "Sprint, Olympic, 70.3 and Ironman triathlons", "Separate bike and run packing plans"].map((text) => <View key={text} style={styles.lockRow}><Ionicons name="checkmark" size={15} color={strictlyColors.accentText} /><Text style={styles.lockRowText}>{text}</Text></View>)}</View><TouchableOpacity style={styles.primary} onPress={() => navigation.navigate("Paywall")}><Text style={styles.primaryText}>Unlock Race Mode</Text><Ionicons name="arrow-forward" size={18} color={strictlyColors.onLime} /></TouchableOpacity></View>
-  </ScreenShell>;
-
-  return <ScreenShell title="Race Mode" eyebrow="PRO RACE PLANNER" back onBack={() => navigation.goBack()}>
+  return <ScreenShell title="Race Mode" eyebrow="RACE FUEL PLANNER" back onBack={() => navigation.goBack()}>
     <Text style={styles.intro}>Pick the event and your realistic finish time. Strictly turns the research range into a plan you can actually pack and practice.</Text>
     <Text style={styles.sectionLabel}>YOUR EVENT</Text>
     <View style={styles.races}>{RACES.map((item) => <TouchableOpacity key={item.id} onPress={() => chooseRace(item.id)} style={[styles.race, raceId === item.id && styles.raceActive]}><Text style={[styles.raceName, raceId === item.id && styles.raceNameActive]}>{item.shortName}</Text><Text style={[styles.raceDistance, raceId === item.id && styles.raceDistanceActive]}>{item.distance}</Text></TouchableOpacity>)}</View>
@@ -87,5 +81,4 @@ const styles = StyleSheet.create({
   timeline: { borderRadius: strictlyRadius.large, overflow: "hidden", borderWidth: 1, borderColor: strictlyColors.border }, stop: { minHeight: 61, padding: 11, flexDirection: "row", alignItems: "center", gap: 11, backgroundColor: strictlyColors.surface, borderBottomWidth: 1, borderBottomColor: strictlyColors.border }, stopTime: { width: 53, height: 34, borderRadius: strictlyRadius.pill, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.cream }, stopTimeText: { fontFamily: strictlyType.mono, color: strictlyColors.text, fontSize: 9 }, stopCopy: { flex: 1 }, stopTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 11 }, stopText: { marginTop: 2, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 9 },
   practice: { marginTop: 13, flexDirection: "row", gap: 10, padding: 15, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.cream }, practiceText: { flex: 1, fontFamily: strictlyType.sans, color: strictlyColors.text, fontSize: 10, lineHeight: 16 }, hydration: { marginTop: 9, padding: 15, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border }, hydrationTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 12 }, hydrationText: { marginTop: 4, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 9, lineHeight: 15 },
   source: { minHeight: 46, flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 13, marginBottom: 7, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.surface }, sourceText: { flex: 1, fontFamily: strictlyType.sansMedium, color: strictlyColors.text, fontSize: 10 }, disclaimer: { marginTop: 12, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 8, lineHeight: 13, textAlign: "center" },
-  locked: { padding: 23, borderRadius: strictlyRadius.xlarge, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border }, lockIcon: { width: 56, height: 56, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.lime }, lockTitle: { marginTop: 17, fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 25, letterSpacing: -0.6 }, lockText: { marginTop: 7, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 12, lineHeight: 19 }, lockList: { marginTop: 18, gap: 10 }, lockRow: { flexDirection: "row", alignItems: "center", gap: 8 }, lockRowText: { flex: 1, fontFamily: strictlyType.sansMedium, color: strictlyColors.text, fontSize: 11 },
 });

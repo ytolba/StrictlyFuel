@@ -10,13 +10,13 @@ export function FuelPostCard({ post, saved, onPress, onSave, onCopy }: { post: F
   return <TouchableOpacity activeOpacity={0.92} onPress={onPress} style={styles.card}>
     {meal.imageUri ? <Image source={{ uri: meal.imageUri }} style={styles.image} /> : <View style={styles.placeholder}><Text style={styles.emoji}>{meal.ingredients.slice(0, 4).map((item) => item.food.emoji).join("  ")}</Text><Text style={styles.placeholderText}>{meal.name}</Text></View>}
     <View style={styles.body}>
-      <View style={styles.author}><View><Text style={styles.username}>@{post.username}</Text><Text style={styles.context}>{workout.activityType} · {workout.durationMinutes} min · ate {workout.startsInMinutes} min before</Text></View><View style={[styles.score, { backgroundColor: scoreColor(meal.score.total) }]}><Text style={styles.scoreValue}>{meal.score.total}</Text><Text style={styles.scoreLabel}>SCORE</Text></View></View>
+      <View style={styles.author}><View style={styles.authorCopy}><View style={styles.authorName}><Text style={styles.username}>@{post.username}</Text>{post.isDemo ? <Text style={styles.example}>STRICTLY EXAMPLE</Text> : null}</View><Text style={styles.context}>{workout.activityType} · {workout.durationMinutes} min · ate {workout.startsInMinutes} min before</Text></View><View style={[styles.score, { backgroundColor: scoreColor(meal.score.total) }]}><Text style={styles.scoreValue}>{meal.score.total}</Text><Text style={styles.scoreLabel}>SCORE</Text></View></View>
       <Text style={styles.mealName}>{meal.name}</Text>
       <Text style={styles.carbs}>{Math.round(meal.macros.carbs)}g <Text style={styles.carbsLabel}>carbohydrates</Text></Text>
-      <CarbSpeedBar compact fast={meal.macros.fastCarbs} medium={meal.macros.mediumCarbs} slow={meal.macros.slowCarbs} />
+      <CarbSpeedBar compact fast={meal.macros.fastCarbs} medium={meal.macros.mediumCarbs} slow={meal.macros.slowCarbs} unknown={meal.macros.unclassifiedCarbs} />
       {post.caption ? <Text style={styles.caption}>{post.caption}</Text> : null}
       <View style={styles.actions}>
-        <TouchableOpacity style={styles.utility} onPress={(event) => { event.stopPropagation(); onSave(); }}><Ionicons name={saved ? "bookmark" : "bookmark-outline"} size={17} color={strictlyColors.text} /><Text style={styles.utilityText}>{post.saves + (saved ? 1 : 0)} saves</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.utility} onPress={(event) => { event.stopPropagation(); onSave(); }}><Ionicons name={saved ? "bookmark" : "bookmark-outline"} size={17} color={strictlyColors.text} /><Text style={styles.utilityText}>{post.isDemo ? saved ? "Example saved" : "Save example" : `${post.saves + (saved ? 1 : 0)} saves`}</Text></TouchableOpacity>
         <TouchableOpacity style={styles.copy} onPress={(event) => { event.stopPropagation(); onCopy(); }}><Ionicons name="copy-outline" size={16} color={strictlyColors.onLime} /><Text style={styles.copyText}>Copy meal</Text></TouchableOpacity>
       </View>
     </View>
@@ -31,7 +31,9 @@ const styles = StyleSheet.create({
   placeholderText: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 14, marginTop: 16 },
   body: { padding: 16 },
   author: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
+  authorCopy: { flex: 1, paddingRight: 10 }, authorName: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 7 },
   username: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 13 },
+  example: { paddingHorizontal: 7, paddingVertical: 4, overflow: "hidden", borderRadius: strictlyRadius.pill, backgroundColor: strictlyColors.cream, fontFamily: strictlyType.mono, color: strictlyColors.accentText, fontSize: 6, letterSpacing: 0.7 },
   context: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11, marginTop: 4, textTransform: "capitalize" },
   score: { alignItems: "center", justifyContent: "center", width: 45, height: 45, borderRadius: 23, backgroundColor: strictlyColors.lime },
   scoreValue: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.onLime, fontSize: 16, lineHeight: 17 },
@@ -46,4 +48,3 @@ const styles = StyleSheet.create({
   copy: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: strictlyColors.lime, borderRadius: strictlyRadius.pill, paddingHorizontal: 13, paddingVertical: 9 },
   copyText: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.onLime, fontSize: 11 },
 });
-

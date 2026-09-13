@@ -3,7 +3,6 @@ import { Alert, LayoutChangeEvent, ScrollView, StyleSheet, Text, TouchableOpacit
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFuel } from "../../contexts/FuelContext";
 import { useAuth } from "../../contexts/AuthContext";
-import { useSubscription } from "../../provider/RevenuCatProvider";
 import { saveWorkout } from "../../services/fuelService";
 import { loadNutritionProfile, saveNutritionProfile } from "../../services/nutritionProfileService";
 import { EMPTY_NUTRITION_PROFILE, type NutritionProfile } from "../../types/nutritionProfile";
@@ -14,14 +13,15 @@ import { ScreenShell } from "../../components/fuel/ScreenShell";
 import { FuelTargetCard } from "../../components/fuel/FuelTargetCard";
 import { ValueEditorSheet, DURATION_UNITS, WEIGHT_UNITS } from "../../components/fuel/ValueEditorSheet";
 import { ActivityPickerSheet } from "../../components/fuel/ActivityPickerSheet";
-import { appleHealthSupported, isAppleHealthConnected, loadRecentHealthWorkouts, type HealthWorkout } from "../../services/appleHealthService";
+import { appleHealthSupported, isAppleHealthConnected, loadRecentHealthWorkouts, refreshHealthWhenAppBecomesActive, type HealthWorkout } from "../../services/appleHealthService";
 import { strictlyColors, strictlyRadius, strictlyType } from "../../theme/strictlyTheme";
 
 type EditingField = "duration" | "startsIn" | "weight";
 
-export default function FuelHomeScreen({ navigation }: any) {
+const previousWorkoutDate = (value: string) => new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(new Date(value));
+
+export default function FuelHomeScreen({ navigation, route }: any) {
   const { user } = useAuth();
-  const { isPro } = useSubscription();
   const { workout, target, createWorkout, recentActivities, favoriteActivities, toggleFavoriteActivity } = useFuel();
 
   const [activityType, setActivityType] = useState<ActivityType>(workout?.activityType || "running");
@@ -32,7 +32,7 @@ export default function FuelHomeScreen({ navigation }: any) {
   const [editingField, setEditingField] = useState<EditingField>();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [profile, setProfile] = useState<NutritionProfile>(EMPTY_NUTRITION_PROFILE);
-  const [healthWorkouts, setHealthWorkouts] = useState<HealthWorkout[]>([]);
+  const [recentHealthWorkouts, setRecentHealthWorkouts] = useState<HealthWorkout[]>([]);
   const [healthLoading, setHealthLoading] = useState(false);
   const [healthConnected, setHealthConnected] = useState(false);
 
@@ -40,6 +40,7 @@ export default function FuelHomeScreen({ navigation }: any) {
   // it, so "Calculate" reveals the target in place rather than pushing a new
   // screen the athlete then has to back out of.
   const scrollRef = useRef<ScrollView | null>(null);
+  const sessionOffset = useRef(0);
   const targetOffset = useRef(0);
   const [revealTarget, setRevealTarget] = useState(false);
 
@@ -57,8 +58,8 @@ export default function FuelHomeScreen({ navigation }: any) {
       if (!connected) return;
       setHealthLoading(true);
       try {
-        const items = await loadRecentHealthWorkouts(4);
-        if (!cancelled) setHealthWorkouts(items);
+        const items = await loadRecentHealthWorkouts(6);
+        if (!cancelled) setRecentHealthWorkouts(items);
       } catch {
         // The dedicated Apple Health screen explains permissions and empty
         // history, while Home stays fast and uncluttered.
@@ -67,8 +68,27 @@ export default function FuelHomeScreen({ navigation }: any) {
       }
     };
     loadHealthWorkouts();
-    return () => { cancelled = true; };
+    const subscription = refreshHealthWhenAppBecomesActive(loadHealthWorkouts);
+    return () => {
+      cancelled = true;
+      subscription.remove();
+    };
   }, []);
+
+  const copyPreviousWorkout = (item: HealthWorkout) => {
+    setActivityType(item.activityType);
+    setDuration(Math.max(15, Math.round(item.durationMinutes)));
+    setIntensity("moderate");
+    setHeartRateZones([]);
+    setTimeout(() => scrollRef.current?.scrollTo({ y: Math.max(0, sessionOffset.current - 14), animated: true }), 80);
+  };
+
+  useEffect(() => {
+    const copied = route?.params?.copiedWorkout as HealthWorkout | undefined;
+    if (!copied) return;
+    copyPreviousWorkout(copied);
+    navigation.setParams({ copiedWorkout: undefined });
+  }, [navigation, route?.params?.copiedWorkout]);
 
   useEffect(() => {
     if (!revealTarget || !workout || !target) return;
@@ -131,42 +151,6 @@ export default function FuelHomeScreen({ navigation }: any) {
     setRevealTarget(true);
   };
 
-  const useHealthWorkoutForNextPlan = (item: HealthWorkout) => {
-    setActivityType(item.activityType);
-    setDuration(item.durationMinutes);
-    setIntensity("moderate");
-    setHeartRateZones([]);
-    scrollRef.current?.scrollTo({ y: 110, animated: true });
-  };
-
-  const recoverFromHealthWorkout = (item: HealthWorkout) => {
-    if (!profile.bodyWeightKg) {
-      return Alert.alert("Add your weight once", "Strictly needs it to personalize a recovery meal.", [{ text: "Not now", style: "cancel" }, { text: "Add weight", onPress: () => setEditingField("weight") }]);
-    }
-    const open = (intensityChoice: WorkoutIntensity) => {
-      createWorkout({
-        activityType: item.activityType,
-        durationMinutes: item.durationMinutes,
-        startsInMinutes: 90,
-        bodyWeightKg: profile.bodyWeightKg!,
-        intensity: intensityChoice,
-        heartRateZones: [],
-        completedWorkout: {
-          source: "apple_health", id: item.id, completedAt: item.endDate, sourceName: item.sourceName,
-          distanceKm: item.distanceKm, activeCalories: item.activeCalories,
-          averageHeartRate: item.averageHeartRate, maxHeartRate: item.maxHeartRate,
-        },
-      });
-      navigation.navigate("PostWorkoutMeals");
-    };
-    Alert.alert("How hard did that session feel?", "Strictly uses the completed workout’s real duration and Health data. Your effort choice keeps the recovery plan personal.", [
-      { text: "Easy", onPress: () => open("easy") },
-      { text: "Moderate", onPress: () => open("moderate") },
-      { text: "Hard", onPress: () => open("hard") },
-      { text: "Cancel", style: "cancel" },
-    ]);
-  };
-
   const editorProps = () => {
     if (editingField === "weight") {
       return {
@@ -209,13 +193,7 @@ export default function FuelHomeScreen({ navigation }: any) {
       <Text style={styles.hero}>What are you training today?</Text>
       <Text style={styles.subhero}>Tell us the session. We’ll turn it into food you can actually use.</Text>
 
-      <TouchableOpacity style={styles.raceMode} onPress={() => navigation.navigate("RaceMode")}><View style={styles.raceModeIcon}><Ionicons name="flag" size={21} color={strictlyColors.onLime} /></View><View style={styles.raceModeCopy}><View style={styles.raceModeTitleRow}><Text style={styles.raceModeTitle}>Race Mode</Text><Text style={styles.proBadge}>PRO</Text></View><Text style={styles.raceModeText}>Know the carbs, timing, and exact fuel to pack.</Text></View><Ionicons name={isPro ? "arrow-forward" : "lock-closed"} size={17} color={strictlyColors.textSoft} /></TouchableOpacity>
-
-      {appleHealthSupported() ? <View style={styles.healthContext}>
-        <View style={styles.healthContextHead}><View style={styles.healthContextTitleWrap}><View style={styles.healthContextIcon}><Ionicons name="heart" size={15} color={strictlyColors.white} /></View><View><Text style={styles.healthContextEyebrow}>APPLE HEALTH</Text><Text style={styles.healthContextTitle}>Train from what you actually did.</Text></View></View><TouchableOpacity onPress={() => navigation.navigate("HealthWorkouts")}><Text style={styles.healthContextLink}>{healthConnected ? "See all" : "Connect"}</Text></TouchableOpacity></View>
-        {!healthConnected ? <TouchableOpacity style={styles.healthConnect} onPress={() => navigation.navigate("HealthWorkouts")}><Text style={styles.healthConnectText}>Connect recent workouts for personalized recovery</Text><Ionicons name="arrow-forward" size={16} color={strictlyColors.onLime} /></TouchableOpacity> : healthLoading ? <Text style={styles.healthLoading}>Loading recent workouts…</Text> : !healthWorkouts.length ? <TouchableOpacity style={styles.healthConnect} onPress={() => navigation.navigate("HealthWorkouts")}><Text style={styles.healthConnectText}>Choose which Health workouts to share</Text><Ionicons name="arrow-forward" size={16} color={strictlyColors.onLime} /></TouchableOpacity> : healthWorkouts.slice(0, 2).map((item) => <View key={item.id} style={styles.healthWorkout}><View style={styles.healthWorkoutTop}><View style={styles.healthWorkoutCopy}><Text style={styles.healthWorkoutName}>{item.activityLabel}</Text><Text style={styles.healthWorkoutMeta}>{formatDuration(item.durationMinutes)}{item.averageHeartRate ? ` · avg ${Math.round(item.averageHeartRate)} bpm` : ""}{item.distanceKm ? ` · ${item.distanceKm.toFixed(1)} km` : ""}</Text></View><Text style={styles.healthWorkoutDate}>{new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(new Date(item.startDate))}</Text></View><View style={styles.healthActions}><TouchableOpacity style={styles.healthRecover} onPress={() => recoverFromHealthWorkout(item)}><Text style={styles.healthRecoverText}>Recovery</Text><Ionicons name="restaurant-outline" size={14} color={strictlyColors.onLime} /></TouchableOpacity><TouchableOpacity style={styles.healthPlan} onPress={() => useHealthWorkoutForNextPlan(item)}><Text style={styles.healthPlanText}>Plan similar</Text></TouchableOpacity></View></View>)}</View> : null}
-
-      <View style={styles.card}>
+      <View style={styles.card} onLayout={(event) => { sessionOffset.current = event.nativeEvent.layout.y; }}>
         <Text style={styles.cardTitle}>Your session</Text>
 
         {/* 1 — activity */}
@@ -316,6 +294,35 @@ export default function FuelHomeScreen({ navigation }: any) {
         </TouchableOpacity>
       </View>
 
+      {appleHealthSupported() ? <View style={styles.healthContext}>
+        <View style={styles.healthContextHead}>
+          <View style={styles.healthContextIcon}><Ionicons name="heart" size={15} color={strictlyColors.white} /></View>
+          <View style={styles.healthContextCopy}>
+            <Text style={styles.healthContextEyebrow}>APPLE HEALTH</Text>
+            <Text style={styles.healthContextTitle}>{healthConnected ? "Copy a previous workout" : "Connect previous workouts"}</Text>
+            <Text style={styles.healthContextDetail}>
+              {healthLoading
+                ? "Checking your recent training…"
+                : healthConnected
+                  ? "Use a past activity and duration as the starting point for your next session."
+                  : "Connect Apple Health to reuse activity and duration without entering them again."}
+            </Text>
+          </View>
+        </View>
+        {healthConnected && recentHealthWorkouts.length ? <View style={styles.healthWorkoutList}>
+          {recentHealthWorkouts.slice(0, 2).map((item) => <TouchableOpacity key={item.id} style={styles.healthWorkout} onPress={() => copyPreviousWorkout(item)} activeOpacity={0.78}>
+            <View style={styles.healthWorkoutCopy}><Text style={styles.healthWorkoutTitle}>{item.activityLabel}</Text><Text style={styles.healthWorkoutMeta}>{previousWorkoutDate(item.startDate)} · {formatDuration(item.durationMinutes)}</Text></View>
+            <View style={styles.healthWorkoutAction}><Ionicons name="copy-outline" size={14} color={strictlyColors.onLime} /><Text style={styles.healthWorkoutActionText}>Copy</Text></View>
+          </TouchableOpacity>)}
+        </View> : null}
+        <TouchableOpacity style={styles.healthContextFooter} onPress={() => navigation.navigate("HealthWorkouts")}>
+          <Text style={styles.healthContextFooterText}>{healthConnected ? recentHealthWorkouts.length ? "See all previous workouts" : "Refresh previous workouts" : "Connect Apple Health"}</Text>
+          <Ionicons name="arrow-forward" size={15} color={strictlyColors.text} />
+        </TouchableOpacity>
+      </View> : null}
+
+      <TouchableOpacity style={styles.raceMode} onPress={() => navigation.navigate("RaceMode")}><View style={styles.raceModeIcon}><Ionicons name="flag" size={21} color={strictlyColors.onLime} /></View><View style={styles.raceModeCopy}><Text style={styles.raceModeTitle}>Race Mode</Text><Text style={styles.raceModeText}>Know the carbs, timing, and exact fuel to pack.</Text></View><Ionicons name="arrow-forward" size={17} color={strictlyColors.textSoft} /></TouchableOpacity>
+
       {/* The result of the form above. Scrolled into view by `calculate`. */}
       {workout && target ? (
         <View
@@ -373,30 +380,25 @@ const styles = StyleSheet.create({
   hero: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 32, lineHeight: 36, letterSpacing: -1.2, maxWidth: 340 },
   subhero: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 14, lineHeight: 21, marginTop: 8, marginBottom: 4, maxWidth: 330 },
   raceMode: { minHeight: 76, flexDirection: "row", alignItems: "center", gap: 11, padding: 13, marginTop: 14, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
-  raceModeIcon: { width: 44, height: 44, borderRadius: 15, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.lime }, raceModeCopy: { flex: 1 }, raceModeTitleRow: { flexDirection: "row", alignItems: "center", gap: 7 },
-  raceModeTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 15 }, proBadge: { paddingHorizontal: 6, paddingVertical: 3, borderRadius: strictlyRadius.pill, overflow: "hidden", backgroundColor: strictlyColors.cream, fontFamily: strictlyType.mono, color: strictlyColors.accentText, fontSize: 7, letterSpacing: 0.8 },
+  raceModeIcon: { width: 44, height: 44, borderRadius: 15, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.lime }, raceModeCopy: { flex: 1 },
+  raceModeTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 15 },
   raceModeText: { marginTop: 3, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 10, lineHeight: 15 },
-  healthContext: { marginTop: 12, padding: 14, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
-  healthContextHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
-  healthContextTitleWrap: { flex: 1, flexDirection: "row", alignItems: "center", gap: 9 },
-  healthContextIcon: { width: 31, height: 31, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: "#E64A55" },
+  healthContext: { marginTop: 14, padding: 13, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
+  healthContextHead: { flexDirection: "row", alignItems: "center", gap: 11 },
+  healthContextIcon: { width: 40, height: 40, flexShrink: 0, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: "#E64A55" },
+  healthContextCopy: { flex: 1, minWidth: 0 },
   healthContextEyebrow: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 7, letterSpacing: 0.8 },
   healthContextTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 13, marginTop: 2 },
-  healthContextLink: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.accentText, fontSize: 11 },
-  healthConnect: { minHeight: 40, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 12, paddingHorizontal: 11, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.cream },
-  healthConnectText: { flex: 1, fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 10 },
-  healthLoading: { marginTop: 12, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 10 },
-  healthWorkout: { paddingTop: 11, marginTop: 11, borderTopWidth: 1, borderTopColor: strictlyColors.border },
-  healthWorkoutTop: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 8 },
+  healthContextDetail: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 10, lineHeight: 14, marginTop: 3 },
+  healthWorkoutList: { marginTop: 13, gap: 7 },
+  healthWorkout: { minHeight: 54, paddingHorizontal: 12, flexDirection: "row", alignItems: "center", gap: 10, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.surfaceMuted },
   healthWorkoutCopy: { flex: 1 },
-  healthWorkoutName: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 12 },
+  healthWorkoutTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 12 },
   healthWorkoutMeta: { marginTop: 3, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 9 },
-  healthWorkoutDate: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 8 },
-  healthActions: { flexDirection: "row", gap: 7, marginTop: 9 },
-  healthRecover: { flex: 1, height: 36, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, borderRadius: strictlyRadius.small, backgroundColor: strictlyColors.lime },
-  healthRecoverText: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.onLime, fontSize: 10 },
-  healthPlan: { flex: 1, height: 36, alignItems: "center", justifyContent: "center", borderRadius: strictlyRadius.small, backgroundColor: strictlyColors.surfaceMuted },
-  healthPlanText: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 10 },
+  healthWorkoutAction: { minHeight: 31, paddingHorizontal: 10, flexDirection: "row", alignItems: "center", gap: 5, borderRadius: strictlyRadius.pill, backgroundColor: strictlyColors.lime },
+  healthWorkoutActionText: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.onLime, fontSize: 9 },
+  healthContextFooter: { minHeight: 42, marginTop: 8, paddingHorizontal: 4, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  healthContextFooterText: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 10 },
 
   activeWrap: { marginTop: 20, marginBottom: 4 },
   resultLabel: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 8, letterSpacing: 1.3, marginBottom: 9 },

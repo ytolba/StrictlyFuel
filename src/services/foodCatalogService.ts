@@ -1,6 +1,7 @@
 import { searchFuelFoods } from "../data/fuelFoods";
 import { supabase } from "../lib/supabase";
 import type { FuelFood } from "../types/fuel";
+import { classifyCarbSpeed } from "../logic/nutritionEngine";
 
 type FoodRow = {
   id: string;
@@ -9,14 +10,17 @@ type FoodRow = {
   barcode?: string;
   name: string;
   brand?: string;
+  description?: string;
   category?: string;
   carb_speed_tier_id: FuelFood["carbSpeed"];
+  carb_speed_confidence?: number;
   carb_speed_reason?: string;
   calories_per_100g: number;
   carbs_per_100g: number;
   protein_per_100g: number;
   fat_per_100g: number;
   fiber_per_100g: number;
+  sugar_per_100g?: number;
   soluble_fiber_per_100g?: number;
   insoluble_fiber_per_100g?: number;
   sugar_alcohols_per_100g?: number;
@@ -65,22 +69,26 @@ function toFuelFood(row: FoodRow): FuelFood {
   const category = categories.includes(row.category as FuelFood["category"]) ? row.category as FuelFood["category"] : "grain";
   const servingGrams = Number(row.default_portion_grams);
   const defaultGrams = Number.isFinite(servingGrams) && servingGrams > 0 ? servingGrams : 100;
-  return {
+  const draft: FuelFood = {
     id: row.id,
     name: row.brand ? `${row.name} · ${row.brand}` : row.name,
     aliases: [],
     emoji: emoji[category],
     category,
-    carbSpeed: row.carb_speed_tier_id || "medium",
-    timing: row.carb_speed_reason || "Practical digestion estimate",
+    carbSpeed: row.carb_speed_tier_id || "unknown",
+    carbSpeedConfidence: Number(row.carb_speed_confidence) || 0,
+    carbSpeedReason: row.carb_speed_reason || undefined,
+    timing: row.carb_speed_reason || "Not enough evidence to classify digestion speed",
     defaultGrams,
     servingLabel: row.default_portion_label?.trim() || (defaultGrams === 100 ? "100 g" : `${Math.round(defaultGrams)} g serving`),
+    ingredientsText: row.description?.trim() || undefined,
     per100g: {
       calories: Number(row.calories_per_100g) || 0,
       carbs: Number(row.carbs_per_100g) || 0,
       protein: Number(row.protein_per_100g) || 0,
       fat: Number(row.fat_per_100g) || 0,
       fiber: Number(row.fiber_per_100g) || 0,
+      sugar: row.sugar_per_100g == null ? undefined : Number(row.sugar_per_100g),
       solubleFiber: Number(row.soluble_fiber_per_100g) || undefined,
       insolubleFiber: Number(row.insoluble_fiber_per_100g) || undefined,
       sugarAlcohols: Number(row.sugar_alcohols_per_100g) || undefined,
@@ -93,6 +101,16 @@ function toFuelFood(row: FoodRow): FuelFood {
     dataQualityScore: Number(row.data_quality_score) || undefined,
     isVerified: Boolean(row.is_verified),
   };
+  if (draft.source === "strictly" && draft.carbSpeed !== "unknown") return draft;
+  const inferred = classifyCarbSpeed(draft);
+  const databaseConfidence = draft.carbSpeedConfidence || 0;
+  if (inferred.confidence >= 80 && inferred.confidence > databaseConfidence) {
+    return { ...draft, carbSpeed: inferred.tier, carbSpeedConfidence: inferred.confidence, carbSpeedReason: inferred.reason, timing: inferred.reason };
+  }
+  if (databaseConfidence < 75) {
+    return { ...draft, carbSpeed: "unknown", carbSpeedConfidence: 0, carbSpeedReason: inferred.reason, timing: inferred.reason };
+  }
+  return draft;
 }
 
 async function addDefaultPortions(rows: FoodRow[]): Promise<FoodRow[]> {

@@ -20,7 +20,10 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
  * cheaper model without a redeploy.
  */
 export const AI_MODELS = {
-  meal_vision: Deno.env.get("OPENAI_MEAL_MODEL") || "gpt-5.6-luna",
+  // Meal portions are the most error-sensitive vision task in the product.
+  // Use the balanced frontier model by default; Luna remains available as an
+  // environment override for controlled cost/accuracy experiments.
+  meal_vision: Deno.env.get("OPENAI_MEAL_MODEL") || "gpt-5.6-terra",
   label_vision: Deno.env.get("OPENAI_LABEL_MODEL") || "gpt-5.6-luna",
 } as const;
 
@@ -114,11 +117,13 @@ export async function callVision(options: {
   apiKey: string;
   instructions: string;
   userText: string;
-  imageBase64: string;
+  imageBase64?: string;
+  imagesBase64?: string[];
   schemaName: string;
   schema: Record<string, unknown>;
   maxOutputTokens: number;
   timeoutMs?: number;
+  reasoningEffort?: "none" | "minimal" | "low" | "medium" | "high";
 }): Promise<VisionResult> {
   const model = AI_MODELS[options.feature];
   const startedAt = Date.now();
@@ -126,22 +131,24 @@ export async function callVision(options: {
 
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
+      const images = (options.imagesBase64?.length ? options.imagesBase64 : [options.imageBase64 || ""]).filter(Boolean).slice(0, 3);
       const response = await fetch("https://api.openai.com/v1/responses", {
         method: "POST",
         headers: { Authorization: `Bearer ${options.apiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           model,
           store: false,
-          reasoning: { effort: "low" },
+          reasoning: { effort: options.reasoningEffort || "low" },
           max_output_tokens: options.maxOutputTokens,
           instructions: options.instructions,
           input: [{
             role: "user",
             content: [
               { type: "input_text", text: options.userText },
-              // Portion and small-print reading both depend on detail; dropping
-              // to "auto" saves input tokens but measurably degrades both.
-              { type: "input_image", image_url: `data:image/jpeg;base64,${options.imageBase64}`, detail: "high" },
+              // Portion and small-print reading both depend on detail. Multiple
+              // meal angles share one request so the model can reconcile count,
+              // height, occlusion and spread thickness before answering.
+              ...images.map((imageBase64) => ({ type: "input_image", image_url: `data:image/jpeg;base64,${imageBase64}`, detail: "high" })),
             ],
           }],
           text: { format: { type: "json_schema", name: options.schemaName, strict: true, schema: options.schema } },

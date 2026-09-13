@@ -21,7 +21,7 @@
     <key>CFBundlePackageType</key>
     <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0.1</string>
+	<string>$(MARKETING_VERSION)</string>
     <key>CFBundleSignature</key>
     <string>????</string>
     <key>CFBundleURLTypes</key>
@@ -41,19 +41,23 @@
       </dict>
     </array>
     <key>CFBundleVersion</key>
-    <string>10</string>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
     <key>LSMinimumSystemVersion</key>
     <string>12.0</string>
     <key>LSRequiresIPhoneOS</key>
     <true/>
     <key>NSCameraUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to access your camera</string>
+	<string>StrictlyFuel uses the camera to scan meals, barcodes, and nutrition labels for fueling estimates.</string>
     <key>NSHealthShareUsageDescription</key>
     <string>StrictlyFuel reads workouts you choose to share so it can help you repeat and fuel similar sessions.</string>
-    <key>NSMicrophoneUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to access your microphone</string>
+    <key>NSHealthUpdateUsageDescription</key>
+    <string>StrictlyFuel only reads workouts you choose to share and does not write data to Apple Health.</string>
     <key>NSPhotoLibraryUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to access your photos</string>
+	<string>StrictlyFuel lets you choose a meal photo to estimate its foods and nutrition.</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>StrictlyFuel saves the fuel cards you create to your photo library when you ask it to.</string>
+    <key>ITSAppUsesNonExemptEncryption</key>
+    <false/>
     <key>RCTNewArchEnabled</key>
     <true/>
     <key>UILaunchStoryboardName</key>

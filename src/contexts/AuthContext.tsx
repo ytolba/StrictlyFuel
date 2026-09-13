@@ -23,12 +23,16 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   errorMessage: string | null;
+  isPasswordRecovery: boolean;
+  passwordRecoveryReady: boolean;
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   signUpWithEmail: (email: string, password: string, firstName: string, lastName: string) => Promise<{ confirmationRequired: boolean }>;
   verifySignUpCode: (email: string, token: string) => Promise<void>;
   resendSignUpCode: (email: string) => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  updatePassword: (password: string) => Promise<void>;
+  cancelPasswordRecovery: () => void;
   clearError: () => void;
   deleteAccount: () => Promise<void>;
   continueWithoutAccount: () => Promise<void>;
@@ -38,23 +42,45 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const AUTH_CALLBACK_URL = "strictlyfuel://auth/callback";
+const PASSWORD_RECOVERY_URL = "strictlyfuel://reset-password";
 
-async function applyAuthCallback(url: string) {
-  if (!url.startsWith(AUTH_CALLBACK_URL) && !url.startsWith("strictlyfuel://reset-password")) return;
-  const payload = url.includes("#") ? url.split("#")[1] : url.split("?")[1] || "";
-  const params = new URLSearchParams(payload);
+type AuthCallbackResult = "ignored" | "auth" | "recovery";
+
+const isPasswordRecoveryUrl = (url: string) =>
+  url.startsWith(PASSWORD_RECOVERY_URL);
+
+const authParamsFromUrl = (url: string) => {
+  const params = new URLSearchParams();
+  const query = url.split("?")[1]?.split("#")[0] || "";
+  const fragment = url.split("#")[1] || "";
+  new URLSearchParams(query).forEach((value, key) => params.set(key, value));
+  new URLSearchParams(fragment).forEach((value, key) => params.set(key, value));
+  return params;
+};
+
+async function applyAuthCallback(url: string): Promise<AuthCallbackResult> {
+  const recoveryUrl = isPasswordRecoveryUrl(url);
+  if (!url.startsWith(AUTH_CALLBACK_URL) && !recoveryUrl) return "ignored";
+  const params = authParamsFromUrl(url);
+  const callbackType = params.get("type");
+  const isRecovery = recoveryUrl || callbackType === "recovery";
+  const callbackError = params.get("error_description") || params.get("error_code") || params.get("error");
+  if (callbackError) throw new Error(callbackError);
   const code = params.get("code");
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (error) throw error;
-    return;
+    return isRecovery ? "recovery" : "auth";
   }
   const accessToken = params.get("access_token");
   const refreshToken = params.get("refresh_token");
   if (accessToken && refreshToken) {
     const { error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
     if (error) throw error;
+    return isRecovery ? "recovery" : "auth";
   }
+  if (isRecovery) throw new Error("Email link is invalid or has expired");
+  return "auth";
 }
 
 const messageFor = (error: unknown) => {
@@ -63,8 +89,13 @@ const messageFor = (error: unknown) => {
   if (/email not confirmed/i.test(raw)) return "Check your inbox and confirm your email before signing in.";
   if (/already registered|already been registered|user already exists/i.test(raw)) return "An account already exists for that email.";
   if (/password/i.test(raw) && /6 characters/i.test(raw)) return "Use a password with at least 6 characters.";
+  if (/email link is invalid|otp_expired|access_denied|link.*expired/i.test(raw)) {
+    return "This password reset link is invalid or has expired. Request a new link below.";
+  }
   if (/token has expired|invalid otp|token is invalid/i.test(raw)) return "That code is incorrect or has expired. Request a new one and try again.";
-  if (/for security purposes|rate limit/i.test(raw)) return "Please wait a moment before requesting another code.";
+  if (/for security purposes|rate limit|over_email_send_rate_limit/i.test(raw)) {
+    return "Too many reset emails were sent. Wait about an hour, then try once more.";
+  }
   return raw;
 };
 
@@ -104,6 +135,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
+  const [passwordRecoveryReady, setPasswordRecoveryReady] = useState(false);
 
   const clearError = () => setErrorMessage(null);
   const fail = (error: unknown): never => {
@@ -120,8 +153,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setLoading(false);
     }).catch(() => mounted && setLoading(false));
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return;
+      if (event === "PASSWORD_RECOVERY") {
+        setIsPasswordRecovery(true);
+        setPasswordRecoveryReady(true);
+      }
       const next = session?.user ? mapUser(session.user) : null;
       setUser(next);
       setLoading(false);
@@ -134,12 +171,32 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   useEffect(() => {
+    const handleAuthUrl = async (url: string) => {
+      const recoveryUrl = isPasswordRecoveryUrl(url);
+      if (recoveryUrl) {
+        setIsPasswordRecovery(true);
+        setPasswordRecoveryReady(false);
+      }
+      try {
+        const result = await applyAuthCallback(url);
+        if (result === "recovery") {
+          setErrorMessage(null);
+          setIsPasswordRecovery(true);
+          setPasswordRecoveryReady(true);
+        }
+      } catch (error) {
+        if (recoveryUrl) {
+          setIsPasswordRecovery(true);
+          setPasswordRecoveryReady(false);
+        }
+        setErrorMessage(messageFor(error));
+      }
+    };
+
     Linking.getInitialURL().then((url) => {
-      if (url) applyAuthCallback(url).catch((error) => setErrorMessage(messageFor(error)));
+      if (url) handleAuthUrl(url);
     });
-    const subscription = Linking.addEventListener("url", ({ url }) => {
-      applyAuthCallback(url).catch((error) => setErrorMessage(messageFor(error)));
-    });
+    const subscription = Linking.addEventListener("url", ({ url }) => handleAuthUrl(url));
     return () => subscription.remove();
   }, []);
 
@@ -195,6 +252,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo: "strictlyfuel://reset-password" });
       if (error) throw error;
     } catch (error) { fail(error); }
+  };
+
+  const updatePassword = async (password: string) => {
+    try {
+      clearError();
+      if (password.length < 8) throw new Error("Use a password with at least 8 characters.");
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      setIsPasswordRecovery(false);
+      setPasswordRecoveryReady(false);
+    } catch (error) { fail(error); }
+  };
+
+  const cancelPasswordRecovery = () => {
+    setIsPasswordRecovery(false);
+    setPasswordRecoveryReady(false);
+    clearError();
   };
 
   const signOut = async () => {
@@ -297,10 +371,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const value = useMemo<AuthContextType>(() => ({
-    user, loading, errorMessage, signInWithEmail, signOut, signUpWithEmail, verifySignUpCode, resendSignUpCode, resetPassword,
-    clearError, deleteAccount, continueWithoutAccount, signInWithApple,
+    user, loading, errorMessage, isPasswordRecovery, passwordRecoveryReady, signInWithEmail, signOut, signUpWithEmail, verifySignUpCode, resendSignUpCode, resetPassword, updatePassword,
+    cancelPasswordRecovery, clearError, deleteAccount, continueWithoutAccount, signInWithApple,
     signUpWithApple: async () => { await signInWithApple(); },
-  }), [user, loading, errorMessage]);
+  }), [user, loading, errorMessage, isPasswordRecovery, passwordRecoveryReady]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

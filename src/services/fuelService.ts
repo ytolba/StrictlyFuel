@@ -19,6 +19,7 @@ export async function saveWorkout(userId: string, workout: WorkoutDraft, target:
     intra_required: target.intraWorkout.required, intra_low_g_per_hour: target.intraWorkout.lowPerHour,
     intra_high_g_per_hour: target.intraWorkout.highPerHour, intra_note: target.intraWorkout.note,
     timing_label: target.timingLabel, rationale: target.rationale,
+    availability_model_version: target.availabilityModelVersion || "2026.08",
   }, { onConflict: "workout_id" });
   if (targetError) throw targetError;
 }
@@ -29,7 +30,10 @@ export async function saveMeal(userId: string, meal: FuelMeal) {
     source: meal.source, is_estimate: meal.isEstimate, confidence: meal.confidence ?? null,
     calories: meal.macros.calories, carbs_g: meal.macros.carbs, protein_g: meal.macros.protein, fat_g: meal.macros.fat,
     fiber_g: meal.macros.fiber, fast_carbs_g: meal.macros.fastCarbs, medium_carbs_g: meal.macros.mediumCarbs,
-    slow_carbs_g: meal.macros.slowCarbs, created_at: meal.createdAt, updated_at: new Date().toISOString(),
+    slow_carbs_g: meal.macros.slowCarbs, unclassified_carbs_g: meal.macros.unclassifiedCarbs,
+    available_carbs_g: meal.macros.availableCarbs ?? meal.macros.carbs,
+    carb_availability_confidence: meal.macros.carbSpeedConfidence ?? meal.score.confidence ?? null,
+    created_at: meal.createdAt, updated_at: new Date().toISOString(),
   });
   if (mealError) throw mealError;
   await supabase.from("meal_items").delete().eq("meal_id", meal.id);
@@ -55,6 +59,7 @@ export async function saveMeal(userId: string, meal: FuelMeal) {
     distribution_score: scorePercent(byId("distribution")?.score || 0, byId("distribution")?.maxScore || 1),
     comfort_score: scorePercent(byId("comfort")?.score || 0, byId("comfort")?.maxScore || 1),
     headline: meal.score.headline, summary: meal.score.summary, components,
+    model_version: "fuel-score-v3.0", provisional: Boolean(meal.score.provisional),
   }, { onConflict: "meal_id" });
   if (analysisError) throw analysisError;
 }
@@ -126,5 +131,18 @@ export async function saveCommunityMeal(userId: string, post: FuelPost) {
 
 export async function removeSavedCommunityMeal(userId: string, postId: string) {
   const { error } = await supabase.from("saved_meals").delete().eq("user_id", userId).eq("post_id", postId);
+  if (error) throw error;
+}
+
+export async function reportCommunityPost(userId: string, postId: string, reason: string) {
+  const { error } = await supabase.from("post_reports").upsert(
+    { reporter_id: userId, post_id: postId, reason },
+    { onConflict: "post_id,reporter_id" }
+  );
+  if (error) throw error;
+}
+
+export async function blockCommunityUser(userId: string, blockedUserId: string) {
+  const { error } = await supabase.from("blocked_users").upsert({ blocker_id: userId, blocked_id: blockedUserId });
   if (error) throw error;
 }

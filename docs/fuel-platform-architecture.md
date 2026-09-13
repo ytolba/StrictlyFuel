@@ -19,9 +19,11 @@ These services do not call an AI model, so identical inputs produce identical ou
 
 ## AI boundary
 
-The Firebase callable `analyzeMealPhoto` identifies visible foods and estimates portions, macros, fiber, confidence, and uncertainty ranges. The user can edit or remove every detected item. Once confirmed, the deterministic nutrition and scoring engines take over.
+The Supabase `analyze-meal` Edge Function receives one or two views of the same plate. It identifies visible foods, preserves preparation state, counts discrete foods, and returns item-level portion intervals and confidence. It does not calculate final macros. The app resolves each item against the food catalog and performs the nutrition arithmetic in deterministic code.
 
-The mobile app never contains the OpenAI API key. The Firebase function reads `OPENAI_API_KEY` from Firebase Secret Manager.
+Amounts that cannot be measured reliably from appearance, especially spreads, syrups, oils, dry toppings, and hidden components, are flagged for an optional athlete check. The athlete can answer, edit the amount directly, or continue with StrictlyFuel's best visual estimate. If they skip the check, the original lower confidence and wider macro range remain attached to the meal and a Fuel Score can still be issued.
+
+The mobile app never contains the OpenAI API key. The Edge Function reads `OPENAI_API_KEY` from Supabase secrets.
 
 ## Firestore collections
 
@@ -45,4 +47,3 @@ Ingredient snapshots are embedded in a meal so historical nutrition does not sil
 2. Move community counters to transaction-backed engagement subcollections or Cloud Functions before production scale.
 3. Add server-side post validation/moderation and report/block collections before opening public posting broadly.
 4. Add a USDA proxy/cache before live generic-food search so the data.gov key remains server-side.
-

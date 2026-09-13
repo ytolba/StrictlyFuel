@@ -19,10 +19,14 @@ export async function saveFoodLabel(food: FoodLabelAnalysis): Promise<FuelFood> 
   return {
     id: row.id, name: food.brand ? `${food.productName} · ${food.brand}` : food.productName, aliases: [], emoji: "▣",
     category: "grain", carbSpeed: food.carbSpeed, timing: food.carbSpeedReason,
+    carbSpeedConfidence: food.carbSpeed === "unknown" ? 0 : Math.min(90, food.confidence),
+    carbSpeedReason: food.carbSpeedReason,
     defaultGrams: grams, servingLabel: food.servingLabel,
+    ingredientsText: food.ingredientsText,
     per100g: {
       calories: food.caloriesPerServing / factor, carbs: food.carbsPerServing / factor,
       protein: food.proteinPerServing / factor, fat: food.fatPerServing / factor, fiber: food.fiberPerServing / factor,
+      sugar: food.sugarPerServing / factor,
       sugarAlcohols: food.sugarAlcoholsPerServing / factor, sugarAlcoholType: food.sugarAlcoholType,
       allulose: food.allulosePerServing / factor,
     }, source: "label", sourceId: row.source_product_id, dataQualityScore: Math.min(70, food.confidence), isVerified: false,

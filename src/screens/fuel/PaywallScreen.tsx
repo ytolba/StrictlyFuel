@@ -48,9 +48,18 @@ export default function PaywallScreen({ navigation }: any) {
   const priceFor = (plan: PlanKey) => packFor(plan)?.product?.priceString || PLAN_COPY[plan].price;
 
   const monthlyEquivalent = () => {
+    const storeEquivalent = yearlyPackage?.product?.pricePerMonthString;
+    if (storeEquivalent) return `${storeEquivalent}/month equivalent`;
     const price = yearlyPackage?.product?.price;
     if (!price) return "about $2.50/month";
     return `about $${(price / 12).toFixed(2)}/month`;
+  };
+
+  const yearlySavings = () => {
+    const monthlyPrice = monthlyPackage?.product?.price;
+    const yearlyPrice = yearlyPackage?.product?.price;
+    if (!monthlyPrice || !yearlyPrice || monthlyPrice * 12 <= yearlyPrice) return null;
+    return Math.round((1 - yearlyPrice / (monthlyPrice * 12)) * 100);
   };
 
   const buy = async () => {
@@ -175,7 +184,7 @@ export default function PaywallScreen({ navigation }: any) {
           <View style={[styles.radio, selected === "yearly" && styles.radioActive]}>{selected === "yearly" ? <View style={styles.radioDot} /> : null}</View>
           <View>
             <Text style={styles.planName}>Yearly</Text>
-            <Text style={styles.planNote}>{monthlyEquivalent()} · save 50%</Text>
+            <Text style={styles.planNote}>{monthlyEquivalent()}{yearlySavings() ? ` · save ${yearlySavings()}%` : ""}</Text>
           </View>
         </View>
         <View style={styles.planRight}>
@@ -203,7 +212,7 @@ export default function PaywallScreen({ navigation }: any) {
       <TouchableOpacity style={[styles.cta, busy && styles.ctaBusy]} onPress={buy} disabled={busy}>
         {busy ? <ActivityIndicator color={strictlyColors.onLime} /> : (
           <>
-            <Text style={styles.ctaText}>Start {PLAN_COPY.trialDays}-day free trial</Text>
+            <Text style={styles.ctaText}>Continue with {selected === "yearly" ? "Yearly" : "Monthly"}</Text>
             <Ionicons name="arrow-forward" size={18} color={strictlyColors.onLime} />
           </>
         )}
@@ -212,9 +221,9 @@ export default function PaywallScreen({ navigation }: any) {
       {/* Guideline 3.1.2 requires price, duration, renewal and cancellation
           terms to be visible before purchase — not only in App Store Connect. */}
       <Text style={styles.terms}>
-        Your {PLAN_COPY.trialDays}-day free trial is free. After it ends, your subscription renews automatically at{" "}
-        {priceFor(selected)} per {selected === "yearly" ? "year" : "month"} unless cancelled at least 24 hours before the trial
-        ends. Payment is charged to your Apple ID at confirmation of purchase. Manage or cancel in your Apple ID settings.
+        This is an auto-renewable subscription at {priceFor(selected)} per {selected === "yearly" ? "year" : "month"}. Payment is
+        charged to your Apple ID at confirmation and renews unless cancelled at least 24 hours before the current period ends.
+        Any introductory offer you are eligible for appears in Apple’s purchase confirmation. Manage or cancel in Apple ID settings.
       </Text>
 
       <TouchableOpacity style={styles.restore} onPress={restore} disabled={busy}>

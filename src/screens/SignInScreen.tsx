@@ -23,7 +23,7 @@ import { strictlyColors, strictlyRadius, strictlyType } from "../theme/strictlyT
 type Field = "email" | "password" | null;
 
 const SignInScreen: React.FC = () => {
-  const { signInWithEmail, resetPassword, continueWithoutAccount, signInWithApple } = useAuth();
+  const { signInWithEmail, resetPassword, signInWithApple } = useAuth();
   const navigation = useNavigation<StackNavigationProp<any>>();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -35,18 +35,6 @@ const SignInScreen: React.FC = () => {
 
   const describeError = (error: unknown, fallback: string) =>
     error instanceof Error && error.message ? error.message : fallback;
-
-  const confirmContinueWithoutAccount = () =>
-    new Promise<void>((resolve, reject) => {
-      Alert.alert(
-        "Continue without an account?",
-        "Your scans may not be saved across devices.",
-        [
-          { text: "Cancel", style: "cancel", onPress: () => reject(new Error("cancelled")) },
-          { text: "Continue", style: "destructive", onPress: () => resolve() },
-        ]
-      );
-    });
 
   const handleEmailSignIn = async () => {
     setErrorMessage(null);
@@ -75,7 +63,9 @@ const SignInScreen: React.FC = () => {
       await resetPassword(email.trim());
       Alert.alert("Check your email", "A password reset link is on its way.");
     } catch (error) {
-      Alert.alert("Couldn't send reset link", describeError(error, "Please try again in a moment."));
+      const message = describeError(error, "Please try again in a moment.");
+      const rateLimited = /too many reset emails|wait about an hour/i.test(message);
+      Alert.alert(rateLimited ? "Reset email already sent" : "Couldn't send reset link", message);
     } finally {
       setIsForgotLoading(false);
     }
@@ -194,21 +184,6 @@ const SignInScreen: React.FC = () => {
                   </TouchableOpacity>
                 </>
               )}
-
-              <TouchableOpacity
-                style={styles.ghostButton}
-                activeOpacity={0.7}
-                onPress={async () => {
-                  try {
-                    await confirmContinueWithoutAccount();
-                    await continueWithoutAccount();
-                  } catch {
-                    // Cancelled — nothing to do.
-                  }
-                }}
-              >
-                <Text style={styles.ghostButtonText}>Continue without an account</Text>
-              </TouchableOpacity>
             </View>
 
             <View style={styles.footer}>
@@ -372,14 +347,6 @@ const styles = StyleSheet.create({
     fontSize: 14.5,
     fontWeight: "600",
     fontFamily: strictlyType.sansMedium,
-  },
-
-  ghostButton: { alignItems: "center", justifyContent: "center", height: 44, marginTop: 6 },
-  ghostButtonText: {
-    color: strictlyColors.textSoft,
-    fontFamily: strictlyType.sans,
-    fontSize: 12.5,
-    textDecorationLine: "underline",
   },
 
   footer: { flexDirection: "row", justifyContent: "center", marginTop: 26 },

@@ -16,7 +16,6 @@ import FuelSettingsScreen from "../screens/fuel/FuelSettingsScreen";
 import PaywallScreen from "../screens/fuel/PaywallScreen";
 import HealthWorkoutsScreen from "../screens/fuel/HealthWorkoutsScreen";
 import RaceModeScreen from "../screens/fuel/RaceModeScreen";
-import PostWorkoutMealsScreen from "../screens/fuel/PostWorkoutMealsScreen";
 import type { CommunityFilters, FuelPost } from "../types/fuel";
 import { strictlyColors } from "../theme/strictlyTheme";
 
@@ -30,14 +29,13 @@ export type AppStackParamList = {
   CommunityFilters: { filters?: CommunityFilters } | undefined;
   FuelPostDetail: { post?: FuelPost; postId?: string };
   SavedMeals: undefined;
-  FoodCapture: undefined;
+  FoodCapture: { mode?: "barcode" | "label"; returnTo?: "BuildMeal" } | undefined;
   Profile: undefined;
   MealIdeas: undefined;
   Settings: undefined;
   Paywall: undefined;
   HealthWorkouts: undefined;
   RaceMode: undefined;
-  PostWorkoutMeals: undefined;
 };
 
 const Stack = createStackNavigator<AppStackParamList>();
@@ -66,6 +64,5 @@ export default function AppStackNavigator() {
     <Stack.Screen name="Paywall" component={PaywallScreen} options={{ presentation: "modal", ...TransitionPresets.ModalSlideFromBottomIOS }} />
     <Stack.Screen name="HealthWorkouts" component={HealthWorkoutsScreen} />
     <Stack.Screen name="RaceMode" component={RaceModeScreen} />
-    <Stack.Screen name="PostWorkoutMeals" component={PostWorkoutMealsScreen} />
   </Stack.Navigator>;
 }

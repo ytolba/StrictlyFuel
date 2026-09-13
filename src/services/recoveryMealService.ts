@@ -4,7 +4,7 @@ import { POST_WORKOUT_MEALS } from "../data/postWorkoutMeals";
 import type { ActivityType } from "../types/fuel";
 import type { RecoveryCategory, RecoveryIngredientBlueprint, RecoveryMealTemplate } from "../types/recovery";
 
-const CACHE_KEY = "strictlyfuel:post-workout-meals:v1";
+const CACHE_KEY = "strictlyfuel:post-workout-meals:v2";
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 type RecoveryTemplateRow = {

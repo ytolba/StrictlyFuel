@@ -14,7 +14,7 @@ major_version = 15
 [auth]
 enabled = true
 site_url = "strictlyfuel://"
-additional_redirect_urls = ["strictlyfuel://auth/callback"]
+additional_redirect_urls = ["strictlyfuel://auth/callback", "strictlyfuel://reset-password"]
 
 [storage]
 enabled = true

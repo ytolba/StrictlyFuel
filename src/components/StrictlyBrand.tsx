@@ -21,7 +21,7 @@ export const StrictlyMark = ({ size = 38, dark = true, onCream = false }: BrandM
        * against the page in either appearance; `onCream` covers the launch
        * screen, which stays cream in both.
        */
-      fill={onCream ? strictlyColors.onCreamLight : strictlyColors.text}
+      fill={onCream ? strictlyColors.onCreamLight : dark ? strictlyColors.text : strictlyColors.inverseText}
     />
   </Svg>
 );
@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
     letterSpacing: 2.4,
   },
   strictlyLight: {
-    color: strictlyColors.text,
+    color: strictlyColors.inverseText,
   },
   strictlyOnCream: {
     color: strictlyColors.onCreamLight,

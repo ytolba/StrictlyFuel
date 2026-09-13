@@ -59,8 +59,7 @@ export const strictlyLightPalette = {
   fieldText: "#0A0A0A",
 
   /**
-   * The native launch screen is cream in both appearances, so these two do not
-   * flip with the theme.
+   * Stable cream tokens used by artwork and other non-adaptive brand assets.
    */
   creamLight: "#F2EAD7",
   onCreamLight: "#0A1C12",
@@ -118,7 +117,7 @@ export const strictlyDarkPalette = {
   /** Typed value color in text inputs (email/password, etc). Explicit warm beige in dark mode. */
   fieldText: "#E9D8B4",
 
-  /** The cream launch screen, identical in both appearances. */
+  /** Stable cream tokens used by artwork and other non-adaptive brand assets. */
   creamLight: "#F2EAD7",
   onCreamLight: "#0A1C12",
 } as const;
@@ -183,12 +182,14 @@ export const carbSpeedColors = {
   fast: "#F5C451",   // amber — burns quickly
   medium: "#D8E66B", // lime  — the brand middle
   slow: "#6FB8C9",   // teal  — slow release
+  unknown: "#A8AAA3", // neutral — evidence is incomplete
 } as const;
 
 export const carbSpeedMeta = {
-  fast: { label: "Fast", color: carbSpeedColors.fast, hint: "Hits the bloodstream quickly — best close to training." },
-  medium: { label: "Medium", color: carbSpeedColors.medium, hint: "Steady release — the everyday middle of a pre-workout meal." },
-  slow: { label: "Slow", color: carbSpeedColors.slow, hint: "Digests gradually — useful when you have hours to spare." },
+  fast: { label: "Fast", color: carbSpeedColors.fast, hint: "Lower-burden carbohydrate likely to become available sooner." },
+  medium: { label: "Medium", color: carbSpeedColors.medium, hint: "Moderate food structure and expected availability." },
+  slow: { label: "Slow", color: carbSpeedColors.slow, hint: "More structure or digestion burden, usually better with more time." },
+  unknown: { label: "Unclassified", color: carbSpeedColors.unknown, hint: "The available evidence is not strong enough to estimate availability." },
 } as const;
 
 export const strictlyRadius = {

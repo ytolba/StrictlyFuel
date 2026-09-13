@@ -5,6 +5,14 @@ import HealthKit
 final class StrictlyHealthKit: NSObject {
   private let store = HKHealthStore()
 
+  private func readTypes() -> Set<HKObjectType> {
+    var types: Set<HKObjectType> = [HKObjectType.workoutType()]
+    [HKQuantityTypeIdentifier.heartRate, .activeEnergyBurned, .distanceWalkingRunning, .distanceCycling, .distanceSwimming]
+      .compactMap { HKObjectType.quantityType(forIdentifier: $0) }
+      .forEach { types.insert($0) }
+    return types
+  }
+
   @objc
   func isAvailable(
     _ resolve: RCTPromiseResolveBlock,
@@ -23,15 +31,29 @@ final class StrictlyHealthKit: NSObject {
       return
     }
 
-    var readTypes: Set<HKObjectType> = [HKObjectType.workoutType()]
-    if let heartRate = HKObjectType.quantityType(forIdentifier: .heartRate) {
-      readTypes.insert(heartRate)
-    }
-    store.requestAuthorization(toShare: [], read: readTypes) { success, error in
+    store.requestAuthorization(toShare: [], read: readTypes()) { success, error in
       if let error {
         reject("HEALTH_AUTH_ERROR", error.localizedDescription, error)
       } else {
         resolve(success)
+      }
+    }
+  }
+
+  @objc
+  func getAuthorizationRequestStatus(
+    _ resolve: @escaping RCTPromiseResolveBlock,
+    reject: @escaping RCTPromiseRejectBlock
+  ) {
+    store.getRequestStatusForAuthorization(toShare: [], read: readTypes()) { status, error in
+      if let error {
+        reject("HEALTH_STATUS_ERROR", error.localizedDescription, error)
+        return
+      }
+      switch status {
+      case .shouldRequest: resolve("should_request")
+      case .unnecessary: resolve("unnecessary")
+      default: resolve("unknown")
       }
     }
   }
@@ -48,12 +70,40 @@ final class StrictlyHealthKit: NSObject {
     }
 
     let start = Calendar.current.date(byAdding: .month, value: -6, to: Date()) ?? .distantPast
-    let predicate = HKQuery.predicateForSamples(withStart: start, end: Date(), options: .strictStartDate)
+    queryWorkouts(start: start, end: Date(), limit: limit.intValue, resolve: resolve, reject: reject)
+  }
+
+  @objc
+  func getWorkoutsBetween(
+    _ startIso: String,
+    endIso: String,
+    limit: NSNumber,
+    resolve: @escaping RCTPromiseResolveBlock,
+    reject: @escaping RCTPromiseRejectBlock
+  ) {
+    let formatter = ISO8601DateFormatter()
+    guard let start = formatter.date(from: startIso), let end = formatter.date(from: endIso) else {
+      reject("HEALTH_DATE_ERROR", "The workout date range was invalid.", nil)
+      return
+    }
+    queryWorkouts(start: start, end: end, limit: limit.intValue, resolve: resolve, reject: reject)
+  }
+
+  private func queryWorkouts(
+    start: Date,
+    end: Date,
+    limit: Int,
+    resolve: @escaping RCTPromiseResolveBlock,
+    reject: @escaping RCTPromiseRejectBlock
+  ) {
+    // No strict boundary option: a workout crossing midnight should appear on
+    // both local days it overlaps rather than disappearing from today's plan.
+    let predicate = HKQuery.predicateForSamples(withStart: start, end: end, options: [])
     let sort = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
     let query = HKSampleQuery(
       sampleType: HKObjectType.workoutType(),
       predicate: predicate,
-      limit: max(1, min(100, limit.intValue)),
+      limit: max(1, min(100, limit)),
       sortDescriptors: [sort]
     ) { _, samples, error in
       if let error {

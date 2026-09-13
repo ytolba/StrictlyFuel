@@ -22,7 +22,6 @@ const OnboardingScreen = () => {
   const [step, setStep] = useState(0);
   const [profile, setProfile] = useState<NutritionProfile>(EMPTY_NUTRITION_PROFILE);
   const [healthConnecting, setHealthConnecting] = useState(false);
-  const [healthConnected, setHealthConnected] = useState(false);
 
   const finish = async () => {
     await saveNutritionProfile(profile);
@@ -30,7 +29,34 @@ const OnboardingScreen = () => {
     navigation.reset({ index: 0, routes: [{ name: "Auth" }] });
   };
 
-  const next = () => (step === TOTAL_STEPS - 1 ? finish() : setStep((current) => current + 1));
+  const next = () => {
+    if (step === 1 && !profile.bodyWeightKg) {
+      Alert.alert("Add your body weight", "Weight is required because it directly determines your workout carbohydrate target.");
+      return;
+    }
+    return step === TOTAL_STEPS - 1 ? finish() : setStep((current) => current + 1);
+  };
+
+  const continueThroughHealthPermission = async () => {
+    if (!appleHealthSupported()) {
+      await finish();
+      return;
+    }
+
+    setHealthConnecting(true);
+    try {
+      const requestCompleted = await connectAppleHealth();
+      if (!requestCompleted) {
+        Alert.alert("Apple Health couldn’t open", "Please try again so you can choose what to share in Apple’s permission screen.");
+        return;
+      }
+      await finish();
+    } catch (error) {
+      Alert.alert("Apple Health couldn’t open", error instanceof Error ? error.message : "Please try again.");
+    } finally {
+      setHealthConnecting(false);
+    }
+  };
 
   const renderIntro = () => (
     <View style={styles.intro}>
@@ -69,31 +95,15 @@ const OnboardingScreen = () => {
   const renderProfileStep = () => {
     if (step === 6) {
       const supported = appleHealthSupported();
-      const connectHealth = async () => {
-        if (!supported) return;
-        setHealthConnecting(true);
-        try {
-          const connected = await connectAppleHealth();
-          setHealthConnected(connected);
-          if (!connected) Alert.alert("Apple Health needs permission", "You can always connect it later from the home screen.");
-        } catch (error) {
-          Alert.alert("Apple Health couldn’t connect", error instanceof Error ? error.message : "You can connect it later from the home screen.");
-        } finally {
-          setHealthConnecting(false);
-        }
-      };
       return <View style={styles.healthStep}>
         <View style={styles.healthIcon}><Ionicons name="heart" size={29} color={strictlyColors.white} /></View>
         <Text style={styles.healthKicker}>OPTIONAL · APPLE HEALTH</Text>
         <Text style={styles.healthTitle}>Let your training lead the plan.</Text>
-        <Text style={styles.healthDescription}>Connect completed workouts to see their duration, distance, energy, and heart-rate context. Strictly will use that real session to recommend what to eat after it.</Text>
+        <Text style={styles.healthDescription}>Connect completed workouts to see duration, distance, energy, and heart-rate context. Your private Post Workout tab can then build recovery guidance from what you actually did.</Text>
         <View style={styles.healthList}>
-          {["Recent workouts on your home screen", "Recovery meals after completed sessions", "Read-only access. Your Health data stays on your phone"].map((copy) => <View key={copy} style={styles.healthRow}><Ionicons name="checkmark" size={15} color={strictlyColors.good} /><Text style={styles.healthRowText}>{copy}</Text></View>)}
+          {["Automatic workout context", "Recovery meals after completed sessions", "Read-only access. Your Health data stays on your phone"].map((copy) => <View key={copy} style={styles.healthRow}><Ionicons name="checkmark" size={15} color={strictlyColors.good} /><Text style={styles.healthRowText}>{copy}</Text></View>)}
         </View>
-        {supported ? <TouchableOpacity style={[styles.healthButton, healthConnected && styles.healthButtonConnected]} disabled={healthConnecting || healthConnected} onPress={connectHealth}>
-          <Ionicons name={healthConnected ? "checkmark-circle" : "heart-outline"} size={19} color={strictlyColors.onLime} />
-          <Text style={styles.healthButtonText}>{healthConnecting ? "Connecting…" : healthConnected ? "Apple Health connected" : "Connect Apple Health"}</Text>
-        </TouchableOpacity> : <View style={styles.healthUnavailable}><Text style={styles.healthUnavailableTitle}>Available after your iPhone build</Text><Text style={styles.healthUnavailableText}>Finish setup now, then connect Apple Health from Home after installing the new iOS build.</Text></View>}
+        {supported ? <View style={styles.healthPermissionNote}><Ionicons name="shield-checkmark-outline" size={17} color={strictlyColors.good} /><Text style={styles.healthPermissionNoteText}>Continue to Apple’s permission screen, where you choose exactly what to share.</Text></View> : <View style={styles.healthUnavailable}><Text style={styles.healthUnavailableTitle}>Available on iPhone and supported iPad builds</Text><Text style={styles.healthUnavailableText}>Continue setup now. You can manage Apple Health later from Account on a supported Apple device.</Text></View>}
       </View>;
     }
     if (step === 1) return <AthleteBasicsForm profile={profile} onChange={setProfile} />;
@@ -140,13 +150,13 @@ const OnboardingScreen = () => {
       </ScrollView>
 
       <View style={styles.footer}>
-        {step > 0 && (
+        {step > 1 && step !== TOTAL_STEPS - 1 && (
           <TouchableOpacity style={styles.skipButton} onPress={next}>
             <Text style={styles.skipText}>Skip for now</Text>
           </TouchableOpacity>
         )}
-        <TouchableOpacity style={styles.nextButton} onPress={next}>
-          <Text style={styles.nextText}>{step === TOTAL_STEPS - 1 ? "Start fueling" : step === 0 ? "Build my fuel profile" : "Continue"}</Text>
+        <TouchableOpacity style={[styles.nextButton, healthConnecting && styles.nextButtonDisabled]} disabled={healthConnecting} onPress={step === TOTAL_STEPS - 1 ? continueThroughHealthPermission : next}>
+          <Text style={styles.nextText}>{healthConnecting && step === TOTAL_STEPS - 1 ? "Opening Apple Health…" : step === TOTAL_STEPS - 1 ? "Continue" : step === 0 ? "Build my fuel profile" : "Continue"}</Text>
           <Ionicons name="arrow-forward" size={17} color={strictlyColors.paper} />
         </TouchableOpacity>
       </View>
@@ -164,7 +174,7 @@ const styles = StyleSheet.create({
   progressTrack: { flex: 1, height: 3, borderRadius: 2, backgroundColor: strictlyColors.border, overflow: "hidden" },
   progressFill: { height: 3, borderRadius: 2, backgroundColor: strictlyColors.ink },
   stepCount: { color: strictlyColors.textSoft, fontFamily: strictlyType.mono, fontSize: 10 },
-  content: { paddingHorizontal: 22, paddingTop: 22, paddingBottom: 26 },
+  content: { paddingHorizontal: 22, paddingTop: 18, paddingBottom: 40 },
   intro: { paddingTop: 4 },
   // The mark now fills with `text`, so the chip behind it has to be a surface,
   // not `ink` — an ink mark on an ink chip was invisible.
@@ -191,18 +201,18 @@ const styles = StyleSheet.create({
   skipButton: { height: 48, justifyContent: "center", paddingHorizontal: 12 },
   skipText: { color: strictlyColors.textSoft, fontFamily: strictlyType.sansMedium, fontSize: 13 },
   nextButton: { minHeight: 48, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingHorizontal: 18, borderRadius: strictlyRadius.small, backgroundColor: strictlyColors.ink },
+  nextButtonDisabled: { opacity: 0.62 },
   nextText: { color: strictlyColors.paper, fontFamily: strictlyType.sansMedium, fontWeight: "600", fontSize: 13 },
-  healthStep: { paddingTop: 18 },
-  healthIcon: { width: 62, height: 62, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: "#E64A55", marginBottom: 24 },
+  healthStep: { paddingTop: 6, paddingBottom: 12 },
+  healthIcon: { width: 54, height: 54, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: "#E64A55", marginBottom: 18 },
   healthKicker: { color: strictlyColors.good, fontFamily: strictlyType.mono, fontSize: 9, letterSpacing: 1.1 },
-  healthTitle: { color: strictlyColors.text, fontFamily: strictlyType.sansBold, fontWeight: "700", fontSize: 31, lineHeight: 36, letterSpacing: -1, marginTop: 8, maxWidth: 330 },
-  healthDescription: { color: strictlyColors.textSoft, fontFamily: strictlyType.sans, fontSize: 14, lineHeight: 21, marginTop: 11 },
-  healthList: { gap: 11, padding: 16, marginTop: 22, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
+  healthTitle: { color: strictlyColors.text, fontFamily: strictlyType.sansBold, fontWeight: "700", fontSize: 28, lineHeight: 33, letterSpacing: -0.8, marginTop: 7, maxWidth: 330 },
+  healthDescription: { color: strictlyColors.textSoft, fontFamily: strictlyType.sans, fontSize: 13, lineHeight: 19, marginTop: 9 },
+  healthList: { gap: 9, padding: 14, marginTop: 17, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
   healthRow: { flexDirection: "row", alignItems: "flex-start", gap: 9 },
   healthRowText: { flex: 1, color: strictlyColors.text, fontFamily: strictlyType.sans, fontSize: 12, lineHeight: 17 },
-  healthButton: { minHeight: 54, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 13, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.lime },
-  healthButtonConnected: { opacity: 0.78 },
-  healthButtonText: { color: strictlyColors.onLime, fontFamily: strictlyType.sansMedium, fontWeight: "900", fontSize: 13 },
+  healthPermissionNote: { flexDirection: "row", alignItems: "flex-start", gap: 9, padding: 14, marginTop: 13, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.cream },
+  healthPermissionNoteText: { flex: 1, color: strictlyColors.text, fontFamily: strictlyType.sans, fontSize: 11, lineHeight: 17 },
   healthUnavailable: { padding: 16, marginTop: 13, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.cream },
   healthUnavailableTitle: { color: strictlyColors.text, fontFamily: strictlyType.sansMedium, fontWeight: "800", fontSize: 13 },
   healthUnavailableText: { color: strictlyColors.textSoft, fontFamily: strictlyType.sans, fontSize: 11, lineHeight: 16, marginTop: 5 },

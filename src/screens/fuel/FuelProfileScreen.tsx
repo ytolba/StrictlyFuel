@@ -26,28 +26,30 @@ export default function FuelProfileScreen({ navigation }: any) {
 
   const confirmDelete = () => {
     if (deleteInFlight.current) return;
+    const runDelete = async () => {
+      if (deleteInFlight.current) return;
+      deleteInFlight.current = true;
+      setDeleting(true);
+      try {
+        // deleteAccount reports its own failure and leaves the session
+        // intact, so there is nothing to navigate on error: the app swaps
+        // to the auth stack by itself once the user is cleared.
+        await deleteAccount();
+      } finally {
+        deleteInFlight.current = false;
+        setDeleting(false);
+      }
+    };
     Alert.alert(
       "Delete your account?",
-      "This permanently removes your account, workouts, meals, saved foods and community posts. It cannot be undone.",
+      "This permanently removes your account and data. Deleting StrictlyFuel does not cancel an Apple subscription, so manage any active subscription first if you do not want it to renew.",
       [
         { text: "Cancel", style: "cancel" },
+        { text: "Manage subscription", onPress: () => Linking.openURL("https://apps.apple.com/account/subscriptions") },
         {
-          text: "Delete",
+          text: "Delete anyway",
           style: "destructive",
-          onPress: async () => {
-            if (deleteInFlight.current) return;
-            deleteInFlight.current = true;
-            setDeleting(true);
-            try {
-              // deleteAccount reports its own failure and leaves the session
-              // intact, so there is nothing to navigate on error: the app swaps
-              // to the auth stack by itself once the user is cleared.
-              await deleteAccount();
-            } finally {
-              deleteInFlight.current = false;
-              setDeleting(false);
-            }
-          },
+          onPress: runDelete,
         },
       ]
     );

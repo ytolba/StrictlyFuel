@@ -1,12 +1,12 @@
 import React, { useMemo, useRef, useState } from "react";
 import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from "expo-camera";
-import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { Ionicons } from "@expo/vector-icons";
 import { ScreenShell } from "../../components/fuel/ScreenShell";
 import { LoadingState } from "../../components/fuel/LoadingState";
 import { ValueEditorSheet } from "../../components/fuel/ValueEditorSheet";
+import { PhotoCamera } from "../../components/fuel/PhotoCamera";
 import { lookupFoodBarcode } from "../../services/foodCatalogService";
 import { saveFoodLabel } from "../../services/foodCaptureService";
 import { extractTextFromImage } from "../../utils/AppleVisionOCR";
@@ -26,10 +26,10 @@ const numericFields: { key: NumericField; label: string; unit: string }[] = [
   { key: "sugarAlcoholsPerServing", label: "Sugar alcohols", unit: "g" }, { key: "allulosePerServing", label: "Allulose", unit: "g" },
 ];
 
-export default function FoodCaptureScreen({ navigation }: any) {
+export default function FoodCaptureScreen({ navigation, route }: any) {
   const { addIngredient } = useFuel();
   const [permission, requestPermission] = useCameraPermissions();
-  const [mode, setMode] = useState<Mode>("choose");
+  const [mode, setMode] = useState<Mode>(route.params?.mode || "choose");
   const [scanned, setScanned] = useState(false);
   const [manualBarcode, setManualBarcode] = useState("");
   const [loading, setLoading] = useState(false);
@@ -38,9 +38,12 @@ export default function FoodCaptureScreen({ navigation }: any) {
   const [label, setLabel] = useState<FoodLabelAnalysis>();
   const [numericKey, setNumericKey] = useState<NumericField>();
   const [scannedBarcode, setScannedBarcode] = useState("");
+  const [torch, setTorch] = useState(false);
+  const [labelCameraOpen, setLabelCameraOpen] = useState(false);
   const scanLock = useRef(false);
 
   const closeCapture = () => {
+    if (route.params?.returnTo === "BuildMeal") return navigation.replace("BuildMeal");
     if (navigation.canGoBack?.()) return navigation.goBack();
     const parent = navigation.getParent?.();
     if (parent?.canGoBack?.()) return parent.goBack();
@@ -66,19 +69,16 @@ export default function FoodCaptureScreen({ navigation }: any) {
     finally { setLoading(false); scanLock.current = false; }
   };
 
-  const captureLabel = async () => {
-    const access = await ImagePicker.requestCameraPermissionsAsync();
-    if (!access.granted) return Alert.alert("Camera permission needed", "Allow camera access to read a package label.");
-    const result = await ImagePicker.launchCameraAsync({ mediaTypes: ["images"], quality: 1 });
-    if (result.canceled) return;
-    setPhotoUri(result.assets[0].uri); setLoading(true); setLabel(undefined);
+  const captureLabel = async (uri: string) => {
+    setLabelCameraOpen(false);
+    setPhotoUri(uri); setLoading(true); setLabel(undefined);
     try {
-      const prepared = await ImageManipulator.manipulateAsync(result.assets[0].uri, [{ resize: { width: 1800 } }], { compress: 0.86, format: ImageManipulator.SaveFormat.JPEG, base64: true });
+      const prepared = await ImageManipulator.manipulateAsync(uri, [{ resize: { width: 1800 } }], { compress: 0.86, format: ImageManipulator.SaveFormat.JPEG, base64: true });
       if (!prepared.base64) throw new Error("The label photo could not be prepared.");
       // Nutrition facts are printed data, so keep this path private, fast and
       // deterministic: Apple's on-device Vision OCR reads the text and the
       // parser maps only numbers that are actually visible on the label.
-      const text = await extractTextFromImage(result.assets[0].uri);
+      const text = await extractTextFromImage(uri);
       setLabel(parseNutritionLabelText(text));
     } catch (error) {
       Alert.alert("Could not read this label", error instanceof Error ? error.message : "Try again in brighter light with the nutrition panel flat and close to the camera.");
@@ -95,7 +95,7 @@ export default function FoodCaptureScreen({ navigation }: any) {
   };
 
   const title = mode === "barcode" ? "Scan barcode" : mode === "label" ? "Add from label" : "Add a packaged food";
-  return <ScreenShell title={title} eyebrow="FOOD CAPTURE" back onBack={() => mode === "choose" ? closeCapture() : setMode("choose")}>
+  return <ScreenShell title={title} eyebrow="FOOD CAPTURE" back onBack={() => labelCameraOpen ? setLabelCameraOpen(false) : mode === "choose" ? closeCapture() : setMode("choose")}>
     {mode === "choose" ? <>
       <Text style={styles.intro}>Use the fastest source available. You’ll always review the food before it enters your meal.</Text>
       <TouchableOpacity style={styles.choice} onPress={() => setMode("barcode")}><View style={styles.choiceIcon}><Ionicons name="barcode-outline" size={27} color={strictlyColors.onLime} /></View><View style={styles.choiceCopy}><Text style={styles.choiceTitle}>Scan a barcode</Text><Text style={styles.choiceText}>Find the exact packaged product and its listed macros.</Text></View><Ionicons name="chevron-forward" size={19} color={strictlyColors.text} /></TouchableOpacity>
@@ -104,13 +104,13 @@ export default function FoodCaptureScreen({ navigation }: any) {
 
     {mode === "barcode" ? <>
       {loading ? <View style={styles.barcodeLoading}><View style={styles.barcodePill}><Ionicons name="barcode-outline" size={18} color={strictlyColors.text} /><Text style={styles.barcodeValue}>{scannedBarcode}</Text></View><LoadingState title="Finding your product" messages={["Checking the exact barcode", "Loading its package serving", "Adding one serving to your meal"]} /><Text style={styles.loadingNote}>Keep this screen open for a moment. Strictly will return you to your meal when the match is ready.</Text></View> : !permission?.granted ? <TouchableOpacity style={styles.primary} onPress={requestPermission}><Text style={styles.primaryText}>Allow camera access</Text></TouchableOpacity> :
-        <View style={styles.cameraWrap}><CameraView style={styles.camera} barcodeScannerSettings={{ barcodeTypes: ["ean13", "ean8", "upc_a", "upc_e", "itf14", "code128"] }} onBarcodeScanned={scanned ? undefined : (event: BarcodeScanningResult) => findBarcode(event.data)} /><View pointerEvents="none" style={styles.scanFrame} /><Text style={styles.cameraHint}>Center the barcode inside the frame</Text></View>}
+        <View style={styles.cameraWrap}><CameraView style={styles.camera} facing="back" enableTorch={torch} barcodeScannerSettings={{ barcodeTypes: ["ean13", "ean8", "upc_a", "upc_e", "itf14", "code128"] }} onBarcodeScanned={scanned ? undefined : (event: BarcodeScanningResult) => findBarcode(event.data)} /><TouchableOpacity style={[styles.flashButton, torch && styles.flashButtonActive]} onPress={() => setTorch((value) => !value)}><Ionicons name={torch ? "flash" : "flash-outline"} size={20} color={torch ? strictlyColors.onLime : strictlyColors.white} /></TouchableOpacity><View pointerEvents="none" style={styles.scanFrame} /><Text style={styles.cameraHint}>Center the barcode inside the frame</Text></View>}
       {notFound ? <View style={styles.notFound}><Text style={styles.notFoundTitle}>We don’t have this one yet</Text><Text style={styles.notFoundText}>Photograph its nutrition and ingredient label to add it for yourself and help the catalog grow.</Text><TouchableOpacity style={styles.primary} onPress={() => setMode("label")}><Text style={styles.primaryText}>Scan the package label</Text></TouchableOpacity><TouchableOpacity onPress={() => { setScanned(false); setNotFound(false); }} style={styles.tryAgain}><Text style={styles.tryAgainText}>Try barcode again</Text></TouchableOpacity></View> : null}
       {!loading ? <View style={styles.manual}><Text style={styles.fieldLabel}>ENTER BARCODE</Text><View style={styles.manualRow}><TextInput value={manualBarcode} onChangeText={setManualBarcode} keyboardType="number-pad" placeholder="012345678901" placeholderTextColor={strictlyColors.textSoft} style={styles.manualInput} /><TouchableOpacity onPress={() => findBarcode(manualBarcode)} style={styles.go}><Ionicons name="arrow-forward" size={19} color={strictlyColors.onLime} /></TouchableOpacity></View></View> : null}
     </> : null}
 
     {mode === "label" ? <>
-      {!photoUri ? <View style={styles.labelHero}><Ionicons name="document-text-outline" size={42} color={strictlyColors.text} /><Text style={styles.labelTitle}>Capture the useful side</Text><Text style={styles.labelText}>Keep the nutrition facts, serving size, ingredients, product name, and barcode as flat and readable as possible.</Text><TouchableOpacity style={styles.primary} onPress={captureLabel}><Ionicons name="camera" size={19} color={strictlyColors.onLime} /><Text style={styles.primaryText}>Take label photo</Text></TouchableOpacity></View> : <Image source={{ uri: photoUri }} style={styles.photo} />}
+      {labelCameraOpen ? <PhotoCamera hint="Keep the full label flat and readable" onCapture={captureLabel} onCancel={() => setLabelCameraOpen(false)} /> : !photoUri ? <View style={styles.labelHero}><Ionicons name="document-text-outline" size={42} color={strictlyColors.text} /><Text style={styles.labelTitle}>Capture the useful side</Text><Text style={styles.labelText}>Keep the nutrition facts, serving size, ingredients, product name, and barcode as flat and readable as possible.</Text><TouchableOpacity style={styles.primary} onPress={() => setLabelCameraOpen(true)}><Ionicons name="camera" size={19} color={strictlyColors.onLime} /><Text style={styles.primaryText}>Take label photo</Text></TouchableOpacity></View> : <Image source={{ uri: photoUri }} style={styles.photo} />}
       {loading ? <View style={styles.loadingCard}><LoadingState title={label ? "Saving this food" : "Reading on device"} messages={["Finding serving size", "Reading printed macros", "Preparing an editable label"]} /></View> : null}
       {label && !loading ? <View style={styles.form}>
         <View style={styles.review}><Ionicons name={label.needsCorrection ? "alert-circle-outline" : "checkmark-circle-outline"} size={20} color={strictlyColors.text} /><Text style={styles.reviewText}>{label.needsCorrection ? "Review highlighted values before saving." : `${label.confidence}% read confidence. Confirm everything below.`}</Text></View>
@@ -120,7 +120,7 @@ export default function FoodCaptureScreen({ navigation }: any) {
         <View style={styles.numericGrid}>{numericFields.map((field) => <View key={field.key} style={styles.numericField}><Text style={styles.numberLabel}>{field.label}</Text><TouchableOpacity onPress={() => setNumericKey(field.key)} style={styles.numberInputWrap}><Text style={styles.numberInput}>{Math.round(Number(label[field.key]) * 10) / 10}</Text><Text style={styles.unit}>{field.unit}</Text><Ionicons name="create-outline" size={13} color={strictlyColors.textSoft} /></TouchableOpacity></View>)}</View>
         {label.sugarAlcoholsPerServing > 0 ? <Text style={styles.reason}>Sugar alcohol: {label.sugarAlcoholType === "unknown" ? "type not specified on the label" : label.sugarAlcoholType}</Text> : null}
         <Text style={styles.fieldLabel}>INGREDIENTS</Text><TextInput value={label.ingredientsText} onChangeText={(ingredientsText) => setLabel({ ...label, ingredientsText })} multiline style={[styles.textField, styles.ingredients]} placeholder="Ingredients from package" placeholderTextColor={strictlyColors.textSoft} />
-        <Text style={styles.fieldLabel}>CARB SPEED</Text><View style={styles.speedRow}>{(["fast", "medium", "slow"] as const).map((speed) => <TouchableOpacity key={speed} onPress={() => setLabel({ ...label, carbSpeed: speed })} style={[styles.speed, label.carbSpeed === speed && styles.speedActive]}><Text style={[styles.speedText, label.carbSpeed === speed && styles.speedTextActive]}>{speed}</Text></TouchableOpacity>)}</View>
+        <Text style={styles.fieldLabel}>CARB SPEED</Text><View style={styles.speedRow}>{(["fast", "medium", "slow", "unknown"] as const).map((speed) => <TouchableOpacity key={speed} onPress={() => setLabel({ ...label, carbSpeed: speed })} style={[styles.speed, label.carbSpeed === speed && styles.speedActive]}><Text style={[styles.speedText, label.carbSpeed === speed && styles.speedTextActive]}>{speed === "unknown" ? "not sure" : speed}</Text></TouchableOpacity>)}</View>
         <Text style={styles.reason}>{label.carbSpeedReason}</Text>
         <TouchableOpacity style={styles.primary} onPress={save}><Text style={styles.primaryText}>Save and add to meal</Text><Ionicons name="arrow-forward" size={18} color={strictlyColors.onLime} /></TouchableOpacity>
         <TouchableOpacity style={styles.retake} onPress={() => { setPhotoUri(undefined); setLabel(undefined); }}><Text style={styles.tryAgainText}>Retake photo</Text></TouchableOpacity>
@@ -137,6 +137,7 @@ const styles = StyleSheet.create({
   choiceTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 16 }, choiceText: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 16, marginTop: 4 },
   cameraWrap: { height: 390, overflow: "hidden", borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.ink }, camera: { flex: 1 },
   scanFrame: { position: "absolute", left: 34, right: 34, top: 112, height: 128, borderRadius: 18, borderWidth: 3, borderColor: strictlyColors.lime }, cameraHint: { position: "absolute", bottom: 22, alignSelf: "center", color: strictlyColors.white, fontFamily: strictlyType.sansMedium, fontSize: 12 },
+  flashButton: { position: "absolute", top: 14, right: 14, width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.glass }, flashButtonActive: { backgroundColor: strictlyColors.lime },
   loadingCard: { marginTop: 12, backgroundColor: strictlyColors.surface, borderRadius: strictlyRadius.large }, notFound: { padding: 18, marginTop: 12, backgroundColor: strictlyColors.surface, borderRadius: strictlyRadius.large, borderWidth: 1, borderColor: strictlyColors.border },
   barcodeLoading: { minHeight: 420, alignItems: "center", justifyContent: "center", paddingHorizontal: 18, backgroundColor: strictlyColors.surface, borderRadius: strictlyRadius.large, borderWidth: 1, borderColor: strictlyColors.border },
   barcodePill: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 13, height: 38, borderRadius: strictlyRadius.pill, backgroundColor: strictlyColors.cream },

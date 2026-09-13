@@ -23,6 +23,8 @@
     "src/logic/mealImprovement.ts",
     "src/logic/mealScore.ts",
     "src/logic/healthScore.ts",
+    "src/logic/householdMeasures.ts",
+    "src/logic/healthWorkouts.ts",
     "src/logic/raceFueling.ts",
     "src/logic/recoveryNutrition.ts"
   ]

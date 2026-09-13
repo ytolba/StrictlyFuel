@@ -54,6 +54,7 @@ const CORE_FUEL_FOODS: FuelFood[] = [
   food("potato", "Boiled white potato", "🥔", "grain", "medium", "60–180 min", 170, "1 medium", [87, 20.1, 1.9, 0.1, 1.8]),
   food("sweet-potato", "Cooked sweet potato", "🍠", "grain", "slow", "90–240 min", 180, "1 medium", [90, 20.7, 2, 0.2, 3.3]),
   food("oats", "Cooked rolled oats", "🥣", "grain", "slow", "90–240 min", 234, "1 cup", [71, 12, 2.5, 1.5, 1.7], ["oatmeal"]),
+  food("dry-rolled-oats", "Dry rolled oats", "🥣", "grain", "slow", "90–240 min", 40, "½ cup dry", [379, 67.7, 13.2, 6.5, 10.1], ["uncooked oats", "raw oats", "oat topping"]),
   food("quinoa", "Cooked quinoa", "🥣", "grain", "slow", "120–240 min", 185, "1 cup", [120, 21.3, 4.4, 1.9, 2.8]),
   food("bagel", "Plain bagel", "🥯", "bread", "medium", "60–180 min", 95, "1 medium", [250, 50.5, 10, 1.5, 2.3]),
   food("white-bread", "White bread", "🍞", "bread", "fast", "30–120 min", 56, "2 slices", [266, 49.4, 8.9, 3.3, 2.7], ["toast"]),
