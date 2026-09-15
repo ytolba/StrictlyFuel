@@ -107,6 +107,6 @@ const styles = StyleSheet.create({
   icon: { width: 44, height: 28, borderRadius: strictlyRadius.pill, alignItems: "center", justifyContent: "center" },
   iconActive: { backgroundColor: strictlyColors.lime },
   lockBadge: { position: "absolute", top: 0, right: 5, width: 13, height: 13, borderRadius: 7, backgroundColor: strictlyColors.cream, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: strictlyColors.surface },
-  label: { fontFamily: strictlyType.sansMedium, color: strictlyColors.textSoft, fontSize: 11, marginTop: 2 },
-  labelActive: { color: strictlyColors.text, fontWeight: "700" },
+  label: { fontFamily: strictlyType.medium, color: strictlyColors.textSoft, fontSize: 11, marginTop: 2 },
+  labelActive: { color: strictlyColors.text, fontFamily: strictlyType.bold },
 });

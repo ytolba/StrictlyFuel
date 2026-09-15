@@ -28,5 +28,5 @@ const styles = StyleSheet.create({
   header: { minHeight: 72, flexDirection: "row", alignItems: "center", gap: 12 },
   back: { width: 40, height: 40, borderRadius: 20, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, alignItems: "center", justifyContent: "center" },
   heading: { flex: 1 },
-  title: { fontFamily: strictlyType.sansBold, fontWeight: "700", fontSize: 28, lineHeight: 34, letterSpacing: -0.8, color: strictlyColors.text },
+  title: { fontFamily: strictlyType.bold,  fontSize: 28, lineHeight: 34, letterSpacing: -0.8, color: strictlyColors.text },
 });

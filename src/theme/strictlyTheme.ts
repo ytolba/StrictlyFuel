@@ -198,15 +198,20 @@ export const strictlyRadius = {
 } as const;
 
 /**
- * San Francisco carries the whole UI. `mono` used to set small tracked labels
- * in Menlo; labels are quiet wayfinding, not code, so they share the system
- * face and rely on weight and size instead.
+ * Space Grotesk carries the whole UI, matching strictlyinc.com and StrictlyVision.
+ * Each weight is its own face, so styles pick a weight token instead of setting
+ * fontWeight. The legacy names stay for components that pass a family through.
  */
 export const strictlyType = {
-  sans: "System",
-  sansMedium: "System",
-  sansBold: "System",
-  mono: "System",
+  light: "SpaceGrotesk_300Light",
+  regular: "SpaceGrotesk_400Regular",
+  medium: "SpaceGrotesk_500Medium",
+  semibold: "SpaceGrotesk_600SemiBold",
+  bold: "SpaceGrotesk_700Bold",
+  sans: "SpaceGrotesk_400Regular",
+  sansMedium: "SpaceGrotesk_500Medium",
+  sansBold: "SpaceGrotesk_700Bold",
+  mono: "SpaceGrotesk_600SemiBold",
 } as const;
 
 /** Layout constants for the docked bottom tab bar. */

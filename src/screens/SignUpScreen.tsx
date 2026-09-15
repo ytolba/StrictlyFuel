@@ -257,16 +257,14 @@ const styles = StyleSheet.create({
   container: { flex: 1, alignItems: "center", paddingHorizontal: 24 },
 
   title: {
-    fontSize: 26,
-    fontWeight: "700",
+    fontSize: 26, 
     color: strictlyColors.text,
     textAlign: "center",
-    fontFamily: strictlyType.sansBold,
-    letterSpacing: -0.6,
-  },
+    fontFamily: strictlyType.bold,
+    letterSpacing: -0.6 },
   subtitle: {
     color: strictlyColors.textSoft,
-    fontFamily: strictlyType.sans,
+    fontFamily: strictlyType.regular,
     fontSize: 14,
     lineHeight: 20,
     textAlign: "center",
@@ -284,8 +282,8 @@ const styles = StyleSheet.create({
     borderColor: strictlyColors.border,
     borderRadius: strictlyRadius.xlarge,
   },
-  legalCopy: { marginTop: 16, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 15, textAlign: "center" },
-  legalLink: { fontFamily: strictlyType.sansMedium, color: strictlyColors.text, fontWeight: "700", textDecorationLine: "underline" },
+  legalCopy: { marginTop: 16, fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 15, textAlign: "center" },
+  legalLink: { fontFamily: strictlyType.bold, color: strictlyColors.text,  textDecorationLine: "underline" },
 
   errorBanner: {
     flexDirection: "row",
@@ -301,7 +299,7 @@ const styles = StyleSheet.create({
     color: strictlyColors.danger,
     fontSize: 12.5,
     lineHeight: 17,
-    fontFamily: strictlyType.sans,
+    fontFamily: strictlyType.regular,
   },
 
   row: { flexDirection: "row", gap: 12 },
@@ -311,11 +309,9 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginBottom: 6,
     color: strictlyColors.textSoft,
-    fontFamily: strictlyType.sansMedium,
-    fontWeight: "600",
+    fontFamily: strictlyType.semibold, 
     fontSize: 11.5,
-    letterSpacing: 0.2,
-  },
+    letterSpacing: 0.2 },
 
   input: {
     width: "100%",
@@ -325,7 +321,7 @@ const styles = StyleSheet.create({
     borderRadius: strictlyRadius.medium,
     color: strictlyColors.fieldText,
     fontSize: 15,
-    fontFamily: strictlyType.sans,
+    fontFamily: strictlyType.regular,
     borderWidth: 1.5,
     borderColor: "transparent",
   },
@@ -346,17 +342,15 @@ const styles = StyleSheet.create({
   buttonDisabled: { opacity: 0.55 },
   buttonText: {
     color: strictlyColors.onLime,
-    fontSize: 15,
-    fontWeight: "700",
-    fontFamily: strictlyType.sansMedium,
-  },
+    fontSize: 15, 
+    fontFamily: strictlyType.bold },
 
   dividerRow: { flexDirection: "row", alignItems: "center", marginTop: 20, marginBottom: 14 },
   dividerLine: { flex: 1, height: 1, backgroundColor: strictlyColors.border },
   dividerText: {
     color: strictlyColors.textSoft,
     marginHorizontal: 12,
-    fontFamily: strictlyType.sans,
+    fontFamily: strictlyType.regular,
     fontSize: 11,
     textTransform: "uppercase",
     letterSpacing: 0.5,
@@ -376,23 +370,19 @@ const styles = StyleSheet.create({
   },
   appleButtonText: {
     color: strictlyColors.text,
-    fontSize: 14.5,
-    fontWeight: "600",
-    fontFamily: strictlyType.sansMedium,
-  },
+    fontSize: 14.5, 
+    fontFamily: strictlyType.semibold },
 
   footer: { flexDirection: "row", justifyContent: "center", marginTop: 26 },
   footerText: {
     color: strictlyColors.textSoft,
-    fontFamily: strictlyType.sans,
+    fontFamily: strictlyType.regular,
     fontSize: 13.5,
   },
   footerLink: {
     color: strictlyColors.accentText,
-    fontFamily: strictlyType.sansMedium,
-    fontWeight: "700",
-    fontSize: 13.5,
-  },
+    fontFamily: strictlyType.bold, 
+    fontSize: 13.5 },
 });
 
 export default SignUpScreen;

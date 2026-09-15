@@ -255,16 +255,16 @@ const styles = StyleSheet.create({
   remoteClose: { position: "absolute", right: 16, zIndex: 20, width: 46, height: 46, borderRadius: 23, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
   closeButton: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
 
-  intro: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 13, lineHeight: 20, marginBottom: 18 },
+  intro: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 13, lineHeight: 20, marginBottom: 18 },
 
   benefits: { gap: 8 },
   benefit: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
   benefitIcon: { width: 40, height: 40, borderRadius: 14, backgroundColor: strictlyColors.lime, alignItems: "center", justifyContent: "center" },
   benefitCopy: { flex: 1 },
-  benefitTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 13 },
-  benefitText: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 16, marginTop: 3 },
+  benefitTitle: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 13 },
+  benefitText: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 16, marginTop: 3 },
 
-  sectionTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 19, marginTop: 26, marginBottom: 10 },
+  sectionTitle: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 19, marginTop: 26, marginBottom: 10 },
 
   plan: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 16, marginBottom: 9, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface, borderWidth: 2, borderColor: strictlyColors.border },
   planActive: { borderColor: strictlyColors.accentText, backgroundColor: strictlyColors.surfaceMuted },
@@ -272,30 +272,30 @@ const styles = StyleSheet.create({
   radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: strictlyColors.borderStrong, alignItems: "center", justifyContent: "center" },
   radioActive: { borderColor: strictlyColors.accentText },
   radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: strictlyColors.lime },
-  planName: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 16 },
-  planNote: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11, marginTop: 3 },
+  planName: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 16 },
+  planNote: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, marginTop: 3 },
   planRight: { alignItems: "flex-end" },
-  planPrice: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 18 },
-  planPeriod: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 11, marginTop: 3 },
+  planPrice: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 18 },
+  planPeriod: { fontFamily: strictlyType.semibold, color: strictlyColors.textSoft, fontSize: 11, marginTop: 3 },
 
   cta: { height: 58, marginTop: 8, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 9, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.lime },
   ctaBusy: { opacity: 0.7 },
-  ctaText: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.onLime, fontSize: 15 },
+  ctaText: { fontFamily: strictlyType.bold,  color: strictlyColors.onLime, fontSize: 15 },
 
-  terms: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 16, marginTop: 14 },
+  terms: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 16, marginTop: 14 },
 
   restore: { height: 46, alignItems: "center", justifyContent: "center", marginTop: 6 },
-  restoreText: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 12, textDecorationLine: "underline" },
+  restoreText: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 12, textDecorationLine: "underline" },
 
   legal: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 2 },
-  legalLink: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11, textDecorationLine: "underline" },
+  legalLink: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, textDecorationLine: "underline" },
   legalDot: { color: strictlyColors.textSoft, fontSize: 11 },
 
-  devNote: { fontFamily: strictlyType.sans, color: strictlyColors.clay, fontSize: 11, lineHeight: 15, marginTop: 14, textAlign: "center" },
+  devNote: { fontFamily: strictlyType.regular, color: strictlyColors.clay, fontSize: 11, lineHeight: 15, marginTop: 14, textAlign: "center" },
 
   activeCard: { alignItems: "center", padding: 26, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
-  activeTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 22, marginTop: 12 },
-  activeText: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 12, lineHeight: 18, textAlign: "center", marginTop: 8 },
+  activeTitle: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 22, marginTop: 12 },
+  activeText: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 12, lineHeight: 18, textAlign: "center", marginTop: 8 },
   manage: { height: 52, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 12, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.surfaceMuted },
-  manageText: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 13 },
+  manageText: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 13 },
 });

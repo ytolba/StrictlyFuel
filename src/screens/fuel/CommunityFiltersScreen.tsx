@@ -21,19 +21,19 @@ export default function CommunityFiltersScreen({ navigation, route }: any) {
 }
 
 const styles = StyleSheet.create({
-  label: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 11, letterSpacing: 0.3, marginTop: 21, marginBottom: 9 },
+  label: { fontFamily: strictlyType.semibold, color: strictlyColors.textSoft, fontSize: 11, letterSpacing: 1.1, marginTop: 21, marginBottom: 9 },
   choices: { flexDirection: "row", flexWrap: "wrap", gap: 7 },
   choice: { paddingHorizontal: 13, paddingVertical: 10, borderRadius: strictlyRadius.pill, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
   choiceActive: { backgroundColor: strictlyColors.lime, borderColor: strictlyColors.lime },
-  choiceText: { fontFamily: strictlyType.sansMedium, color: strictlyColors.text, fontSize: 11 },
+  choiceText: { fontFamily: strictlyType.medium, color: strictlyColors.text, fontSize: 11 },
   choiceTextActive: { color: strictlyColors.onLime },
   toggle: { alignSelf: "flex-start", paddingHorizontal: 14, paddingVertical: 11, borderRadius: strictlyRadius.pill, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
   toggleActive: { backgroundColor: strictlyColors.lime, borderColor: strictlyColors.lime },
-  toggleText: { fontFamily: strictlyType.sansMedium, color: strictlyColors.text, fontSize: 11 },
-  toggleTextActive: { fontWeight: "700", color: strictlyColors.onLime },
+  toggleText: { fontFamily: strictlyType.medium, color: strictlyColors.text, fontSize: 11 },
+  toggleTextActive: { fontFamily: strictlyType.bold, color: strictlyColors.onLime },
   apply: { height: 55, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.lime, borderRadius: strictlyRadius.medium, marginTop: 30 },
-  applyText: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.onLime },
+  applyText: { fontFamily: strictlyType.bold,  color: strictlyColors.onLime },
   clear: { height: 47, alignItems: "center", justifyContent: "center" },
-  clearText: { fontFamily: strictlyType.sansMedium, color: strictlyColors.textSoft, fontSize: 11 },
+  clearText: { fontFamily: strictlyType.medium, color: strictlyColors.textSoft, fontSize: 11 },
 });
 

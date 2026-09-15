@@ -66,10 +66,8 @@ const styles = StyleSheet.create({
   },
   wordmark: {
     color: strictlyColors.text,
-    fontFamily: strictlyType.sansBold,
-    fontWeight: "700",
-    letterSpacing: -0.4,
-  },
+    fontFamily: strictlyType.bold, 
+    letterSpacing: -0.4 },
   wordmarkOnDark: {
     color: strictlyDarkPalette.text,
   },
