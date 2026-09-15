@@ -297,7 +297,7 @@ export default function FuelHomeScreen({ navigation, route }: any) {
 
       {appleHealthSupported() ? <View style={styles.healthContext}>
         <View style={styles.healthContextHead}>
-          <View style={styles.healthContextIcon}><Ionicons name="heart" size={15} color={strictlyColors.white} /></View>
+          <View style={styles.healthContextIcon}><Ionicons name="heart-outline" size={15} color={strictlyColors.accentText} /></View>
           <View style={styles.healthContextCopy}>
             <Text style={styles.healthContextEyebrow}>APPLE HEALTH</Text>
             <Text style={styles.healthContextTitle}>{healthConnected ? "Copy a previous workout" : "Connect previous workouts"}</Text>
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
   raceModeText: { marginTop: 3, fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 15 },
   healthContext: { marginTop: 14, padding: 13, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
   healthContextHead: { flexDirection: "row", alignItems: "center", gap: 11 },
-  healthContextIcon: { width: 40, height: 40, flexShrink: 0, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: "#E64A55" },
+  healthContextIcon: { width: 40, height: 40, flexShrink: 0, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.surfaceMuted, borderWidth: 1, borderColor: strictlyColors.border },
   healthContextCopy: { flex: 1, minWidth: 0 },
   healthContextEyebrow: { fontFamily: strictlyType.semibold, color: strictlyColors.textSoft, fontSize: 11, letterSpacing: 1.1 },
   healthContextTitle: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 13, marginTop: 2 },

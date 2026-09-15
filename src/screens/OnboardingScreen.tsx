@@ -95,7 +95,7 @@ const OnboardingScreen = () => {
     if (step === 6) {
       const supported = appleHealthSupported();
       return <View style={styles.healthStep}>
-        <View style={styles.healthIcon}><Ionicons name="heart" size={29} color={strictlyColors.white} /></View>
+        <View style={styles.healthIcon}><Ionicons name="heart-outline" size={29} color={strictlyColors.accentText} /></View>
         <Text style={styles.healthTitle}>Let your training lead the plan.</Text>
         <Text style={styles.healthOptional}>Optional · Apple Health</Text>
         <Text style={styles.healthDescription}>Connect completed workouts to see duration, distance, energy, and heart-rate context. Your private Post Workout tab can then build recovery guidance from what you actually did.</Text>
@@ -149,13 +149,14 @@ const OnboardingScreen = () => {
       </ScrollView>
 
       <View style={styles.footer}>
-        {step > 1 && step !== TOTAL_STEPS - 1 && (
-          <TouchableOpacity style={styles.skipButton} onPress={next}>
+        {step > 1 && (
+          // On the Apple Health step, skipping finishes setup without opening Apple's permission screen.
+          <TouchableOpacity style={styles.skipButton} onPress={step === TOTAL_STEPS - 1 ? finish : next} disabled={healthConnecting} accessibilityRole="button">
             <Text style={styles.skipText}>Skip for now</Text>
           </TouchableOpacity>
         )}
         <TouchableOpacity style={[styles.nextButton, healthConnecting && styles.nextButtonDisabled]} disabled={healthConnecting} onPress={step === TOTAL_STEPS - 1 ? continueThroughHealthPermission : next}>
-          <Text style={styles.nextText}>{healthConnecting && step === TOTAL_STEPS - 1 ? "Opening Apple Health…" : step === TOTAL_STEPS - 1 ? "Continue" : step === 0 ? "Build my fuel profile" : "Continue"}</Text>
+          <Text style={styles.nextText}>{healthConnecting && step === TOTAL_STEPS - 1 ? "Opening Apple Health…" : step === TOTAL_STEPS - 1 ? (appleHealthSupported() ? "Connect Apple Health" : "Continue") : step === 0 ? "Build my fuel profile" : "Continue"}</Text>
           <Ionicons name="arrow-forward" size={17} color={strictlyColors.onLime} />
         </TouchableOpacity>
       </View>
@@ -202,7 +203,7 @@ const styles = StyleSheet.create({
   nextButtonDisabled: { opacity: 0.62 },
   nextText: { color: strictlyColors.onLime, fontFamily: strictlyType.bold,  fontSize: 15 },
   healthStep: { paddingTop: 6, paddingBottom: 12 },
-  healthIcon: { width: 54, height: 54, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: "#E64A55", marginBottom: 18 },
+  healthIcon: { width: 54, height: 54, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.surfaceMuted, borderWidth: 1, borderColor: strictlyColors.border, marginBottom: 18 },
   healthTitle: { color: strictlyColors.text, fontFamily: strictlyType.bold,  fontSize: 28, lineHeight: 33, letterSpacing: -0.8, maxWidth: 330 },
   healthOptional: { color: strictlyColors.textSoft, fontFamily: strictlyType.semibold,  fontSize: 13, marginTop: 6 },
   healthDescription: { color: strictlyColors.textSoft, fontFamily: strictlyType.regular, fontSize: 13, lineHeight: 19, marginTop: 9 },

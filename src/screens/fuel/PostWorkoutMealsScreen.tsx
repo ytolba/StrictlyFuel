@@ -148,7 +148,7 @@ export default function PostWorkoutMealsScreen({ navigation }: any) {
     </View> : null}
 
     <View style={styles.actualWorkout}>
-      <View style={[styles.actualIcon, !fromHealth && styles.actualIconManual]}><Ionicons name={fromHealth ? "heart" : "create-outline"} size={17} color={fromHealth ? strictlyColors.white : strictlyColors.onLime} /></View>
+      <View style={[styles.actualIcon, !fromHealth && styles.actualIconManual]}><Ionicons name={fromHealth ? "heart-outline" : "create-outline"} size={17} color={fromHealth ? strictlyColors.accentText : strictlyColors.onLime} /></View>
       <View style={styles.actualCopy}>
         <Text style={styles.actualEyebrow}>{fromHealth ? `APPLE HEALTH · ${selectedHealthWorkout?.sourceName || "WORKOUT"}` : "YOUR SESSION · MANUAL FALLBACK"}</Text>
         <Text style={styles.actualTitle}>{recoveryWorkout.durationMinutes} min {activityName(recoveryWorkout.activityType)}</Text>
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
   sessionOption: { minHeight: 54, flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 13, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border }, sessionOptionActive: { backgroundColor: strictlyColors.lime, borderColor: strictlyColors.lime },
   sessionOptionCopy: { flex: 1, minWidth: 0 }, sessionOptionTitle: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 12 }, sessionOptionTitleActive: { color: strictlyColors.onLime }, sessionOptionMeta: { marginTop: 3, fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11 }, sessionOptionMetaActive: { color: strictlyColors.onLimeSoft },
   actualWorkout: { flexDirection: "row", gap: 11, padding: 14, marginTop: 15, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
-  actualIcon: { width: 34, height: 34, flexShrink: 0, borderRadius: 11, alignItems: "center", justifyContent: "center", backgroundColor: "#E64A55" }, actualIconManual: { backgroundColor: strictlyColors.lime }, actualCopy: { flex: 1, minWidth: 0 },
+  actualIcon: { width: 34, height: 34, flexShrink: 0, borderRadius: 11, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.surfaceMuted, borderWidth: 1, borderColor: strictlyColors.border }, actualIconManual: { backgroundColor: strictlyColors.lime }, actualCopy: { flex: 1, minWidth: 0 },
   actualEyebrow: { fontFamily: strictlyType.semibold, color: strictlyColors.textSoft, fontSize: 11, letterSpacing: 1.1 }, actualTitle: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 15, lineHeight: 20, marginTop: 4, textTransform: "capitalize" },
   actualMetrics: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 8 }, actualMetric: { paddingHorizontal: 7, paddingVertical: 4, borderRadius: strictlyRadius.pill, overflow: "hidden", backgroundColor: strictlyColors.cream, fontFamily: strictlyType.semibold, color: strictlyColors.text, fontSize: 11 }, sourceNote: { marginTop: 9, fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 14 },
   effortBlock: { padding: 14, marginTop: 9, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface }, effortHeading: { gap: 3, marginBottom: 10 }, effortTitle: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 13 }, effortHelp: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 14 },

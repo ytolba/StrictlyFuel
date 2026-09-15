@@ -41,7 +41,7 @@ export default function HealthWorkoutsScreen({ navigation }: any) {
   const copyWorkoutToPreWorkout = (item: HealthWorkout) => navigation.navigate("Main", { screen: "Home", params: { copiedWorkout: item } });
 
   return <ScreenShell title="Apple Health" eyebrow="CONNECTED WORKOUTS" back onBack={() => navigation.goBack()}>
-    <View style={styles.hero}><View style={styles.healthIcon}><Ionicons name="heart" size={27} color={strictlyColors.white} /></View><Text style={styles.heroTitle}>Reuse a workout you already know.</Text><Text style={styles.heroText}>Copy a previous activity and duration into Pre-Workout, then adjust the timing and intensity for your next session.</Text></View>
+    <View style={styles.hero}><View style={styles.healthIcon}><Ionicons name="heart-outline" size={27} color={strictlyColors.accentText} /></View><Text style={styles.heroTitle}>Reuse a workout you already know.</Text><Text style={styles.heroText}>Copy a previous activity and duration into Pre-Workout, then adjust the timing and intensity for your next session.</Text></View>
     {!supported ? <View style={styles.notice}><Text style={styles.noticeTitle}>{Platform.OS === "ios" ? "Rebuild the iOS app once" : "Apple Health is iPhone only"}</Text><Text style={styles.noticeText}>{Platform.OS === "ios" ? "The HealthKit connection is now in the native project and appears after a fresh Xcode device build." : "Open StrictlyFuel on an iPhone to connect Apple Health."}</Text></View> : null}
     {supported && !loading ? <View style={styles.status}><View style={[styles.statusDot, (connection === "connected" || connection === "limited") && styles.statusDotConnected]} /><View style={styles.statusCopy}><Text style={styles.statusTitle}>{connection === "connected" ? "Apple Health connected" : connection === "limited" ? "Connected with limited visibility" : connection === "error" ? "Apple Health needs attention" : "Permission required"}</Text><Text style={styles.statusText}>{connectionDetail}</Text></View></View> : null}
     {supported && connection !== "connected" && !loading ? <TouchableOpacity style={styles.connect} onPress={() => refresh(true)}><Ionicons name="heart-outline" size={19} color={strictlyColors.onLime} /><Text style={styles.connectText}>{connection === "limited" ? "Review access" : "Continue"}</Text></TouchableOpacity> : null}
@@ -56,7 +56,7 @@ export default function HealthWorkoutsScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   hero: { alignItems: "center", padding: 24, backgroundColor: strictlyColors.surface, borderRadius: strictlyRadius.large, borderWidth: 1, borderColor: strictlyColors.border },
-  healthIcon: { width: 54, height: 54, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: "#E64A55" },
+  healthIcon: { width: 54, height: 54, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.surfaceMuted, borderWidth: 1, borderColor: strictlyColors.border },
   heroTitle: { marginTop: 14, fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 21, letterSpacing: -0.4 },
   heroText: { marginTop: 7, fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 12, lineHeight: 18, textAlign: "center" },
   connect: { height: 56, marginTop: 12, borderRadius: strictlyRadius.medium, flexDirection: "row", gap: 8, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.lime },
