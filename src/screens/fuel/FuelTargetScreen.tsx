@@ -5,6 +5,7 @@ import { useFuel } from "../../contexts/FuelContext";
 import { ScreenShell } from "../../components/fuel/ScreenShell";
 import { FuelTargetCard } from "../../components/fuel/FuelTargetCard";
 import { CarbSpeedBar } from "../../components/fuel/CarbSpeedBar";
+import { Overline, SectionIntro } from "../../components/fuel/Section";
 import { formatDuration } from "../../logic/mealTiming";
 import { strictlyColors, strictlyRadius, strictlyType } from "../../theme/strictlyTheme";
 
@@ -28,10 +29,11 @@ export default function FuelTargetScreen({ navigation }: any) {
     ? Array.from({ length: Math.floor(workout.durationMinutes / 30) }, (_, index) => ({ minute: (index + 1) * 30, grams: intervalGrams }))
     : [];
 
-  const action = (opts: { icon: string; title: string; text: string; onPress: () => void; primary?: boolean }) => (
+  // Numbered paths, like the site's "Suggest meals / Choose your own" switch.
+  const action = (opts: { step: string; title: string; text: string; onPress: () => void; primary?: boolean }) => (
     <TouchableOpacity style={opts.primary ? styles.actionPrimary : styles.action} onPress={opts.onPress} activeOpacity={0.85}>
       <View style={opts.primary ? styles.actionIconPrimary : styles.actionIcon}>
-        <Ionicons name={opts.icon as any} size={21} color={opts.primary ? strictlyColors.onLime : strictlyColors.text} />
+        <Text style={opts.primary ? styles.actionStepPrimary : styles.actionStep}>{opts.step}</Text>
       </View>
       <View style={styles.actionCopy}>
         <Text style={opts.primary ? styles.actionTitlePrimary : styles.actionTitle}>{opts.title}</Text>
@@ -68,13 +70,13 @@ export default function FuelTargetScreen({ navigation }: any) {
         <Text style={styles.noteText}>{target.rationale}</Text>
       </View>
 
-      <Text style={styles.sectionTitle}>How do you want to fuel?</Text>
-      {action({ icon: "restaurant-outline", title: "Tell me what to eat", text: "Get a realistic meal scaled to this target.", onPress: () => navigation.navigate("MealIdeas"), primary: true })}
-      {action({ icon: "basket-outline", title: "Use what I have", text: "Search your foods and build from what’s available.", onPress: () => navigation.navigate("BuildMeal") })}
-      {action({ icon: "camera-outline", title: "Scan my meal", text: "Estimate your plate, then correct every item.", onPress: () => navigation.navigate("Main", { screen: "Scan" }) })}
+      <SectionIntro step="02" overline="Choose your path" title="Get an idea or build your own." />
+      {action({ step: "01", title: "Suggest meals", text: "Real meals matched to your target and timing.", onPress: () => navigation.navigate("MealIdeas"), primary: true })}
+      {action({ step: "02", title: "Choose your own", text: "Search foods you have and adjust every gram.", onPress: () => navigation.navigate("BuildMeal") })}
+      {action({ step: "03", title: "Scan my meal", text: "Estimate your plate, then correct every item.", onPress: () => navigation.navigate("Main", { screen: "Scan" }) })}
 
       <View style={styles.intra}>
-        <Text style={styles.intraEyebrow}>DURING THE WORKOUT</Text>
+        <Overline>During the workout</Overline>
         <Text style={styles.intraValue}>
           {target.intraWorkout.required ? `${target.intraWorkout.lowPerHour}–${target.intraWorkout.highPerHour} g/hour` : "Not required"}
         </Text>
@@ -116,42 +118,43 @@ export default function FuelTargetScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  empty: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft },
+  empty: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft },
 
   splitToggle: { flexDirection: "row", alignItems: "center", gap: 10, minHeight: 52, paddingHorizontal: 15, marginTop: 12, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
-  splitToggleText: { flex: 1, fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 12 },
+  splitToggleText: { flex: 1, fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 12 },
   splitPanel: { padding: 15, marginTop: 8, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
-  splitNote: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 17, marginTop: 12 },
+  splitNote: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 17, marginTop: 12 },
 
   note: { flexDirection: "row", gap: 10, padding: 14, backgroundColor: strictlyColors.cream, borderRadius: strictlyRadius.medium, marginTop: 12 },
-  noteText: { flex: 1, fontFamily: strictlyType.sans, fontSize: 12, lineHeight: 18, color: strictlyColors.text },
+  noteText: { flex: 1, fontFamily: strictlyType.regular, fontSize: 12, lineHeight: 18, color: strictlyColors.text },
 
-  sectionTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 19, marginTop: 28, marginBottom: 10 },
+  actionStep: { fontFamily: strictlyType.semibold, color: strictlyColors.text, fontSize: 14, fontVariant: ["tabular-nums"] },
+  actionStepPrimary: { fontFamily: strictlyType.semibold, color: strictlyColors.onLime, fontSize: 14, fontVariant: ["tabular-nums"] },
 
   action: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, marginBottom: 9 },
   actionPrimary: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.lime, marginBottom: 9 },
   actionIcon: { width: 42, height: 42, borderRadius: 15, backgroundColor: strictlyColors.surfaceMuted, alignItems: "center", justifyContent: "center" },
   actionIconPrimary: { width: 42, height: 42, borderRadius: 15, backgroundColor: strictlyColors.onAccentOverlay, alignItems: "center", justifyContent: "center" },
   actionCopy: { flex: 1 },
-  actionTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 14 },
-  actionTitlePrimary: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.onLime, fontSize: 14 },
-  actionText: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11, marginTop: 3 },
-  actionTextPrimary: { fontFamily: strictlyType.sans, color: strictlyColors.onLimeSoft, fontSize: 11, marginTop: 3 },
+  actionTitle: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 14 },
+  actionTitlePrimary: { fontFamily: strictlyType.bold,  color: strictlyColors.onLime, fontSize: 14 },
+  actionText: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, marginTop: 3 },
+  actionTextPrimary: { fontFamily: strictlyType.regular, color: strictlyColors.onLimeSoft, fontSize: 11, marginTop: 3 },
 
   intra: { padding: 18, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, marginTop: 20 },
-  intraEyebrow: { fontFamily: strictlyType.mono, fontSize: 9, letterSpacing: 1.4, color: strictlyColors.textSoft },
-  intraValue: { fontFamily: strictlyType.sansMedium, fontWeight: "800", fontSize: 26, color: strictlyColors.text, marginTop: 10 },
-  intraText: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 12, lineHeight: 18, marginTop: 7 },
+  intraEyebrow: { fontFamily: strictlyType.semibold, fontSize: 11, letterSpacing: 1.1, color: strictlyColors.textSoft },
+  intraValue: { fontFamily: strictlyType.bold,  fontSize: 26, color: strictlyColors.text, marginTop: 10 },
+  intraText: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 12, lineHeight: 18, marginTop: 7 },
   packRow: { flexDirection: "row", gap: 10, padding: 13, marginTop: 14, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.cream },
   packItem: { flex: 1 },
-  packLabel: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 7, letterSpacing: 0.7 },
-  packValue: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 20, marginTop: 3 },
-  timelineTitle: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 7, letterSpacing: 1, marginTop: 17, marginBottom: 6 },
+  packLabel: { fontFamily: strictlyType.semibold, color: strictlyColors.textSoft, fontSize: 11, letterSpacing: 1.1 },
+  packValue: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 20, marginTop: 3 },
+  timelineTitle: { fontFamily: strictlyType.semibold, color: strictlyColors.textSoft, fontSize: 11, letterSpacing: 1.1, marginTop: 17, marginBottom: 6 },
   timeline: { paddingLeft: 3 },
   timelinePoint: { minHeight: 38, flexDirection: "row", alignItems: "center", gap: 10 },
-  timelineTime: { width: 36, fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 9 },
+  timelineTime: { width: 36, fontFamily: strictlyType.semibold, color: strictlyColors.textSoft, fontSize: 11 },
   timelineDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: strictlyColors.lime },
-  timelineGrams: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 11 },
+  timelineGrams: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 11 },
 
-  disclaimer: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 10, lineHeight: 15, marginTop: 18 },
+  disclaimer: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 15, marginTop: 18 },
 });

@@ -41,7 +41,7 @@ export default function HealthWorkoutsScreen({ navigation }: any) {
   const copyWorkoutToPreWorkout = (item: HealthWorkout) => navigation.navigate("Main", { screen: "Home", params: { copiedWorkout: item } });
 
   return <ScreenShell title="Apple Health" eyebrow="CONNECTED WORKOUTS" back onBack={() => navigation.goBack()}>
-    <View style={styles.hero}><View style={styles.healthIcon}><Ionicons name="heart" size={27} color={strictlyColors.white} /></View><Text style={styles.heroTitle}>Reuse a workout you already know.</Text><Text style={styles.heroText}>Copy a previous activity and duration into Pre-Workout, then adjust the timing and intensity for your next session.</Text></View>
+    <View style={styles.hero}><View style={styles.healthIcon}><Ionicons name="heart-outline" size={27} color={strictlyColors.accentText} /></View><Text style={styles.heroTitle}>Reuse a workout you already know.</Text><Text style={styles.heroText}>Copy a previous activity and duration into Pre-Workout, then adjust the timing and intensity for your next session.</Text></View>
     {!supported ? <View style={styles.notice}><Text style={styles.noticeTitle}>{Platform.OS === "ios" ? "Rebuild the iOS app once" : "Apple Health is iPhone only"}</Text><Text style={styles.noticeText}>{Platform.OS === "ios" ? "The HealthKit connection is now in the native project and appears after a fresh Xcode device build." : "Open StrictlyFuel on an iPhone to connect Apple Health."}</Text></View> : null}
     {supported && !loading ? <View style={styles.status}><View style={[styles.statusDot, (connection === "connected" || connection === "limited") && styles.statusDotConnected]} /><View style={styles.statusCopy}><Text style={styles.statusTitle}>{connection === "connected" ? "Apple Health connected" : connection === "limited" ? "Connected with limited visibility" : connection === "error" ? "Apple Health needs attention" : "Permission required"}</Text><Text style={styles.statusText}>{connectionDetail}</Text></View></View> : null}
     {supported && connection !== "connected" && !loading ? <TouchableOpacity style={styles.connect} onPress={() => refresh(true)}><Ionicons name="heart-outline" size={19} color={strictlyColors.onLime} /><Text style={styles.connectText}>{connection === "limited" ? "Review access" : "Continue"}</Text></TouchableOpacity> : null}
@@ -56,26 +56,26 @@ export default function HealthWorkoutsScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   hero: { alignItems: "center", padding: 24, backgroundColor: strictlyColors.surface, borderRadius: strictlyRadius.large, borderWidth: 1, borderColor: strictlyColors.border },
-  healthIcon: { width: 54, height: 54, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: "#E64A55" },
-  heroTitle: { marginTop: 14, fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 21, letterSpacing: -0.4 },
-  heroText: { marginTop: 7, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 12, lineHeight: 18, textAlign: "center" },
+  healthIcon: { width: 54, height: 54, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.surfaceMuted, borderWidth: 1, borderColor: strictlyColors.border },
+  heroTitle: { marginTop: 14, fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 21, letterSpacing: -0.4 },
+  heroText: { marginTop: 7, fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 12, lineHeight: 18, textAlign: "center" },
   connect: { height: 56, marginTop: 12, borderRadius: strictlyRadius.medium, flexDirection: "row", gap: 8, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.lime },
   status: { marginTop: 12, padding: 14, flexDirection: "row", alignItems: "flex-start", gap: 10, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
-  statusDot: { width: 10, height: 10, marginTop: 4, borderRadius: 5, backgroundColor: strictlyColors.clay }, statusDotConnected: { backgroundColor: strictlyColors.good }, statusCopy: { flex: 1 }, statusTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 12 }, statusText: { marginTop: 3, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 10, lineHeight: 15 },
-  connectText: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.onLime, fontSize: 13 },
+  statusDot: { width: 10, height: 10, marginTop: 4, borderRadius: 5, backgroundColor: strictlyColors.clay }, statusDotConnected: { backgroundColor: strictlyColors.good }, statusCopy: { flex: 1 }, statusTitle: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 12 }, statusText: { marginTop: 3, fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 15 },
+  connectText: { fontFamily: strictlyType.bold,  color: strictlyColors.onLime, fontSize: 13 },
   loading: { marginTop: 12, backgroundColor: strictlyColors.surface, borderRadius: strictlyRadius.large },
   notice: { marginTop: 12, padding: 17, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.cream },
-  noticeTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 14 },
-  noticeText: { marginTop: 5, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 17 },
+  noticeTitle: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 14 },
+  noticeText: { marginTop: 5, fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 17 },
   sectionRow: { marginTop: 25, marginBottom: 9, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  sectionTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 19 },
+  sectionTitle: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 19 },
   workout: { padding: 15, marginBottom: 9, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
   workoutTop: { flexDirection: "row", alignItems: "center", gap: 10 },
   workoutIcon: { width: 38, height: 38, borderRadius: 13, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.cream },
-  workoutCopy: { flex: 1 }, workoutTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 15 },
-  workoutMeta: { marginTop: 3, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 10 },
-  stats: { flexDirection: "row", flexWrap: "wrap", gap: 7, marginTop: 12 }, stat: { paddingHorizontal: 9, paddingVertical: 6, borderRadius: strictlyRadius.pill, overflow: "hidden", backgroundColor: strictlyColors.cream, fontFamily: strictlyType.mono, color: strictlyColors.text, fontSize: 9 },
+  workoutCopy: { flex: 1 }, workoutTitle: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 15 },
+  workoutMeta: { marginTop: 3, fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11 },
+  stats: { flexDirection: "row", flexWrap: "wrap", gap: 7, marginTop: 12 }, stat: { paddingHorizontal: 9, paddingVertical: 6, borderRadius: strictlyRadius.pill, overflow: "hidden", backgroundColor: strictlyColors.cream, fontFamily: strictlyType.semibold, color: strictlyColors.text, fontSize: 11 },
   use: { height: 43, marginTop: 12, borderRadius: strictlyRadius.medium, flexDirection: "row", gap: 7, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.surfaceMuted },
-  useText: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 11 },
-  privacy: { marginTop: 18, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 9, lineHeight: 14, textAlign: "center" },
+  useText: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 11 },
+  privacy: { marginTop: 18, fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 14, textAlign: "center" },
 });

@@ -9,7 +9,7 @@ import AuthStackNavigator from "./AuthStackNavigator";
 import AppStackNavigator from "./AppStackNavigator";
 import OnboardingStackNavigator from "./OnboardingStackNavigator";
 import { LoadingState } from "../components/fuel/LoadingState";
-import { strictlyColors } from "../theme/strictlyTheme";
+import { strictlyColors, strictlyType } from "../theme/strictlyTheme";
 import { useStrictlyAppearance } from "../contexts/AppearanceContext";
 
 export default function AppNavigator() {
@@ -66,22 +66,10 @@ export default function AppNavigator() {
         },
         dark: resolvedMode === "dark",
         fonts: {
-          regular: {
-            fontWeight: "normal",
-            fontFamily: "System",
-          },
-          medium: {
-            fontWeight: "500",
-            fontFamily: "System",
-          },
-          heavy: {
-            fontWeight: "700",
-            fontFamily: "System",
-          },
-          bold: {
-            fontWeight: "900",
-            fontFamily: "System",
-          },
+          regular: { fontWeight: "normal", fontFamily: strictlyType.regular },
+          medium: { fontWeight: "normal", fontFamily: strictlyType.medium },
+          heavy: { fontWeight: "normal", fontFamily: strictlyType.bold },
+          bold: { fontWeight: "normal", fontFamily: strictlyType.bold },
         },
       }}
     >

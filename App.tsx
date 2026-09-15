@@ -2,6 +2,7 @@ import "react-native-gesture-handler";
 import React, { useEffect, useState } from "react";
 import { View, StyleSheet, Animated, Text } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
+import { useFonts, SpaceGrotesk_300Light, SpaceGrotesk_400Regular, SpaceGrotesk_500Medium, SpaceGrotesk_600SemiBold, SpaceGrotesk_700Bold } from "@expo-google-fonts/space-grotesk";
 import Constants from "expo-constants";
 import AppNavigator from "./src/navigation/AppNavigator";
 import { AuthProvider } from "./src/contexts/AuthContext";
@@ -22,27 +23,14 @@ import { StrictlyAppearanceProvider, useStrictlyAppearance } from "./src/context
 
 const SPLASH_BG_COLOR = strictlyDarkPalette.background;
 
-// Create a font configuration; note that we rely on our fonts and set the "medium" variant's fontWeight to undefined.
-const fontConfig: any = {
-  ios: {
-    regular: { fontFamily: "System", fontWeight: "400" },
-    medium: { fontFamily: "System", fontWeight: "600" },
-    light: { fontFamily: "System", fontWeight: "300" },
-    thin: { fontFamily: "System", fontWeight: "200" },
-  },
-  android: {
-    regular: { fontFamily: "sans-serif", fontWeight: "400" },
-    medium: { fontFamily: "sans-serif-medium", fontWeight: "600" },
-    light: { fontFamily: "sans-serif-light", fontWeight: "300" },
-    thin: { fontFamily: "sans-serif-thin", fontWeight: "200" },
-  },
-  default: {
-    regular: { fontFamily: "System", fontWeight: "400" },
-    medium: { fontFamily: "System", fontWeight: "600" },
-    light: { fontFamily: "System", fontWeight: "300" },
-    thin: { fontFamily: "System", fontWeight: "200" },
-  },
+// React Native Paper components use the same Space Grotesk faces as the rest of the app.
+const paperFaces = {
+  regular: { fontFamily: strictlyType.regular },
+  medium: { fontFamily: strictlyType.semibold },
+  light: { fontFamily: strictlyType.light },
+  thin: { fontFamily: strictlyType.light },
 };
+const fontConfig: any = { ios: paperFaces, android: paperFaces, default: paperFaces };
 
 const AppContent: React.FC = () => {
   const { palette } = useStrictlyAppearance();
@@ -125,11 +113,16 @@ const AppContent: React.FC = () => {
   );
 };
 
-const App: React.FC = () => (
-  <StrictlyAppearanceProvider>
-    <AppContent />
-  </StrictlyAppearanceProvider>
-);
+const App: React.FC = () => {
+  const [fontsLoaded, fontError] = useFonts({ SpaceGrotesk_300Light, SpaceGrotesk_400Regular, SpaceGrotesk_500Medium, SpaceGrotesk_600SemiBold, SpaceGrotesk_700Bold });
+  // Hold on the splash color for the brief font load so text never flashes in the system face.
+  if (!fontsLoaded && !fontError) return <View style={{ flex: 1, backgroundColor: SPLASH_BG_COLOR }} />;
+  return (
+    <StrictlyAppearanceProvider>
+      <AppContent />
+    </StrictlyAppearanceProvider>
+  );
+};
 
 export default App;
 
@@ -150,14 +143,12 @@ const styles = StyleSheet.create({
   warningText: {
     fontSize: 16,
     textAlign: "center",
-    fontWeight: "bold",
+    fontFamily: strictlyType.bold,
   },
   splashTagline: {
     marginTop: 18,
     color: strictlyDarkPalette.inverseText,
-    fontFamily: strictlyType.mono,
-    fontWeight: "600",
-    fontSize: 10,
-    letterSpacing: 2.4,
-  },
+    fontFamily: strictlyType.semibold, 
+    fontSize: 11,
+    letterSpacing: 2.4 },
 });

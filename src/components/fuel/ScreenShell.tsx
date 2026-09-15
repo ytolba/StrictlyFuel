@@ -14,7 +14,8 @@ export function ScreenShell({ children, title, eyebrow, back, onBack, action, sc
   }, [entrance]);
   const header = (title || back || action) ? <View style={styles.header}>
     {back ? <TouchableOpacity activeOpacity={0.68} hitSlop={8} onPress={onBack} style={styles.back}><Ionicons name="arrow-back" size={20} color={strictlyColors.text} /></TouchableOpacity> : null}
-    <View style={styles.heading}>{eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}{title ? <Text style={styles.title}>{title}</Text> : null}</View>
+    {/* `eyebrow` is accepted for existing callers but no longer drawn: the title carries the screen. */}
+    <View style={styles.heading}>{title ? <Text style={styles.title} accessibilityRole="header">{title}</Text> : null}</View>
     {action ?? null}
   </View> : null;
   const content = <Animated.View style={{ opacity: entrance, transform: [{ translateY: entrance.interpolate({ inputRange: [0, 1], outputRange: [7, 0] }) }] }}>{header}{children}</Animated.View>;
@@ -27,6 +28,5 @@ const styles = StyleSheet.create({
   header: { minHeight: 72, flexDirection: "row", alignItems: "center", gap: 12 },
   back: { width: 40, height: 40, borderRadius: 20, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, alignItems: "center", justifyContent: "center" },
   heading: { flex: 1 },
-  eyebrow: { fontFamily: strictlyType.mono, fontSize: 9, letterSpacing: 1.5, color: strictlyColors.textSoft, textTransform: "uppercase", marginBottom: 4 },
-  title: { fontFamily: strictlyType.sansMedium, fontWeight: "700", fontSize: 25, letterSpacing: -0.7, color: strictlyColors.text },
+  title: { fontFamily: strictlyType.bold,  fontSize: 28, lineHeight: 34, letterSpacing: -0.8, color: strictlyColors.text },
 });

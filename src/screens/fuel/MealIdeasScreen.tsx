@@ -11,6 +11,7 @@ import { loadNutritionProfile } from "../../services/nutritionProfileService";
 import { EMPTY_NUTRITION_PROFILE, type NutritionProfile } from "../../types/nutritionProfile";
 import { ScreenShell } from "../../components/fuel/ScreenShell";
 import { CarbSpeedBar } from "../../components/fuel/CarbSpeedBar";
+import { Overline } from "../../components/fuel/Section";
 import { scoreColor, scoreLabel, strictlyColors, strictlyRadius, strictlyType } from "../../theme/strictlyTheme";
 
 /** Eligibility and ranking live in logic/mealRecommendation — no AI, no network. */
@@ -97,7 +98,6 @@ export default function MealIdeasScreen({ navigation }: any) {
           </View>
           <View style={[styles.score, { backgroundColor: tint }]}>
             <Text style={styles.scoreValue}>{meal.score.total}</Text>
-            <Text style={styles.scoreLabel}>FUEL</Text>
           </View>
         </View>
 
@@ -148,6 +148,8 @@ export default function MealIdeasScreen({ navigation }: any) {
 
   return (
     <ScreenShell title="What to eat" eyebrow={`${target.carbTarget} G TARGET`} back onBack={() => navigation.goBack()}>
+      <Overline accent>Suggested pre-workout meals</Overline>
+      <Text style={styles.heading}>Pick what sounds good.</Text>
       <Text style={styles.intro}>Real meals, scaled to this workout. Every recommendation shown scores 90+ and allergies stay hard exclusions.</Text>
 
       {hasMore ? (
@@ -191,50 +193,50 @@ export default function MealIdeasScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  empty: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft },
-  intro: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 13, lineHeight: 19, marginBottom: 14 },
+  empty: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft },
+  heading: { fontFamily: strictlyType.bold, color: strictlyColors.text, fontSize: 26, lineHeight: 30, letterSpacing: -0.9, marginTop: 6 },
+  intro: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 14, lineHeight: 21, marginTop: 6, marginBottom: 16 },
 
   reshuffle: { flexDirection: "row", alignItems: "center", gap: 11, minHeight: 58, paddingHorizontal: 15, marginBottom: 12, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.lime },
   reshuffleCopy: { flex: 1 },
-  reshuffleText: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.onLime, fontSize: 14 },
-  reshuffleMeta: { fontFamily: strictlyType.sans, color: strictlyColors.onLimeSoft, fontSize: 10, marginTop: 2 },
+  reshuffleText: { fontFamily: strictlyType.bold,  color: strictlyColors.onLime, fontSize: 14 },
+  reshuffleMeta: { fontFamily: strictlyType.regular, color: strictlyColors.onLimeSoft, fontSize: 11, marginTop: 2 },
 
   card: { padding: 16, marginBottom: 10, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, borderRadius: strictlyRadius.large },
   bestCard: { borderColor: strictlyColors.borderStrong, backgroundColor: strictlyColors.surfaceMuted },
   cardHead: { flexDirection: "row", alignItems: "center", gap: 12 },
   cardCopy: { flex: 1 },
-  cardEyebrow: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 7, letterSpacing: 1.1 },
-  cardTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 18, lineHeight: 22, marginTop: 4 },
+  cardEyebrow: { fontFamily: strictlyType.semibold, color: strictlyColors.textSoft, fontSize: 11, letterSpacing: 1.1 },
+  cardTitle: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 18, lineHeight: 22, marginTop: 4 },
   score: { width: 50, height: 50, borderRadius: 25, alignItems: "center", justifyContent: "center" },
-  scoreValue: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.onLime, fontSize: 16 },
-  scoreLabel: { fontFamily: strictlyType.mono, color: strictlyColors.onLimeSoft, fontSize: 6 },
-  band: { fontFamily: strictlyType.mono, fontSize: 9, letterSpacing: 1, textTransform: "uppercase", marginTop: 10 },
+  scoreValue: { fontFamily: strictlyType.bold, color: strictlyColors.onLime, fontSize: 18, fontVariant: ["tabular-nums"] },
+  band: { fontFamily: strictlyType.semibold, fontSize: 11, letterSpacing: 1.1, textTransform: "uppercase", marginTop: 10 },
 
   macroRow: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", gap: 10, marginTop: 10, marginBottom: 10 },
-  carbs: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 25 },
-  carbsUnit: { fontFamily: strictlyType.sans, fontWeight: "400", color: strictlyColors.textSoft, fontSize: 10 },
-  macro: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 9 },
+  carbs: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 25 },
+  carbsUnit: { fontFamily: strictlyType.regular,  color: strictlyColors.textSoft, fontSize: 11 },
+  macro: { fontFamily: strictlyType.semibold, color: strictlyColors.textSoft, fontSize: 11 },
 
   timing: { flexDirection: "row", alignItems: "center", gap: 9, padding: 11, marginTop: 12, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.cream },
   timingCopy: { flex: 1 },
-  timingLabel: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 7, letterSpacing: 1 },
-  timingValue: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 11, marginTop: 3 },
+  timingLabel: { fontFamily: strictlyType.semibold, color: strictlyColors.textSoft, fontSize: 11, letterSpacing: 1.1 },
+  timingValue: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 11, marginTop: 3 },
 
   ingredients: { marginTop: 12, gap: 5 },
-  ingredient: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11 },
+  ingredient: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11 },
 
-  use: { height: 50, marginTop: 14, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.ink, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+  use: { height: 50, marginTop: 14, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.ink, borderWidth: 1, borderColor: strictlyColors.border, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
   useBest: { backgroundColor: strictlyColors.lime },
-  useText: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.lime, fontSize: 13 },
+  useText: { fontFamily: strictlyType.bold,  color: strictlyColors.lime, fontSize: 13 },
   useTextBest: { color: strictlyColors.onLime },
 
-  moreTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 19, marginTop: 18, marginBottom: 10 },
+  moreTitle: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 19, marginTop: 18, marginBottom: 10 },
 
   emptyCard: { padding: 22, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
-  emptyTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 16 },
-  emptyText: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 12, lineHeight: 18, marginTop: 6 },
+  emptyTitle: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 16 },
+  emptyText: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 12, lineHeight: 18, marginTop: 6 },
   emptyAction: { height: 48, marginTop: 14, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.lime, alignItems: "center", justifyContent: "center" },
-  emptyActionText: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.onLime, fontSize: 13 },
+  emptyActionText: { fontFamily: strictlyType.bold,  color: strictlyColors.onLime, fontSize: 13 },
 
-  note: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 10, lineHeight: 15, marginTop: 8 },
+  note: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 15, marginTop: 8 },
 });

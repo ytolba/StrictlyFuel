@@ -1,7 +1,15 @@
 import type { ActivityType, FuelTarget, HeartRateZone, WorkoutDraft } from "../types/fuel";
+import { getActivity } from "../data/activities";
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 const round5 = (value: number) => Math.max(5, Math.round(value / 5) * 5);
+// "60-minute session" reads as an adjective; "90 minutes to digest" as a span.
+const formatMinutes = (minutes: number, adjective = false) => {
+  const whole = Math.max(1, Math.round(minutes));
+  const hours = Math.floor(whole / 60); const rest = whole % 60;
+  if (hours) return `${hours} hr${rest ? ` ${rest} min` : ""}`;
+  return adjective ? `${whole}-minute` : `${whole} minutes`;
+};
 
 const activityFactor: Partial<Record<ActivityType, number>> = {
   running: 1,
@@ -265,7 +273,7 @@ export function calculateFuelTarget(workout: WorkoutDraft): FuelTarget {
     slowCarbs,
     intraWorkout: intraTarget(workout, demandIndex, sportDemand),
     timingLabel: timing.label,
-    rationale: `Built from ${workout.bodyWeightKg} kg body weight, a ${workout.durationMinutes}-minute ${workout.intensity} ${workout.activityType} session${workout.heartRateZones?.length ? ` spanning HR zones ${workout.heartRateZones.join(", ")}` : ""}, and ${workout.startsInMinutes} minutes to digest. The selected target is ${selectedPerKg.toFixed(2)} g/kg with a practical ±12% working range. The fast, medium, and slow split is a smooth whole-meal availability estimate, not a glycaemic-index prescription.`,
+    rationale: `Based on your body weight, a ${formatMinutes(workout.durationMinutes, true)} ${workout.intensity} ${getActivity(workout.activityType).shortLabel.toLowerCase()} session${workout.heartRateZones?.length ? ` in heart-rate ${workout.heartRateZones.length === 1 ? "zone" : "zones"} ${workout.heartRateZones.length > 1 ? `${workout.heartRateZones.slice(0, -1).join(", ")} and ${workout.heartRateZones[workout.heartRateZones.length - 1]}` : workout.heartRateZones[0]}` : ""}, and ${formatMinutes(workout.startsInMinutes)} to digest. Aim anywhere in the working range. The fast, medium, and slow split is a practical estimate, not a glycemic-index prescription.`,
     availabilityModelVersion: "2026.08",
   };
 }
