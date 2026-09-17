@@ -12,6 +12,8 @@ import { EMPTY_NUTRITION_PROFILE, type NutritionProfile } from "../../types/nutr
 import { ScreenShell } from "../../components/fuel/ScreenShell";
 import { CarbSpeedBar } from "../../components/fuel/CarbSpeedBar";
 import { Overline } from "../../components/fuel/Section";
+import { Citations } from "../../components/fuel/Citations";
+import { FUEL_TARGET_SOURCES } from "../../data/researchSources";
 import { scoreColor, scoreLabel, strictlyColors, strictlyRadius, strictlyType } from "../../theme/strictlyTheme";
 
 /** Eligibility and ranking live in logic/mealRecommendation — no AI, no network. */
@@ -188,6 +190,7 @@ export default function MealIdeasScreen({ navigation }: any) {
         Nutrition is calculated from the food library and the scaled portions. Strictly never invents a combination just because its
         macros happen to fit.
       </Text>
+      <Citations sources={FUEL_TARGET_SOURCES} note="Portions are scaled to the carbohydrate target from your session, using published sports-nutrition guidance." />
     </ScreenShell>
   );
 }

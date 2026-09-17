@@ -268,7 +268,7 @@ Deno.serve(async (request) => {
       schema,
       // Sized for the trimmed schema: ~8 short fields per food, up to 16 foods.
       maxOutputTokens: 2600,
-      reasoningEffort: "medium",
+      reasoningEffort: "low",
     });
 
     if (!result.ok) {

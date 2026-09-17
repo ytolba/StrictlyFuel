@@ -1,4 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Citations } from "../../components/fuel/Citations";
+import { RECOVERY_SOURCES } from "../../data/researchSources";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -201,7 +203,7 @@ export default function PostWorkoutMealsScreen({ navigation }: any) {
     })}
     {!recommendations.length ? <View style={styles.emptyCard}><Text style={styles.emptyTitle}>No safe recovery match yet</Text><Text style={styles.emptyText}>Your dietary exclusions removed the current meals. You can still build a meal manually from foods you trust.</Text></View> : null}
     <View style={styles.hydration}><Ionicons name="water-outline" size={18} color={strictlyColors.accentText} /><Text style={styles.hydrationText}>{target.hydrationNote}</Text></View>
-    <Text style={styles.disclaimer}>Recovery targets are general sports-nutrition estimates, not medical advice. Daily intake, appetite, sweat losses, and the timing of your next session all matter.</Text>
+    <Citations sources={RECOVERY_SOURCES} note="Recovery targets scale published carbohydrate and protein guidance to your session and body weight. Daily intake, appetite, sweat losses, and the timing of your next session all matter." />
   </ScreenShell>;
 }
 

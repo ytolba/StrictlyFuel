@@ -9,19 +9,17 @@ import { NutritionProfileForm } from "../components/NutritionProfileForm";
 import { AthleteBasicsForm } from "../components/AthleteBasicsForm";
 import { saveNutritionProfile } from "../services/nutritionProfileService";
 import { EMPTY_NUTRITION_PROFILE, NutritionProfile } from "../types/nutritionProfile";
-import { appleHealthSupported, connectAppleHealth } from "../services/appleHealthService";
 import { strictlyColors, strictlyRadius, strictlyType } from "../theme/strictlyTheme";
 
 type OnboardingStackParamList = { Onboarding: undefined; Auth: undefined };
 type OnboardingNavigation = StackNavigationProp<OnboardingStackParamList, "Onboarding">;
 
-const TOTAL_STEPS = 7;
+const TOTAL_STEPS = 6;
 
 const OnboardingScreen = () => {
   const navigation = useNavigation<OnboardingNavigation>();
   const [step, setStep] = useState(0);
   const [profile, setProfile] = useState<NutritionProfile>(EMPTY_NUTRITION_PROFILE);
-  const [healthConnecting, setHealthConnecting] = useState(false);
 
   const finish = async () => {
     await saveNutritionProfile(profile);
@@ -35,27 +33,6 @@ const OnboardingScreen = () => {
       return;
     }
     return step === TOTAL_STEPS - 1 ? finish() : setStep((current) => current + 1);
-  };
-
-  const continueThroughHealthPermission = async () => {
-    if (!appleHealthSupported()) {
-      await finish();
-      return;
-    }
-
-    setHealthConnecting(true);
-    try {
-      const requestCompleted = await connectAppleHealth();
-      if (!requestCompleted) {
-        Alert.alert("Apple Health couldn’t open", "Please try again so you can choose what to share in Apple’s permission screen.");
-        return;
-      }
-      await finish();
-    } catch (error) {
-      Alert.alert("Apple Health couldn’t open", error instanceof Error ? error.message : "Please try again.");
-    } finally {
-      setHealthConnecting(false);
-    }
   };
 
   const renderIntro = () => (
@@ -92,19 +69,6 @@ const OnboardingScreen = () => {
   );
 
   const renderProfileStep = () => {
-    if (step === 6) {
-      const supported = appleHealthSupported();
-      return <View style={styles.healthStep}>
-        <View style={styles.healthIcon}><Ionicons name="heart-outline" size={29} color={strictlyColors.accentText} /></View>
-        <Text style={styles.healthTitle}>Let your training lead the plan.</Text>
-        <Text style={styles.healthOptional}>Optional · Apple Health</Text>
-        <Text style={styles.healthDescription}>Connect completed workouts to see duration, distance, energy, and heart-rate context. Your private Post Workout tab can then build recovery guidance from what you actually did.</Text>
-        <View style={styles.healthList}>
-          {["Automatic workout context", "Recovery meals after completed sessions", "Read-only access. Your Health data stays on your phone"].map((copy) => <View key={copy} style={styles.healthRow}><Ionicons name="checkmark" size={15} color={strictlyColors.good} /><Text style={styles.healthRowText}>{copy}</Text></View>)}
-        </View>
-        {supported ? <View style={styles.healthPermissionNote}><Ionicons name="shield-checkmark-outline" size={17} color={strictlyColors.good} /><Text style={styles.healthPermissionNoteText}>Continue to Apple’s permission screen, where you choose exactly what to share.</Text></View> : <View style={styles.healthUnavailable}><Text style={styles.healthUnavailableTitle}>Available on iPhone and supported iPad builds</Text><Text style={styles.healthUnavailableText}>Continue setup now. You can manage Apple Health later from Account on a supported Apple device.</Text></View>}
-      </View>;
-    }
     if (step === 1) return <AthleteBasicsForm profile={profile} onChange={setProfile} />;
     const sections = step === 2 ? ["sensitivities"] : step === 3 ? ["conditions"] : step === 4 ? ["dietaryPatterns"] : ["priorities"];
     return (
@@ -150,13 +114,12 @@ const OnboardingScreen = () => {
 
       <View style={styles.footer}>
         {step > 1 && (
-          // On the Apple Health step, skipping finishes setup without opening Apple's permission screen.
-          <TouchableOpacity style={styles.skipButton} onPress={step === TOTAL_STEPS - 1 ? finish : next} disabled={healthConnecting} accessibilityRole="button">
+          <TouchableOpacity style={styles.skipButton} onPress={next} accessibilityRole="button">
             <Text style={styles.skipText}>Skip for now</Text>
           </TouchableOpacity>
         )}
-        <TouchableOpacity style={[styles.nextButton, healthConnecting && styles.nextButtonDisabled]} disabled={healthConnecting} onPress={step === TOTAL_STEPS - 1 ? continueThroughHealthPermission : next}>
-          <Text style={styles.nextText}>{healthConnecting && step === TOTAL_STEPS - 1 ? "Opening Apple Health…" : step === TOTAL_STEPS - 1 ? (appleHealthSupported() ? "Connect Apple Health" : "Continue") : step === 0 ? "Build my fuel profile" : "Continue"}</Text>
+        <TouchableOpacity style={styles.nextButton} onPress={next}>
+          <Text style={styles.nextText}>{step === TOTAL_STEPS - 1 ? "Finish setup" : step === 0 ? "Build my fuel profile" : "Continue"}</Text>
           <Ionicons name="arrow-forward" size={17} color={strictlyColors.onLime} />
         </TouchableOpacity>
       </View>

@@ -6,6 +6,8 @@ import { ScreenShell } from "../../components/fuel/ScreenShell";
 import { FuelTargetCard } from "../../components/fuel/FuelTargetCard";
 import { CarbSpeedBar } from "../../components/fuel/CarbSpeedBar";
 import { Overline, SectionIntro } from "../../components/fuel/Section";
+import { Citations } from "../../components/fuel/Citations";
+import { FUEL_TARGET_SOURCES } from "../../data/researchSources";
 import { formatDuration } from "../../logic/mealTiming";
 import { strictlyColors, strictlyRadius, strictlyType } from "../../theme/strictlyTheme";
 
@@ -110,9 +112,7 @@ export default function FuelTargetScreen({ navigation }: any) {
         ) : null}
       </View>
 
-      <Text style={styles.disclaimer}>
-        Strictly provides general sports-fuelling guidance, not medical advice. Individual needs and gastrointestinal tolerance vary.
-      </Text>
+      <Citations sources={FUEL_TARGET_SOURCES} note="Your target scales published carbohydrate guidance to your body weight, session, and timing." />
     </ScreenShell>
   );
 }

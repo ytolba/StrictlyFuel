@@ -27,7 +27,7 @@
     },
     "ios": {
       "bundleIdentifier": "com.strictlyfuel.app",
-      "buildNumber": "16",
+      "buildNumber": "20",
       "supportsTablet": false,
       "infoPlist": {
         "NSCameraUsageDescription": "StrictlyFuel uses the camera to photograph your meal or a product label so it can estimate the nutrition.",
