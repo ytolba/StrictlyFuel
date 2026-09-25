@@ -29,6 +29,7 @@
       "bundleIdentifier": "com.strictlyfuel.app",
       "buildNumber": "20",
       "supportsTablet": false,
+      "usesAppleSignIn": true,
       "infoPlist": {
         "NSCameraUsageDescription": "StrictlyFuel uses the camera to photograph your meal or a product label so it can estimate the nutrition.",
         "NSPhotoLibraryUsageDescription": "StrictlyFuel needs access to your photos so you can pick an existing meal photo to analyse.",
@@ -38,6 +39,7 @@
         "ITSAppUsesNonExemptEncryption": false
       },
       "entitlements": {
+        "com.apple.developer.applesignin": ["Default"],
         "com.apple.developer.healthkit": true
       },
       "config": {
@@ -57,6 +59,7 @@
         }
       ],
       "expo-font",
+      "expo-apple-authentication",
       [
         "expo-camera",
         {

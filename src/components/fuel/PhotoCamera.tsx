@@ -21,7 +21,12 @@ export function PhotoCamera({ hint, onCapture, onCancel }: { hint: string; onCap
     }
   };
 
-  if (!permission?.granted) return <View style={styles.permission}><Ionicons name="camera-outline" size={28} color={strictlyColors.accentText} /><Text style={styles.permissionText}>Camera access is needed for this scan.</Text><TouchableOpacity style={styles.permissionButton} onPress={requestPermission}><Text style={styles.permissionButtonText}>Allow camera</Text></TouchableOpacity><TouchableOpacity onPress={onCancel} style={styles.cancelTextButton}><Text style={styles.cancelText}>Cancel</Text></TouchableOpacity></View>;
+  if (!permission?.granted) return <View style={styles.permission}>
+    <TouchableOpacity style={styles.permissionClose} onPress={onCancel} accessibilityLabel="Close camera"><Ionicons name="close" size={20} color={strictlyColors.textSoft} /></TouchableOpacity>
+    <Ionicons name="camera-outline" size={28} color={strictlyColors.accentText} />
+    <Text style={styles.permissionText}>Camera access is needed for this scan.</Text>
+    <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}><Text style={styles.permissionButtonText}>Continue</Text></TouchableOpacity>
+  </View>;
 
   return <View style={styles.wrap}>
     <CameraView ref={camera} style={styles.camera} facing="back" enableTorch={torch} />
@@ -44,8 +49,8 @@ const styles = StyleSheet.create({
   shutterOuter: { width: 72, height: 72, borderRadius: 36, borderWidth: 3, borderColor: strictlyColors.white, alignItems: "center", justifyContent: "center" },
   shutter: { width: 58, height: 58, borderRadius: 29, backgroundColor: strictlyColors.white }, shutterBusy: { opacity: 0.45 },
   permission: { minHeight: 300, padding: 24, alignItems: "center", justifyContent: "center", borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface },
+  permissionClose: { position: "absolute", top: 14, left: 14, width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.surfaceMuted },
   permissionText: { marginTop: 10, color: strictlyColors.text, fontFamily: strictlyType.regular, fontSize: 12 },
   permissionButton: { height: 46, marginTop: 15, paddingHorizontal: 18, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.lime, alignItems: "center", justifyContent: "center" },
   permissionButtonText: { color: strictlyColors.onLime, fontFamily: strictlyType.bold},
-  cancelTextButton: { padding: 12 }, cancelText: { color: strictlyColors.textSoft, fontFamily: strictlyType.medium },
 });
