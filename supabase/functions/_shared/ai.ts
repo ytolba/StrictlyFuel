@@ -128,6 +128,7 @@ export async function callVision(options: {
   const model = AI_MODELS[options.feature];
   const startedAt = Date.now();
   let retried = false;
+  let maxOutputTokens = options.maxOutputTokens;
 
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
@@ -139,7 +140,7 @@ export async function callVision(options: {
           model,
           store: false,
           reasoning: { effort: options.reasoningEffort || "low" },
-          max_output_tokens: options.maxOutputTokens,
+          max_output_tokens: maxOutputTokens,
           instructions: options.instructions,
           input: [{
             role: "user",
@@ -170,6 +171,16 @@ export async function callVision(options: {
       }
 
       const payload = await response.json();
+      // Reasoning tokens count against max_output_tokens. A reply that ran out of room is partial JSON,
+      // so retry once with double the budget instead of handing back something unparseable.
+      if (payload.status === "incomplete") {
+        if (attempt === 0) { retried = true; maxOutputTokens *= 2; continue; }
+        await recordAiUsage({
+          feature: options.feature, model, userId: options.userId,
+          latencyMs: Date.now() - startedAt, success: false, retried, errorCode: "incomplete", usage: payload.usage,
+        });
+        return { ok: false, status: 502, errorCode: "incomplete", model, retried };
+      }
       const text = payload.output_text
         || payload.output?.flatMap((item: any) => item.content || [])
              .find((part: any) => part.type === "output_text")?.text;

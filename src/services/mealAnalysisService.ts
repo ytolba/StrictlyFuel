@@ -68,12 +68,23 @@ function chooseNutritionMatch(matches: FuelFood[], item: any) {
   return { food: best.food, confidence: Math.round(Math.min(sourceCap, best.food.dataQualityScore || sourceCap, lexicalConfidence)) };
 }
 
+export function countAgreesWithEstimate(countedGrams: number, item: any) {
+  const estimate = Number(item.estimatedGrams) || 0;
+  if (estimate <= 0) return true;
+  const lower = Math.min(estimate, Number(item.portionLowerGrams) || estimate);
+  const upper = Math.max(estimate, Number(item.portionUpperGrams) || estimate);
+  return countedGrams >= lower * 0.6 && countedGrams <= upper * 1.6;
+}
+
 function calibratedPortion(item: any) {
   const count = Number(item.detectedCount) || 0;
   const unit = String(item.detectedUnit || "unknown");
-  const deterministic = count > 0 && ["piece", "slice"].includes(unit)
+  const counted = count > 0 && ["piece", "slice"].includes(unit)
     ? householdAmountToGrams(String(item.name || ""), `${count} ${unit}${count === 1 ? "" : "s"}`)
     : null;
+  // A count only replaces the visual estimate when the two roughly agree. Nine banana slices reported as
+  // "9 pieces" would otherwise become nine whole bananas (1,062 g) while the model itself saw ~120 g.
+  const deterministic = counted && countAgreesWithEstimate(counted.grams, item) ? counted : null;
   if (deterministic) {
     return {
       estimatedGrams: deterministic.grams,
