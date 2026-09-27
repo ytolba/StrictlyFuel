@@ -42,13 +42,15 @@ export default function PostWorkoutMealsScreen({ navigation }: any) {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([loadNutritionProfile(), fetchRecoveryMealTemplates()])
+    setContentLoading(true);
+    Promise.all([loadNutritionProfile(), isPro ? fetchRecoveryMealTemplates() : Promise.resolve([])])
       .then(([nextProfile, nextTemplates]) => {
         if (!cancelled) { setProfile(nextProfile); setTemplates(nextTemplates); }
       })
+      .catch(() => { if (!cancelled) { setProfile(EMPTY_NUTRITION_PROFILE); setTemplates([]); } })
       .finally(() => { if (!cancelled) setContentLoading(false); });
     return () => { cancelled = true; };
-  }, []);
+  }, [isPro]);
 
   useFocusEffect(useCallback(() => {
     let cancelled = false;
@@ -112,34 +114,24 @@ export default function PostWorkoutMealsScreen({ navigation }: any) {
     [profile, recoveryWorkout, templates, window],
   );
 
-  if (!ready) return <ScreenShell title="Post Workout" eyebrow="RECOVERY"><LoadingState title="Getting recovery ready" messages={["Checking your access", "Loading your session"]} /></ScreenShell>;
+  if (!ready) return <ScreenShell title="Recovery" back onBack={() => navigation.goBack()}><LoadingState title="Getting recovery ready" messages={["Checking your access", "Loading your session"]} /></ScreenShell>;
 
-  if (!isPro) return <ScreenShell title="Post Workout" eyebrow="STRICTLY PRO">
-    <View style={styles.lockedHero}>
-      <View style={styles.lockIcon}><Ionicons name="lock-closed" size={25} color={strictlyColors.onLime} /></View>
-      <Text style={styles.lockedTitle}>Recovery built from the work you did.</Text>
-      <Text style={styles.lockedText}>Post Workout turns today’s Apple Health session, or the workout you planned in Strictly, into a practical carb and protein target with complete meal ideas.</Text>
-      <View style={styles.benefits}>{["Automatic workout context", "Personal macro targets", "Complete meals scaled to you"].map((item) => <View key={item} style={styles.benefit}><Ionicons name="checkmark-circle" size={17} color={strictlyColors.good} /><Text style={styles.benefitText}>{item}</Text></View>)}</View>
-      <TouchableOpacity style={styles.unlock} onPress={() => navigation.getParent()?.navigate("Paywall")}><Text style={styles.unlockText}>Unlock Post Workout</Text><Ionicons name="arrow-forward" size={17} color={strictlyColors.onLime} /></TouchableOpacity>
-    </View>
-  </ScreenShell>;
+  if (contentLoading || healthLoading) return <ScreenShell title="Recovery" back onBack={() => navigation.goBack()}><LoadingState title="Building your recovery plan" messages={["Checking today’s workout", "Setting your macro target", "Scaling complete meals"]} /></ScreenShell>;
 
-  if (contentLoading || healthLoading) return <ScreenShell title="Post Workout" eyebrow="RECOVERY"><LoadingState title="Building your recovery plan" messages={["Checking today’s workout", "Setting your macro target", "Scaling complete meals"]} /></ScreenShell>;
-
-  if (!recoveryWorkout || !target) return <ScreenShell title="Post Workout" eyebrow="RECOVERY">
+  if (!recoveryWorkout || !target) return <ScreenShell title="Recovery" back onBack={() => navigation.goBack()}>
     <View style={styles.emptyCard}>
       <View style={styles.emptyIcon}><Ionicons name="fitness-outline" size={24} color={strictlyColors.accentText} /></View>
       <Text style={styles.emptyTitle}>{profile.bodyWeightKg ? "Add a session first" : "Add your body weight"}</Text>
-      <Text style={styles.emptyText}>{profile.bodyWeightKg ? "No Apple Health workout was found today and there is no session on Today yet. Enter your workout and this tab will use it automatically." : "Add your body weight once so Strictly can calculate a useful recovery target."}</Text>
-      <TouchableOpacity style={styles.emptyAction} onPress={() => profile.bodyWeightKg ? navigation.navigate("Home") : navigation.getParent()?.navigate("Settings")}><Text style={styles.emptyActionText}>{profile.bodyWeightKg ? "Set today’s session" : "Add weight"}</Text><Ionicons name="arrow-forward" size={16} color={strictlyColors.onLime} /></TouchableOpacity>
+      <Text style={styles.emptyText}>{profile.bodyWeightKg ? "Plan a session first. After training, return here for a recovery target based on that workout." : "Add your body weight once so Strictly can calculate a useful recovery target."}</Text>
+      <TouchableOpacity style={styles.emptyAction} onPress={() => profile.bodyWeightKg ? navigation.navigate("Main", { screen: "Home" }) : navigation.navigate("Settings")}><Text style={styles.emptyActionText}>{profile.bodyWeightKg ? "Set today’s session" : "Add weight"}</Text><Ionicons name="arrow-forward" size={16} color={strictlyColors.onLime} /></TouchableOpacity>
     </View>
   </ScreenShell>;
 
   const fromHealth = Boolean(selectedHealthWorkout);
   const kidneyContext = profile.conditions.includes("kidney");
 
-  return <ScreenShell title="Post Workout" eyebrow="RECOVER FROM TODAY">
-    <Text style={styles.intro}>A practical meal target based on the session you completed, with clear macro ranges and meals that feel like real food.</Text>
+  return <ScreenShell title="Recovery" back onBack={() => navigation.goBack()}>
+    <Text style={styles.intro}>{fromHealth ? "Based on the workout you finished today." : "Based on the session you planned. Update it first if your workout changed."} See your recovery target, then choose a meal if you want more guidance.</Text>
 
     {todayWorkouts.length > 1 ? <View style={styles.sessionPicker}>
       <Text style={styles.sessionPickerLabel}>TODAY’S WORKOUT</Text>
@@ -152,7 +144,7 @@ export default function PostWorkoutMealsScreen({ navigation }: any) {
     <View style={styles.actualWorkout}>
       <View style={[styles.actualIcon, !fromHealth && styles.actualIconManual]}><Ionicons name={fromHealth ? "heart-outline" : "create-outline"} size={17} color={fromHealth ? strictlyColors.accentText : strictlyColors.onLime} /></View>
       <View style={styles.actualCopy}>
-        <Text style={styles.actualEyebrow}>{fromHealth ? `APPLE HEALTH · ${selectedHealthWorkout?.sourceName || "WORKOUT"}` : "YOUR SESSION · MANUAL FALLBACK"}</Text>
+        <Text style={styles.actualEyebrow}>{fromHealth ? `APPLE HEALTH · ${selectedHealthWorkout?.sourceName || "WORKOUT"}` : "SESSION FROM PLAN"}</Text>
         <Text style={styles.actualTitle}>{recoveryWorkout.durationMinutes} min {activityName(recoveryWorkout.activityType)}</Text>
         <View style={styles.actualMetrics}>
           {fromHealth ? <Text style={styles.actualMetric}>ended {workoutTime(selectedHealthWorkout!.endDate)}</Text> : <Text style={styles.actualMetric}>{recoveryWorkout.intensity} effort</Text>}
@@ -161,13 +153,13 @@ export default function PostWorkoutMealsScreen({ navigation }: any) {
           {selectedHealthWorkout?.distanceKm ? <Text style={styles.actualMetric}>{selectedHealthWorkout.distanceKm.toFixed(1)} km</Text> : null}
           {selectedHealthWorkout?.activeCalories ? <Text style={styles.actualMetric}>{Math.round(selectedHealthWorkout.activeCalories)} kcal</Text> : null}
         </View>
-        {!fromHealth ? <Text style={styles.sourceNote}>No completed Apple Health workout was found today, so this plan uses the session entered on Today.</Text> : null}
+        {!fromHealth ? <Text style={styles.sourceNote}>This estimate uses the session you entered in Plan. If your workout changed, update it there first.</Text> : null}
       </View>
     </View>
 
     {fromHealth ? <View style={styles.effortBlock}><View style={styles.effortHeading}><Text style={styles.effortTitle}>How hard did it feel?</Text><Text style={styles.effortHelp}>Heart rate adds context. Your effort keeps the target personal.</Text></View><View style={styles.effortSegment}>{(["easy", "moderate", "hard"] as WorkoutIntensity[]).map((value) => <TouchableOpacity key={value} onPress={() => setHealthIntensity(value)} style={[styles.effortOption, healthIntensity === value && styles.effortOptionActive]}><Text style={[styles.effortOptionText, healthIntensity === value && styles.effortOptionTextActive]}>{value}</Text></TouchableOpacity>)}</View></View> : null}
 
-    {!healthConnected && appleHealthSupported() ? <TouchableOpacity style={styles.connectPrompt} onPress={() => navigation.getParent()?.navigate("HealthWorkouts")}><View style={styles.connectPromptCopy}><Text style={styles.connectPromptTitle}>Want automatic workout details?</Text><Text style={styles.connectPromptText}>Connect Apple Health for future sessions.</Text></View><Ionicons name="chevron-forward" size={17} color={strictlyColors.textSoft} /></TouchableOpacity> : null}
+    {isPro && !healthConnected && appleHealthSupported() ? <TouchableOpacity style={styles.connectPrompt} onPress={() => navigation.navigate("HealthWorkouts")}><View style={styles.connectPromptCopy}><Text style={styles.connectPromptTitle}>Want automatic workout details?</Text><Text style={styles.connectPromptText}>Connect Apple Health for future sessions.</Text></View><Ionicons name="chevron-forward" size={17} color={strictlyColors.textSoft} /></TouchableOpacity> : null}
 
     <Text style={styles.question}>When is your next demanding session?</Text>
     <View style={styles.windowList}>{WINDOWS.map((option) => {
@@ -188,8 +180,13 @@ export default function PostWorkoutMealsScreen({ navigation }: any) {
     {fromHealth ? <Text style={styles.healthContextNote}>Recorded duration and energy refine the estimate. Heart rate is supporting context, not a medical measure or a substitute for your own zones.</Text> : null}
     {kidneyContext ? <View style={styles.caution}><Ionicons name="medical-outline" size={18} color={strictlyColors.clay} /><Text style={styles.cautionText}>Because you noted a kidney-related limit, treat this general protein target as informational and follow your clinician’s personalized guidance.</Text></View> : null}
 
-    <View style={styles.sectionHead}><Text style={styles.sectionTitle}>Complete meal ideas</Text><Text style={styles.sectionMeta}>{recommendations.length} BEST FITS</Text></View>
-    {recommendations.map((recommendation, index) => {
+    <View style={styles.sectionHead}><Text style={styles.sectionTitle}>Meals for recovery</Text>{isPro ? <Text style={styles.sectionMeta}>{recommendations.length} BEST FITS</Text> : null}</View>
+    {!isPro ? <View style={styles.lockedHero}>
+      <View style={styles.lockIcon}><Ionicons name="nutrition-outline" size={25} color={strictlyColors.onLime} /></View>
+      <Text style={styles.lockedTitle}>Turn your target into a meal.</Text>
+      <Text style={styles.lockedText}>Your recovery target is free. Pro adds complete meal ideas scaled to your session and dietary preferences, plus Apple Health workout details.</Text>
+      <TouchableOpacity style={styles.unlock} onPress={() => navigation.navigate("Paywall")} accessibilityRole="button"><Text style={styles.unlockText}>See StrictlyFuel Pro</Text><Ionicons name="arrow-forward" size={17} color={strictlyColors.onLime} /></TouchableOpacity>
+    </View> : recommendations.map((recommendation, index) => {
       const open = expanded === recommendation.template.id;
       return <View key={recommendation.template.id} style={[styles.mealCard, index === 0 && styles.bestCard]}>
         <View style={styles.mealHead}><View style={styles.mealCopy}><Text style={styles.mealEyebrow}>{index === 0 ? "BEST MATCH" : `${recommendation.template.cuisine.toUpperCase()} · ${recommendation.template.prepMinutes} MIN`}</Text><Text style={styles.mealName}>{recommendation.template.name}</Text></View><View style={styles.score}><Text style={styles.scoreValue}>{recommendation.score.total}</Text></View></View>
@@ -201,7 +198,7 @@ export default function PostWorkoutMealsScreen({ navigation }: any) {
         <TouchableOpacity style={[styles.recipeButton, index === 0 && styles.recipeButtonBest]} onPress={() => setExpanded(open ? undefined : recommendation.template.id)}><Text style={[styles.recipeButtonText, index === 0 && styles.recipeButtonTextBest]}>{open ? "Hide instructions" : "View how to make it"}</Text><Ionicons name={open ? "chevron-up" : "chevron-down"} size={16} color={index === 0 ? strictlyColors.onLime : strictlyColors.text} /></TouchableOpacity>
       </View>;
     })}
-    {!recommendations.length ? <View style={styles.emptyCard}><Text style={styles.emptyTitle}>No safe recovery match yet</Text><Text style={styles.emptyText}>Your dietary exclusions removed the current meals. You can still build a meal manually from foods you trust.</Text></View> : null}
+    {isPro && !recommendations.length ? <View style={styles.emptyCard}><Text style={styles.emptyTitle}>No safe recovery match yet</Text><Text style={styles.emptyText}>Your dietary exclusions removed the current meals. You can still build a meal manually from foods you trust.</Text></View> : null}
     <View style={styles.hydration}><Ionicons name="water-outline" size={18} color={strictlyColors.accentText} /><Text style={styles.hydrationText}>{target.hydrationNote}</Text></View>
     <Citations sources={RECOVERY_SOURCES} note="Recovery targets scale published carbohydrate and protein guidance to your session and body weight. Daily intake, appetite, sweat losses, and the timing of your next session all matter." />
   </ScreenShell>;

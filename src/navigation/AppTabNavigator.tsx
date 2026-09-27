@@ -1,48 +1,60 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Platform, StyleSheet, Text, View } from "react-native";
+import { Animated, Easing, Platform, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import FuelHomeScreen from "../screens/fuel/FuelHomeScreen";
 import DiscoverScreen from "../screens/fuel/DiscoverScreen";
 import MealScanScreen from "../screens/fuel/MealScanScreen";
-import PostWorkoutMealsScreen from "../screens/fuel/PostWorkoutMealsScreen";
 import MyFuelScreen from "../screens/fuel/MyFuelScreen";
 import type { CommunityFilters } from "../types/fuel";
 import { strictlyColors, strictlyLayout, strictlyRadius, strictlyType } from "../theme/strictlyTheme";
 import { useStrictlyAppearance } from "../contexts/AppearanceContext";
-import { useSubscription } from "../provider/RevenuCatProvider";
+import { useReducedMotion } from "../hooks/useReducedMotion";
 
 export type AppTabParamList = {
   Home: undefined;
   Discover: { filters?: CommunityFilters } | undefined;
   Scan: undefined;
-  PostWorkout: undefined;
   MyFuel: undefined;
 };
 
 const Tab = createBottomTabNavigator<AppTabParamList>();
 
 const LABELS: Record<keyof AppTabParamList, string> = {
-  Home: "Preworkout",
+  Home: "Plan",
   Discover: "Ideas",
   Scan: "Scan",
-  PostWorkout: "Post Workout",
-  MyFuel: "My fuel",
+  MyFuel: "My Fuel",
 };
 
 const ICONS: Record<keyof AppTabParamList, [string, string]> = {
   Home: ["flash", "flash-outline"],
   Discover: ["compass", "compass-outline"],
   Scan: ["camera", "camera-outline"],
-  PostWorkout: ["nutrition", "nutrition-outline"],
   MyFuel: ["bookmark", "bookmark-outline"],
 };
+
+function TabIcon({ name, focused }: { name: keyof AppTabParamList; focused: boolean }) {
+  const reducedMotion = useReducedMotion();
+  const scale = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    scale.stopAnimation();
+    if (!focused || reducedMotion) { scale.setValue(1); return; }
+    scale.setValue(0.88);
+    const animation = Animated.timing(scale, { toValue: 1, duration: 180, easing: Easing.out(Easing.cubic), useNativeDriver: true });
+    animation.start();
+    return () => animation.stop();
+  }, [focused, reducedMotion, scale]);
+  const [active, inactive] = ICONS[name];
+  return <Animated.View style={[styles.icon, focused && styles.iconActive, { transform: [{ scale }] }]}>
+    <Ionicons name={(focused ? active : inactive) as any} size={19} color={focused ? strictlyColors.onLime : strictlyColors.textSoft} />
+  </Animated.View>;
+}
 
 export default function AppTabNavigator() {
   const insets = useSafeAreaInsets();
   const { palette } = useStrictlyAppearance();
-  const { isPro } = useSubscription();
   // A docked bar owns the bottom edge, so it has to absorb the home-indicator
   // inset itself: the row of items keeps its full height and the inset becomes
   // padding underneath it.
@@ -63,25 +75,12 @@ export default function AppTabNavigator() {
             {LABELS[route.name]}
           </Text>
         ),
-        tabBarIcon: ({ focused }) => {
-          const [active, inactive] = ICONS[route.name];
-          return (
-            <View style={[styles.icon, focused && styles.iconActive]}>
-              <Ionicons
-                name={(focused ? active : inactive) as any}
-                size={19}
-                color={focused ? strictlyColors.onLime : strictlyColors.textSoft}
-              />
-              {route.name === "PostWorkout" && !isPro ? <View style={styles.lockBadge}><Ionicons name="lock-closed" size={7} color={strictlyColors.onLime} /></View> : null}
-            </View>
-          );
-        },
+        tabBarIcon: ({ focused }) => <TabIcon name={route.name} focused={focused} />,
       })}
     >
       <Tab.Screen name="Home" component={FuelHomeScreen} />
       <Tab.Screen name="Discover" component={DiscoverScreen} />
       <Tab.Screen name="Scan" component={MealScanScreen} />
-      <Tab.Screen name="PostWorkout" component={PostWorkoutMealsScreen} />
       <Tab.Screen name="MyFuel" component={MyFuelScreen} />
     </Tab.Navigator>
   );
@@ -106,7 +105,6 @@ const styles = StyleSheet.create({
   item: { paddingTop: 2 },
   icon: { width: 44, height: 28, borderRadius: strictlyRadius.pill, alignItems: "center", justifyContent: "center" },
   iconActive: { backgroundColor: strictlyColors.lime },
-  lockBadge: { position: "absolute", top: 0, right: 5, width: 13, height: 13, borderRadius: 7, backgroundColor: strictlyColors.cream, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: strictlyColors.surface },
   label: { fontFamily: strictlyType.medium, color: strictlyColors.textSoft, fontSize: 11, marginTop: 2 },
   labelActive: { color: strictlyColors.text, fontFamily: strictlyType.bold },
 });

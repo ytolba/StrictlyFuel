@@ -2,6 +2,7 @@ import React from "react";
 import { createStackNavigator, TransitionPresets } from "@react-navigation/stack";
 import AppTabNavigator from "./AppTabNavigator";
 import FuelTargetScreen from "../screens/fuel/FuelTargetScreen";
+import PostWorkoutMealsScreen from "../screens/fuel/PostWorkoutMealsScreen";
 import MealBuilderScreen from "../screens/fuel/MealBuilderScreen";
 import MealAnalysisScreen from "../screens/fuel/MealAnalysisScreen";
 import FixMealScreen from "../screens/fuel/FixMealScreen";
@@ -23,6 +24,7 @@ import { strictlyColors } from "../theme/strictlyTheme";
 export type AppStackParamList = {
   Main: { screen?: string; params?: unknown } | undefined;
   FuelTarget: undefined;
+  Recover: undefined;
   BuildMeal: { suggestedName?: string } | undefined;
   MealAnalysis: { mealId: string };
   FixMeal: { mealId: string };
@@ -52,6 +54,7 @@ export default function AppStackNavigator() {
   }}>
     <Stack.Screen name="Main" component={AppTabNavigator} />
     <Stack.Screen name="FuelTarget" component={FuelTargetScreen} />
+    <Stack.Screen name="Recover" component={PostWorkoutMealsScreen} />
     <Stack.Screen name="BuildMeal" component={MealBuilderScreen} />
     <Stack.Screen name="MealAnalysis" component={MealAnalysisScreen} />
     <Stack.Screen name="FixMeal" component={FixMealScreen} />

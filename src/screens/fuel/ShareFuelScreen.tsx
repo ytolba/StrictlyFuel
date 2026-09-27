@@ -112,11 +112,17 @@ export default function ShareFuelScreen({ navigation, route }: any) {
     };
     setPublishing(true);
     try {
-      await publishFuelPost(user.uid, post, target);
-      addLocalPost(post);
-      Alert.alert("Fuel shared", "Your meal is now available to athletes looking for similar workout fuel.", [
-        { text: "View post", onPress: () => navigation.navigate("Main", { screen: "Discover" }) },
-      ]);
+      const status = await publishFuelPost(user.uid, post, target);
+      if (status === "approved") {
+        addLocalPost(post);
+        Alert.alert("Fuel approved", "Your meal passed review and is saved to your community preview.", [
+          { text: "View post", onPress: () => navigation.navigate("Main", { screen: "Discover" }) },
+        ]);
+      } else if (status === "rejected") {
+        Alert.alert("Could not share this post", "The photo or caption did not pass our community safety check. You can edit it and try again.");
+      } else {
+        Alert.alert("Sent for review", "This post is not visible to others yet. We will review it before it appears in the community.");
+      }
     } catch (error: any) {
       Alert.alert("Could not publish", error?.message || "Try again in a moment.");
     } finally {
@@ -157,7 +163,7 @@ export default function ShareFuelScreen({ navigation, route }: any) {
         <View style={styles.communityIcon}><Ionicons name="people-outline" size={17} color={strictlyColors.accentText} /></View>
         <View style={styles.communityCopy}>
           <Text style={styles.sectionTitleInline}>Share inside StrictlyFuel</Text>
-          <Text style={styles.communityDetail}>Optional. Your meal stays private until you publish it.</Text>
+          <Text style={styles.communityDetail}>Optional. Your photo and caption are checked before anyone else can see them.</Text>
         </View>
       </View>
       <TextInput
@@ -184,10 +190,10 @@ export default function ShareFuelScreen({ navigation, route }: any) {
       </View>
       <View style={styles.privacy}>
         <Ionicons name="lock-closed-outline" size={18} color={strictlyColors.text} />
-        <Text style={styles.privacyText}>Publishing creates a separate post you can delete later. Precise location is never attached.</Text>
+        <Text style={styles.privacyText}>Submitting creates a separate post. Posts needing review stay private. Precise location is never attached.</Text>
       </View>
       <TouchableOpacity activeOpacity={0.78} disabled={publishing} style={[styles.publish, publishing && styles.disabled]} onPress={publish}>
-        {publishing ? <LoadingState compact title="Publishing your fuel" /> : <><Ionicons name="paper-plane-outline" size={18} color={strictlyColors.onLime} /><Text style={styles.publishText}>Publish to community</Text></>}
+        {publishing ? <LoadingState compact title="Checking your post" /> : <><Ionicons name="paper-plane-outline" size={18} color={strictlyColors.onLime} /><Text style={styles.publishText}>Submit to community</Text></>}
       </TouchableOpacity>
     </ScreenShell>
   );

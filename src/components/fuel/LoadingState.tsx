@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Animated, Easing, StyleSheet, Text, View } from "react-native";
 import { strictlyColors, strictlyRadius, strictlyType } from "../../theme/strictlyTheme";
+import { useReducedMotion } from "../../hooks/useReducedMotion";
 
 type Props = {
   title?: string;
@@ -12,21 +13,24 @@ type Props = {
 export function LoadingState({ title = "Getting things ready", messages = [], compact = false, inverted = false }: Props) {
   const pulse = useRef(new Animated.Value(0)).current;
   const [messageIndex, setMessageIndex] = useState(0);
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
+    pulse.stopAnimation();
+    if (reducedMotion) { pulse.setValue(1); return; }
     const animation = Animated.loop(Animated.sequence([
       Animated.timing(pulse, { toValue: 1, duration: 700, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
       Animated.timing(pulse, { toValue: 0, duration: 700, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
     ]));
     animation.start();
     return () => animation.stop();
-  }, [pulse]);
+  }, [pulse, reducedMotion]);
 
   useEffect(() => {
-    if (messages.length < 2) return;
+    if (reducedMotion || messages.length < 2) return;
     const timer = setInterval(() => setMessageIndex((current) => (current + 1) % messages.length), 1800);
     return () => clearInterval(timer);
-  }, [messages]);
+  }, [messages, reducedMotion]);
 
   // Loading states live on green/cream semantic surfaces. Using `text` here
   // keeps them cream in dark mode and deep green in light mode.

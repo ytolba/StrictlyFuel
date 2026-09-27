@@ -1,5 +1,5 @@
-import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useRef } from "react";
+import { Animated, Easing, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import type { FuelTarget, WorkoutDraft } from "../../types/fuel";
 import { getActivity } from "../../data/activities";
@@ -7,10 +7,21 @@ import { formatDuration } from "../../logic/mealTiming";
 import { strictlyColors, strictlyRadius, strictlyType } from "../../theme/strictlyTheme";
 import { CarbSpeedBar } from "./CarbSpeedBar";
 import { EstimateBadge, Overline } from "./Section";
+import { useReducedMotion } from "../../hooks/useReducedMotion";
 
 /** The site's "Your result" card: an estimate label, the carb number in lime, and when to eat. */
 export function FuelTargetCard({ target, workout, dark = true }: { target: FuelTarget; workout: WorkoutDraft; dark?: boolean }) {
   const activity = getActivity(workout.activityType);
+  const reducedMotion = useReducedMotion();
+  const numberScale = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    numberScale.stopAnimation();
+    if (reducedMotion) { numberScale.setValue(1); return; }
+    numberScale.setValue(0.94);
+    const animation = Animated.timing(numberScale, { toValue: 1, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: true });
+    animation.start();
+    return () => animation.stop();
+  }, [numberScale, reducedMotion, target.carbTarget]);
   return (
     <View style={[styles.card, dark ? styles.dark : styles.light]}>
       <View style={styles.top}>
@@ -21,10 +32,10 @@ export function FuelTargetCard({ target, workout, dark = true }: { target: FuelT
         Recommended before your {formatDuration(workout.durationMinutes)} {activity.shortLabel.toLowerCase()} · {workout.intensity}
       </Text>
 
-      <Text style={[styles.number, !dark && styles.numberLight]} accessibilityLabel={`${target.carbTarget} grams of carbs`}>
+      <Animated.Text style={[styles.number, !dark && styles.numberLight, { transform: [{ scale: numberScale }] }]} accessibilityLabel={`${target.carbTarget} grams of carbs`}>
         {target.carbTarget}
         <Text style={styles.unit}> g carbs</Text>
-      </Text>
+      </Animated.Text>
       <Text style={styles.range}>Working range {target.carbRange[0]}–{target.carbRange[1]} g</Text>
 
       <View style={[styles.timing, !dark && styles.timingLight]}>
@@ -36,7 +47,7 @@ export function FuelTargetCard({ target, workout, dark = true }: { target: FuelT
 
       <View style={styles.speed}>
         <Overline style={styles.speedTitle}>How those carbs should split</Overline>
-        <CarbSpeedBar fast={target.fastCarbs} medium={target.mediumCarbs} slow={target.slowCarbs} onDark={dark} />
+        <CarbSpeedBar fast={target.fastCarbs} medium={target.mediumCarbs} slow={target.slowCarbs} onDark={dark} animate />
       </View>
     </View>
   );

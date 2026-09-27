@@ -12,7 +12,6 @@ import type { ActivityType, HeartRateZone, WorkoutIntensity } from "../../types/
 import { ScreenShell } from "../../components/fuel/ScreenShell";
 import { StrictlyBrand } from "../../components/StrictlyBrand";
 import { FuelTargetCard } from "../../components/fuel/FuelTargetCard";
-import { Overline, SectionIntro } from "../../components/fuel/Section";
 import { ValueEditorSheet, DURATION_UNITS, WEIGHT_UNITS } from "../../components/fuel/ValueEditorSheet";
 import { ActivityPickerSheet } from "../../components/fuel/ActivityPickerSheet";
 import { appleHealthSupported, isAppleHealthConnected, loadRecentHealthWorkouts, refreshHealthWhenAppBecomesActive, type HealthWorkout } from "../../services/appleHealthService";
@@ -37,6 +36,7 @@ export default function FuelHomeScreen({ navigation, route }: any) {
   const [recentHealthWorkouts, setRecentHealthWorkouts] = useState<HealthWorkout[]>([]);
   const [healthLoading, setHealthLoading] = useState(false);
   const [healthConnected, setHealthConnected] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   // The session form is the top of the screen and the result appears beneath
   // it, so "Calculate" reveals the target in place rather than pushing a new
@@ -118,6 +118,11 @@ export default function FuelHomeScreen({ navigation, route }: any) {
       ? `${Math.round(profile.bodyWeightKg * 2.20462)} lb`
       : `${Math.round(profile.bodyWeightKg * 10) / 10} kg`
     : "Add your weight";
+  const hasCurrentTarget = Boolean(workout && target && profile.bodyWeightKg &&
+    workout.activityType === activityType && workout.durationMinutes === duration &&
+    workout.startsInMinutes === startsIn && workout.intensity === intensity &&
+    workout.bodyWeightKg === profile.bodyWeightKg &&
+    JSON.stringify(workout.heartRateZones || []) === JSON.stringify(supportsHeartRateZones(activityType) ? heartRateZones : []));
 
   const persistProfile = async (next: NutritionProfile) => {
     setProfile(next);
@@ -157,7 +162,7 @@ export default function FuelHomeScreen({ navigation, route }: any) {
     if (editingField === "weight") {
       return {
         label: "Body weight",
-        value: profile.bodyWeightKg || (isImperial ? 75 : 75),
+        value: profile.bodyWeightKg ?? undefined,
         units: WEIGHT_UNITS,
         unitId: isImperial ? "lb" : "kg",
         onUnitChange: saveUnitPreference,
@@ -189,12 +194,8 @@ export default function FuelHomeScreen({ navigation, route }: any) {
         </TouchableOpacity>
       </View>
 
-      {/* Hero and numbered steps follow the strictlyinc.com calculator. */}
-      <Overline accent>Carb fueling, simplified</Overline>
-      <Text style={styles.hero}>Fuel the work.{"\n"}<Text style={styles.heroAccent}>Nothing extra.</Text></Text>
-      <Text style={styles.subhero}>Tell us the session. We’ll turn it into a carb target and food you can actually use.</Text>
-
-      <SectionIntro step="01" overline="Your workout" title="What are you fueling?" />
+      <Text style={styles.hero}>What are you training?</Text>
+      <Text style={styles.subhero}>Add your session. We’ll show you how much to eat and help you choose food.</Text>
       <View style={styles.card} onLayout={(event) => { sessionOffset.current = event.nativeEvent.layout.y; }}>
 
         {/* 1 — activity */}
@@ -245,12 +246,21 @@ export default function FuelHomeScreen({ navigation, route }: any) {
           ))}
         </View>
 
-        {supportsHeartRateZones(activityType) ? (
+        <TouchableOpacity style={styles.weightLine} onPress={() => setEditingField("weight")} accessibilityRole="button" accessibilityLabel={`Body weight, ${weightLabel}`}>
+          <Ionicons name="person-outline" size={15} color={strictlyColors.textSoft} />
+          <Text style={styles.weightText}>Body weight · {weightLabel}</Text>
+          <Text style={styles.weightEdit}>{profile.bodyWeightKg ? "Edit" : "Add"}</Text>
+        </TouchableOpacity>
+
+        {supportsHeartRateZones(activityType) ? <TouchableOpacity style={styles.advancedToggle} onPress={() => setShowAdvanced((value) => !value)} accessibilityRole="button" accessibilityState={{ expanded: showAdvanced }}>
+          <Text style={styles.advancedToggleText}>Heart-rate zones <Text style={styles.advancedOptional}>· optional</Text></Text>
+          <Ionicons name={showAdvanced ? "chevron-up" : "chevron-down"} size={17} color={strictlyColors.textSoft} />
+        </TouchableOpacity> : null}
+        {supportsHeartRateZones(activityType) && showAdvanced ? (
           <View style={styles.zoneBlock}>
             <View style={styles.zoneHeading}>
               <View style={styles.zoneHeadingCopy}>
-                <Text style={styles.stepLabel}>HEART-RATE ZONES · OPTIONAL</Text>
-                <Text style={styles.zoneHelp}>Choose every zone this session will include.</Text>
+                <Text style={styles.zoneHelp}>Select zones only if you know which ones you’ll train in.</Text>
               </View>
               {heartRateZones.length ? (
                 <TouchableOpacity onPress={() => setHeartRateZones([])} hitSlop={8}>
@@ -283,17 +293,29 @@ export default function FuelHomeScreen({ navigation, route }: any) {
           </View>
         ) : null}
 
-        <TouchableOpacity style={styles.weightLine} onPress={() => setEditingField("weight")}>
-          <Ionicons name="person-outline" size={15} color={strictlyColors.textSoft} />
-          <Text style={styles.weightText}>{weightLabel}</Text>
-          <Text style={styles.weightEdit}>{profile.bodyWeightKg ? "Edit" : "Add"}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.primary} onPress={calculate}>
-          <Text style={styles.primaryText}>Calculate my fuel</Text>
+        <TouchableOpacity style={styles.primary} onPress={calculate} accessibilityRole="button">
+          <Text style={styles.primaryText}>{workout && !hasCurrentTarget ? "Update my fuel plan" : "Show my fuel plan"}</Text>
           <Ionicons name="arrow-forward" size={18} color={strictlyColors.onLime} />
         </TouchableOpacity>
       </View>
+
+      {hasCurrentTarget && workout && target ? (
+        <View
+          style={styles.activeWrap}
+          onLayout={(event: LayoutChangeEvent) => { targetOffset.current = event.nativeEvent.layout.y; }}
+        >
+          <Text style={styles.resultHeading}>Your fuel target</Text>
+          <FuelTargetCard workout={workout} target={target} />
+          <TouchableOpacity style={styles.activeFooter} onPress={() => navigation.navigate("MealIdeas")} accessibilityRole="button">
+            <Text style={styles.activeFooterText}>Find food for this target</Text>
+            <Ionicons name="arrow-forward" size={16} color={strictlyColors.onLime} />
+          </TouchableOpacity>
+          <View style={styles.resultLinks}>
+            <TouchableOpacity style={styles.resultLink} onPress={() => navigation.navigate("FuelTarget")} accessibilityRole="button"><Text style={styles.resultLinkText}>See full plan</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.resultLink} onPress={() => navigation.navigate("Recover")} accessibilityRole="button"><Text style={styles.resultLinkText}>After training · Recovery</Text></TouchableOpacity>
+          </View>
+        </View>
+      ) : null}
 
       {appleHealthSupported() ? <View style={styles.healthContext}>
         <View style={styles.healthContextHead}>
@@ -324,36 +346,6 @@ export default function FuelHomeScreen({ navigation, route }: any) {
 
       <TouchableOpacity style={styles.raceMode} onPress={() => navigation.navigate("RaceMode")}><View style={styles.raceModeIcon}><Ionicons name="flag" size={21} color={strictlyColors.onLime} /></View><View style={styles.raceModeCopy}><Text style={styles.raceModeTitle}>Race Mode</Text><Text style={styles.raceModeText}>Know the carbs, timing, and exact fuel to pack.</Text></View><Ionicons name="arrow-forward" size={17} color={strictlyColors.textSoft} /></TouchableOpacity>
 
-      {/* The result of the form above. Scrolled into view by `calculate`. */}
-      {workout && target ? (
-        <View
-          style={styles.activeWrap}
-          onLayout={(event: LayoutChangeEvent) => { targetOffset.current = event.nativeEvent.layout.y; }}
-        >
-          <SectionIntro step="02" overline="Your result" title="Here’s your fuel target." style={styles.resultIntro} />
-          <FuelTargetCard workout={workout} target={target} />
-          <TouchableOpacity
-            style={styles.activeFooter}
-            activeOpacity={0.9}
-            onPress={() => navigation.navigate("FuelTarget")}
-          >
-            <Text style={styles.activeFooterText}>Open the full plan</Text>
-            <Ionicons name="arrow-forward" size={16} color={strictlyColors.onLime} />
-          </TouchableOpacity>
-        </View>
-      ) : null}
-
-      <TouchableOpacity style={styles.discover} onPress={() => navigation.navigate("Discover")}>
-        <View style={styles.discoverIcon}>
-          <Ionicons name="compass-outline" size={20} color={strictlyColors.accentText} />
-        </View>
-        <View style={styles.discoverCopy}>
-          <Text style={styles.discoverTitle}>What others eat</Text>
-          <Text style={styles.discoverText}>Meals that worked for similar sessions.</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={18} color={strictlyColors.textSoft} />
-      </TouchableOpacity>
-
       <ActivityPickerSheet
         visible={pickerOpen}
         selected={activityType}
@@ -376,10 +368,8 @@ const styles = StyleSheet.create({
   avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: strictlyColors.surfaceMuted, borderWidth: 1, borderColor: strictlyColors.border, alignItems: "center", justifyContent: "center" },
   avatarText: { color: strictlyColors.accentText, fontFamily: strictlyType.bold},
 
-  hero: { fontFamily: strictlyType.bold, color: strictlyColors.text, fontSize: 40, lineHeight: 42, letterSpacing: -1.8, marginTop: 10, maxWidth: 340 },
-  heroAccent: { color: strictlyColors.accentText },
-  subhero: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 15, lineHeight: 22, marginTop: 12, maxWidth: 340 },
-  resultIntro: { marginTop: 10 },
+  hero: { fontFamily: strictlyType.bold, color: strictlyColors.text, fontSize: 31, lineHeight: 36, letterSpacing: -0.9, marginTop: 8 },
+  subhero: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 15, lineHeight: 22, marginTop: 8, marginBottom: 22 },
   raceMode: { minHeight: 76, flexDirection: "row", alignItems: "center", gap: 11, padding: 13, marginTop: 14, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
   raceModeIcon: { width: 44, height: 44, borderRadius: 15, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.lime }, raceModeCopy: { flex: 1 },
   raceModeTitle: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 15 },
@@ -401,21 +391,23 @@ const styles = StyleSheet.create({
   healthContextFooter: { minHeight: 42, marginTop: 8, paddingHorizontal: 4, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   healthContextFooterText: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 11 },
 
-  activeWrap: { marginTop: 20, marginBottom: 4 },
-  resultLabel: { fontFamily: strictlyType.semibold, color: strictlyColors.textSoft, fontSize: 11, letterSpacing: 1.1, marginBottom: 9 },
-  activeFooter: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, height: 44, marginTop: 8, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.lime },
+  activeWrap: { marginTop: 24, marginBottom: 4 },
+  resultHeading: { fontFamily: strictlyType.bold, color: strictlyColors.text, fontSize: 21, marginBottom: 11 },
+  activeFooter: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 52, marginTop: 10, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.lime },
   activeFooterText: { fontFamily: strictlyType.bold,  color: strictlyColors.onLime, fontSize: 13 },
+  resultLinks: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 7 },
+  resultLink: { minHeight: 44, flexGrow: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 10 },
+  resultLinkText: { fontFamily: strictlyType.medium, color: strictlyColors.text, fontSize: 12 },
 
   card: { padding: 16, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, borderRadius: strictlyRadius.large },
-  cardTitle: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 17, marginBottom: 16 },
   stepLabel: { fontFamily: strictlyType.semibold, color: strictlyColors.textSoft, fontSize: 11, letterSpacing: 1.1, marginBottom: 9 },
 
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 7 },
-  chip: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 40, paddingHorizontal: 12, borderRadius: strictlyRadius.pill, backgroundColor: strictlyColors.surfaceMuted },
+  chip: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 44, paddingHorizontal: 12, borderRadius: strictlyRadius.pill, backgroundColor: strictlyColors.surfaceMuted },
   chipActive: { backgroundColor: strictlyColors.lime },
   chipText: { fontFamily: strictlyType.bold,  color: strictlyColors.textSoft, fontSize: 12 },
   chipTextActive: { color: strictlyColors.onLime, fontFamily: strictlyType.bold },
-  chipMore: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 40, paddingHorizontal: 12, borderRadius: strictlyRadius.pill, borderWidth: 1, borderColor: strictlyColors.borderStrong },
+  chipMore: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 44, paddingHorizontal: 12, borderRadius: strictlyRadius.pill, borderWidth: 1, borderColor: strictlyColors.borderStrong },
   chipMoreText: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 12 },
   chosen: { fontFamily: strictlyType.regular, color: strictlyColors.accentText, fontSize: 11, marginTop: 9 },
 
@@ -431,10 +423,13 @@ const styles = StyleSheet.create({
   segmentText: { fontFamily: strictlyType.medium, color: strictlyColors.textSoft, fontSize: 12, textTransform: "capitalize" },
   segmentTextActive: { color: strictlyColors.onLime, fontFamily: strictlyType.bold },
 
-  zoneBlock: { marginTop: 17 },
+  advancedToggle: { minHeight: 48, marginTop: 3, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderTopWidth: 1, borderTopColor: strictlyColors.border },
+  advancedToggleText: { fontFamily: strictlyType.medium, color: strictlyColors.text, fontSize: 12 },
+  advancedOptional: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft },
+  zoneBlock: { marginTop: 3, marginBottom: 12 },
   zoneHeading: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
   zoneHeadingCopy: { flex: 1 },
-  zoneHelp: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, marginTop: -4, marginBottom: 9 },
+  zoneHelp: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, marginBottom: 9 },
   zoneClear: { fontFamily: strictlyType.bold,  color: strictlyColors.accentText, fontSize: 11 },
   zoneRow: { flexDirection: "row", gap: 7 },
   zone: { flex: 1, height: 43, borderRadius: strictlyRadius.medium, borderWidth: 1, borderColor: strictlyColors.border, backgroundColor: strictlyColors.surfaceMuted, alignItems: "center", justifyContent: "center" },
@@ -443,16 +438,11 @@ const styles = StyleSheet.create({
   zoneNumberActive: { color: strictlyColors.onLime, fontFamily: strictlyType.bold },
   zoneSummary: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 14, marginTop: 7 },
 
-  weightLine: { height: 48, flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 },
+  weightLine: { minHeight: 48, flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 },
   weightText: { flex: 1, fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 12 },
   weightEdit: { fontFamily: strictlyType.bold,  color: strictlyColors.accentText, fontSize: 11 },
 
   primary: { height: 56, backgroundColor: strictlyColors.lime, borderRadius: strictlyRadius.medium, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 9, marginTop: 4 },
   primaryText: { fontFamily: strictlyType.bold,  color: strictlyColors.onLime, fontSize: 14 },
 
-  discover: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 68, paddingHorizontal: 15, marginTop: 12, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
-  discoverIcon: { width: 40, height: 40, borderRadius: 14, backgroundColor: strictlyColors.surfaceMuted, alignItems: "center", justifyContent: "center" },
-  discoverCopy: { flex: 1 },
-  discoverTitle: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 14 },
-  discoverText: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, marginTop: 3 },
 });

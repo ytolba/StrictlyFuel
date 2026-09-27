@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>StrictlyFuel — Your carbs, to the gram.</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      /* Space Grotesk is the app's own type stack (strictlyType in the theme). */
+      @font-face {
+        font-family: "Space Grotesk";
+        src: url("assets/fonts/SpaceGrotesk_400Regular.ttf") format("truetype");
+        font-weight: 400;
+      }
+      @font-face {
+        font-family: "Space Grotesk";
+        src: url("assets/fonts/SpaceGrotesk_500Medium.ttf") format("truetype");
+        font-weight: 500;
+      }
+      @font-face {
+        font-family: "Space Grotesk";
+        src: url("assets/fonts/SpaceGrotesk_600SemiBold.ttf") format("truetype");
+        font-weight: 600;
+      }
+      @font-face {
+        font-family: "Space Grotesk";
+        src: url("assets/fonts/SpaceGrotesk_700Bold.ttf") format("truetype");
+        font-weight: 700;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #08090a;
+      }
+
+      /* Dark palette, verbatim from src/theme/strictlyTheme.ts */
+      #root {
+        --bg: #08090a;
+        --surface: #101214;
+        --surface-muted: #181b1e;
+        --text: #f4f5f4;
+        --text-soft: #a2aaa6;
+        --muted: #838b87;
+        --lime: #cdf564;
+        --lime-dim: #b9e148;
+        --border: #1f2326;
+        --border-strong: #2e3337;
+        width: 100%;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+        background: var(--bg);
+        font-family: "Space Grotesk", sans-serif;
+        color: var(--text);
+      }
+      .clip {
+        position: absolute;
+        inset: 0;
+      }
+
+      /* The source screenshots cut the device off at the bottom, so the phone
+         bleeds off the bottom of frame rather than floating on a hard edge. */
+      .stage-left {
+        position: absolute;
+        left: 300px;
+        top: 128px;
+        width: 492px;
+        height: 1000px;
+        overflow: hidden;
+        border-radius: 52px 52px 0 0;
+      }
+      .phone {
+        display: block;
+        width: 492px;
+        height: 1000px;
+      }
+
+      .copy {
+        position: absolute;
+        left: 990px;
+        top: 318px;
+        width: 800px;
+      }
+      .eyebrow {
+        font-size: 21px;
+        font-weight: 600;
+        letter-spacing: 2.6px;
+        text-transform: uppercase;
+        color: var(--lime);
+      }
+      .headline {
+        margin-top: 20px;
+        font-size: 64px;
+        font-weight: 700;
+        line-height: 1.07;
+        letter-spacing: -1.5px;
+      }
+      .sub {
+        font-size: 25px;
+        font-weight: 400;
+        line-height: 1.45;
+        color: var(--text-soft);
+      }
+
+      /* split rows beside the phone */
+      .row {
+        position: absolute;
+        left: 990px;
+        width: 620px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 20px 26px;
+        border-radius: 18px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+      }
+      .row .bar {
+        width: 6px;
+        height: 34px;
+        border-radius: 3px;
+        background: var(--lime);
+      }
+      .row .name {
+        flex: 1;
+        font-size: 26px;
+        font-weight: 600;
+        color: var(--text);
+      }
+      .row .amt {
+        font-size: 30px;
+        font-weight: 700;
+        color: var(--lime);
+        letter-spacing: -0.6px;
+      }
+      .row .pct {
+        width: 72px;
+        text-align: right;
+        font-size: 20px;
+        font-weight: 500;
+        color: var(--muted);
+      }
+
+      .pill {
+        position: absolute;
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        padding: 15px 24px;
+        border-radius: 17px;
+        background: var(--surface-muted);
+        border: 1px solid var(--border-strong);
+        font-size: 24px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .pill .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--lime);
+      }
+      .pill .lime {
+        color: var(--lime);
+      }
+
+      .tile {
+        position: absolute;
+        left: 990px;
+        width: 340px;
+        padding: 26px 30px;
+        border-radius: 20px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+      }
+      .tile .value {
+        font-size: 56px;
+        font-weight: 700;
+        color: var(--lime);
+        letter-spacing: -2px;
+        line-height: 1;
+      }
+      .tile .label {
+        margin-top: 10px;
+        font-size: 19px;
+        font-weight: 600;
+        letter-spacing: 1.8px;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      /* outro */
+      #sd {
+        display: grid;
+        place-items: center;
+      }
+      #sd-inner {
+        width: 1500px;
+        text-align: center;
+      }
+      #sd-word {
+        font-size: 30px;
+        font-weight: 600;
+        letter-spacing: 3.4px;
+        text-transform: uppercase;
+        color: var(--lime);
+      }
+      #sd-claim {
+        margin-top: 34px;
+        font-size: 92px;
+        font-weight: 700;
+        letter-spacing: -2.6px;
+      }
+      #sd-cites {
+        margin-top: 40px;
+        font-size: 31px;
+        font-weight: 500;
+        color: var(--text-soft);
+      }
+      #sd-sources {
+        margin-top: 26px;
+        display: flex;
+        justify-content: center;
+        gap: 14px;
+      }
+      #sd-sources span {
+        padding: 11px 20px;
+        border-radius: 14px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        font-size: 19px;
+        font-weight: 500;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="19"
+      data-width="1920"
+      data-height="1080"
+      data-fps="30"
+    >
+      <!-- ===== Scene A — the number, then the split (0 – 7.6) ===== -->
+      <section id="sa" class="clip" data-start="0" data-duration="7.6" data-track-index="0">
+        <div class="stage-left" data-layout-allow-overflow="true">
+          <img id="sa-phone" class="phone" src="assets/img/target.png" alt="StrictlyFuel daily fuel target" />
+        </div>
+
+        <div class="copy" id="sa-copy1">
+          <div class="eyebrow" id="sa-eyebrow">Workout Ready</div>
+          <div class="headline" id="sa-head1">Your carbs, worked out to the gram.</div>
+        </div>
+
+        <div class="copy" id="sa-copy2" style="top: 232px">
+          <div class="headline" id="sa-head2" style="margin-top: 0">Not just how much. When.</div>
+        </div>
+
+        <div class="row" id="sa-r1" style="top: 452px">
+          <span class="bar"></span><span class="name">Fast carbs</span><span class="amt">32g</span
+          ><span class="pct">43%</span>
+        </div>
+        <div class="row" id="sa-r2" style="top: 562px">
+          <span class="bar" style="background: var(--lime-dim)"></span><span class="name">Medium carbs</span
+          ><span class="amt">32g</span><span class="pct">43%</span>
+        </div>
+        <div class="row" id="sa-r3" style="top: 672px">
+          <span class="bar" style="background: #6f8f3a"></span><span class="name">Slow carbs</span
+          ><span class="amt">11g</span><span class="pct">15%</span>
+        </div>
+      </section>
+
+      <!-- ===== Scene B — a real meal (7.6 – 11.9) ===== -->
+      <section id="sb" class="clip" data-start="7.6" data-duration="4.3" data-track-index="1">
+        <div class="stage-left" data-layout-allow-overflow="true">
+          <img id="sb-phone" class="phone" src="assets/img/meals.png" alt="StrictlyFuel meal suggestions" />
+        </div>
+        <div class="copy" id="sb-copy">
+          <div class="eyebrow" id="sb-eyebrow">What To Eat</div>
+          <div class="headline" id="sb-head">Real meals, scaled to today's session.</div>
+        </div>
+        <div class="pill" id="sb-p1" style="left: 990px; top: 588px">
+          <span class="dot"></span>Banana Yogurt Oat Bowl
+        </div>
+        <div class="pill" id="sb-p2" style="left: 990px; top: 684px">
+          <span class="lime">76g carbs</span>&nbsp;·&nbsp;2 hr 15 min before
+        </div>
+      </section>
+
+      <!-- ===== Scene C — recovery (11.9 – 15.2) ===== -->
+      <section id="sc" class="clip" data-start="11.9" data-duration="3.3" data-track-index="2">
+        <div class="stage-left" data-layout-allow-overflow="true">
+          <img id="sc-phone" class="phone" src="assets/img/recovery.png" alt="StrictlyFuel post-workout recovery" />
+        </div>
+        <div class="copy" id="sc-copy" style="top: 258px">
+          <div class="eyebrow" id="sc-eyebrow">Post Workout</div>
+          <div class="headline" id="sc-head">Refuel before the window closes.</div>
+        </div>
+        <div class="tile" id="sc-t1" style="top: 556px">
+          <div class="value">90g</div>
+          <div class="label">Carbs</div>
+        </div>
+        <div class="tile" id="sc-t2" style="left: 1370px; top: 556px">
+          <div class="value">25g</div>
+          <div class="label">Protein</div>
+        </div>
+        <div class="sub" id="sc-note" style="position: absolute; left: 990px; top: 758px; width: 720px">
+          Start recovery within about 30–60 minutes.
+        </div>
+      </section>
+
+      <!-- ===== Scene D — sources included (15.2 – 19.0) ===== -->
+      <section id="sd" class="clip" data-start="15.2" data-duration="3.8" data-track-index="3">
+        <div id="sd-inner">
+          <div id="sd-word">StrictlyFuel</div>
+          <div id="sd-claim">Your carbs, to the gram.</div>
+          <div id="sd-cites">Every number cites its source.</div>
+          <div id="sd-sources">
+            <span>Burke et al.</span><span>World Athletics</span><span>ISSN nutrient timing</span
+            ><span>ISSN female athlete</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== Audio: no music. Sparse motion-matched interface cues only. ===== -->
+      <audio id="sfx-arrive" src="assets/sfx/reveal.ogg" data-start="0.55" data-duration="0.19" data-track-index="10" data-volume="0.6"></audio>
+      <audio id="sfx-r1" src="assets/sfx/tick.ogg" data-start="4.2" data-duration="0.06" data-track-index="11" data-volume="0.52"></audio>
+      <audio id="sfx-r2" src="assets/sfx/tick.ogg" data-start="5.05" data-duration="0.06" data-track-index="12" data-volume="0.52"></audio>
+      <audio id="sfx-r3" src="assets/sfx/tick.ogg" data-start="5.9" data-duration="0.06" data-track-index="13" data-volume="0.52"></audio>
+      <audio id="sfx-meal" src="assets/sfx/confirm.ogg" data-start="8.52" data-duration="0.13" data-track-index="14" data-volume="0.58"></audio>
+      <audio id="sfx-t1" src="assets/sfx/tick.ogg" data-start="12.6" data-duration="0.06" data-track-index="15" data-volume="0.46"></audio>
+      <audio id="sfx-t2" src="assets/sfx/tick.ogg" data-start="13.45" data-duration="0.06" data-track-index="16" data-volume="0.46"></audio>
+      <audio id="sfx-logo" src="assets/sfx/logo.ogg" data-start="15.42" data-duration="0.15" data-track-index="17" data-volume="0.6"></audio>
+    </div>
+
+    <script>
+      const tl = gsap.timeline({ paused: true });
+      const EASE = "power3.out";
+
+      /* ---- Scene A: the number (0 – 3.6), then the split (3.6 – 7.6) ---- */
+      tl.fromTo("#sa-phone", { opacity: 0, yPercent: 14 }, { opacity: 1, yPercent: 0, duration: 0.7, ease: EASE }, 0.45);
+      tl.fromTo("#sa-eyebrow", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.42, ease: EASE }, 0.8);
+      tl.fromTo("#sa-head1", { opacity: 0, y: 28 }, { opacity: 1, y: 0, duration: 0.55, ease: EASE }, 0.98);
+      // 6-word headline settles at 1.53s and holds to 3.32 — 1.79s, above the ~1.8s floor
+      tl.to("#sa-copy1", { opacity: 0, duration: 0.3, ease: "power2.in" }, 3.32);
+
+      tl.fromTo("#sa-copy2", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, ease: EASE }, 3.66);
+      // three split rows 0.85s apart — no beat grid here, spacing is set by reading time alone
+      tl.fromTo("#sa-r1", { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 0.44, ease: EASE }, 4.2);
+      tl.fromTo("#sa-r2", { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 0.44, ease: EASE }, 5.05);
+      tl.fromTo("#sa-r3", { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 0.44, ease: EASE }, 5.9);
+      // all three held together 6.34 → 7.3
+      tl.to(["#sa-copy2", "#sa-r1", "#sa-r2", "#sa-r3"], { opacity: 0, duration: 0.3, ease: "power2.in" }, 7.3);
+      tl.to("#sa-phone", { opacity: 0, duration: 0.3, ease: "power2.in" }, 7.3);
+
+      /* ---- Scene B: a real meal (7.6 – 11.9) ---- */
+      tl.fromTo("#sb-phone", { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.55, ease: EASE }, 7.64);
+      tl.fromTo("#sb-eyebrow", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: EASE }, 7.8);
+      tl.fromTo("#sb-head", { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.52, ease: EASE }, 7.94);
+      tl.fromTo("#sb-p1", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.42, ease: EASE }, 8.52);
+      tl.fromTo("#sb-p2", { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.42, ease: EASE }, 9.42);
+      tl.to(["#sb-copy", "#sb-p1", "#sb-p2", "#sb-phone"], { opacity: 0, duration: 0.28, ease: "power2.in" }, 11.62);
+
+      /* ---- Scene C: recovery (11.9 – 15.2) ---- */
+      tl.fromTo("#sc-phone", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power2.out" }, 11.94);
+      tl.fromTo("#sc-eyebrow", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.38, ease: EASE }, 12.02);
+      tl.fromTo("#sc-head", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, ease: EASE }, 12.14);
+      tl.fromTo("#sc-t1", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.42, ease: EASE }, 12.6);
+      tl.fromTo("#sc-t2", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.42, ease: EASE }, 13.45);
+      tl.fromTo("#sc-note", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power2.out" }, 14.0);
+      tl.to(["#sc-copy", "#sc-t1", "#sc-t2", "#sc-note", "#sc-phone"], { opacity: 0, duration: 0.28, ease: "power2.in" }, 14.92);
+
+      /* ---- Scene D: sources included (15.2 – 19.0) ---- */
+      tl.fromTo("#sd-word", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.45, ease: EASE }, 15.34);
+      tl.fromTo("#sd-claim", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, ease: EASE }, 15.66);
+      tl.fromTo("#sd-cites", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.48, ease: EASE }, 16.86);
+      tl.fromTo("#sd-sources", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.45, ease: EASE }, 17.56);
+
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

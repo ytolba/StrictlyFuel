@@ -153,7 +153,7 @@ export const LEGAL_URLS = {
 } as const;
 
 export const PRO_BENEFITS = [
-  { icon: "fitness-outline", title: "Post-workout recovery", text: "Personal recovery targets and complete meals based on the session you finished." },
+  { icon: "fitness-outline", title: "Recovery meals", text: "Complete meals scaled to your session, with Apple Health workout details when connected." },
   { icon: "camera-outline", title: "Unlimited meal scans", text: `${SCAN_LIMITS.pro} AI photo scans a week instead of ${SCAN_LIMITS.free}.` },
   { icon: "shuffle-outline", title: "Unlimited reshuffles", text: `Re-roll meal ideas ${RESHUFFLE_LIMITS.pro} times a week instead of ${RESHUFFLE_LIMITS.free}.` },
   { icon: "flash-outline", title: "No weekly ceiling mid-block", text: "Train twice a day through a hard block without running out of scans." },

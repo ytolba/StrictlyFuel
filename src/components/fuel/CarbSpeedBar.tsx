@@ -1,6 +1,7 @@
-import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useRef } from "react";
+import { Animated, Easing, StyleSheet, Text, View } from "react-native";
 import { carbSpeedMeta, strictlyColors, strictlyRadius, strictlyType } from "../../theme/strictlyTheme";
+import { useReducedMotion } from "../../hooks/useReducedMotion";
 
 const ORDER = ["fast", "medium", "slow", "unknown"] as const;
 type Speed = (typeof ORDER)[number];
@@ -18,14 +19,26 @@ export type CarbSpeedBarProps = {
   target?: { fast: number; medium: number; slow: number };
   /** Rendering on a dark high-emphasis card rather than a normal surface. */
   onDark?: boolean;
+  /** Reveal the split when a new fuel result appears. */
+  animate?: boolean;
 };
 
 const valueFor = (speed: Speed, fast: number, medium: number, slow: number, unknown: number) =>
   speed === "fast" ? fast : speed === "medium" ? medium : speed === "slow" ? slow : unknown;
 
-export function CarbSpeedBar({ fast, medium, slow, unknown = 0, compact = false, showHints = false, target, onDark = false }: CarbSpeedBarProps) {
+export function CarbSpeedBar({ fast, medium, slow, unknown = 0, compact = false, showHints = false, target, onDark = false, animate = false }: CarbSpeedBarProps) {
   const total = fast + medium + slow + unknown;
   const safeTotal = Math.max(1, total);
+  const reducedMotion = useReducedMotion();
+  const fill = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    fill.stopAnimation();
+    if (!animate || reducedMotion || total <= 0) { fill.setValue(1); return; }
+    fill.setValue(0);
+    const animation = Animated.timing(fill, { toValue: 1, duration: 420, easing: Easing.out(Easing.cubic), useNativeDriver: false });
+    animation.start();
+    return () => animation.stop();
+  }, [animate, fast, medium, slow, unknown, reducedMotion, total, fill]);
 
   return (
     <View>
@@ -33,11 +46,13 @@ export function CarbSpeedBar({ fast, medium, slow, unknown = 0, compact = false,
         {total <= 0 ? (
           <View style={styles.barEmpty} />
         ) : (
-          ORDER.map((speed) => {
-            const value = valueFor(speed, fast, medium, slow, unknown);
-            if (value <= 0) return null;
-            return <View key={speed} style={{ flex: value / safeTotal, backgroundColor: carbSpeedMeta[speed].color }} />;
-          })
+          <Animated.View style={[styles.barFill, { width: fill.interpolate({ inputRange: [0, 1], outputRange: ["0%", "100%"] }) }]}>
+            {ORDER.map((speed) => {
+              const value = valueFor(speed, fast, medium, slow, unknown);
+              if (value <= 0) return null;
+              return <View key={speed} style={{ flex: value / safeTotal, backgroundColor: carbSpeedMeta[speed].color }} />;
+            })}
+          </Animated.View>
         )}
       </View>
 
@@ -98,6 +113,7 @@ export function CarbSpeedBar({ fast, medium, slow, unknown = 0, compact = false,
 const styles = StyleSheet.create({
   bar: { height: 12, borderRadius: strictlyRadius.pill, overflow: "hidden", flexDirection: "row", backgroundColor: strictlyColors.surfaceMuted },
   barCompact: { height: 7 },
+  barFill: { height: "100%", flexDirection: "row", overflow: "hidden" },
   barEmpty: { flex: 1, backgroundColor: strictlyColors.surfaceMuted },
 
   inlineLegend: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginTop: 10 },

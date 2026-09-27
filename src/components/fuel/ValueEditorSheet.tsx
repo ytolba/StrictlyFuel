@@ -43,7 +43,7 @@ type Props = {
   visible: boolean;
   label: string;
   /** Always in the base unit. */
-  value: number;
+  value?: number;
   /** Simple single-unit mode (e.g. grams). Ignored when `units` is supplied. */
   unit?: string;
   presets?: number[];
@@ -64,7 +64,7 @@ export function ValueEditorSheet({ visible, label, value, unit = "g", presets = 
   const current = useMemo(() => units?.find((option) => option.id === activeUnit) || units?.[0], [units, activeUnit]);
   const decimals = current?.decimals ?? 0;
 
-  const display = (base: number) => (current ? trim(current.fromBase(base), decimals) : String(Math.round(base)));
+  const display = (base?: number) => base == null ? "" : (current ? trim(current.fromBase(base), decimals) : String(Math.round(base)));
   const [draft, setDraft] = useState(() => display(value));
 
   // Re-seed whenever the sheet opens, or the unit changes underneath it.
@@ -83,7 +83,7 @@ export function ValueEditorSheet({ visible, label, value, unit = "g", presets = 
     const typed = Number(draft);
     const base = Number.isFinite(typed) && typed > 0 && current ? current.toBase(typed) : value;
     setActiveUnit(option.id);
-    setDraft(trim(option.fromBase(base), option.decimals ?? 0));
+    setDraft(base == null ? "" : trim(option.fromBase(base), option.decimals ?? 0));
     onUnitChange?.(option.id);
   };
 
@@ -96,6 +96,7 @@ export function ValueEditorSheet({ visible, label, value, unit = "g", presets = 
 
   const activePresets = current?.presets ?? presets;
   const suffix = current?.label ?? unit;
+  const canSave = Number.isFinite(Number(draft)) && Number(draft) > 0;
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -142,6 +143,7 @@ export function ValueEditorSheet({ visible, label, value, unit = "g", presets = 
               keyboardType="decimal-pad"
               returnKeyType="done"
               style={styles.input}
+              placeholder="Enter a value"
               placeholderTextColor={strictlyColors.textSoft}
             />
             <Text style={styles.unit}>{suffix}</Text>
@@ -159,7 +161,7 @@ export function ValueEditorSheet({ visible, label, value, unit = "g", presets = 
             </View>
           ) : null}
 
-          <TouchableOpacity style={styles.save} onPress={save}>
+          <TouchableOpacity style={[styles.save, !canSave && styles.saveDisabled]} onPress={save} disabled={!canSave} accessibilityRole="button" accessibilityState={{ disabled: !canSave }}>
             <Text style={styles.saveText}>Save</Text>
           </TouchableOpacity>
         </View>
@@ -195,5 +197,6 @@ const styles = StyleSheet.create({
   presetText: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 11 },
 
   save: { height: 56, marginTop: 18, backgroundColor: strictlyColors.lime, borderRadius: strictlyRadius.medium, alignItems: "center", justifyContent: "center" },
+  saveDisabled: { opacity: 0.45 },
   saveText: { fontFamily: strictlyType.bold,  color: strictlyColors.onLime, fontSize: 14 },
 });
