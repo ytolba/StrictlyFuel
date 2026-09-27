@@ -97,6 +97,13 @@ export async function publishFuelPost(
   return data.status;
 }
 
+/** Delete the signed-in author's own post, including its photo, from the community. */
+export async function deleteFuelPost(postId: string) {
+  const { data, error } = await supabase.functions.invoke("delete-fuel-post", { body: { postId } });
+  if (error) await throwFunctionError(error, data, "This post could not be deleted. Please try again.");
+  if (data?.deleted !== true) throw new Error("This post could not be deleted. Please try again.");
+}
+
 // Rich post hydration is intentionally kept separate from the core meal flow.
 // Local/demo posts remain visible while live community rows are progressively adopted.
 export async function fetchFuelPosts(_activityType?: string): Promise<FuelPost[]> { return []; }

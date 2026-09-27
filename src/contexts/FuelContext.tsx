@@ -35,6 +35,7 @@ type FuelContextValue = {
   importPostMeal: (post: FuelPost) => void;
   toggleSavedPost: (postId: string) => void;
   addLocalPost: (post: FuelPost) => void;
+  removeLocalPost: (postId: string) => void;
   toggleFavoriteActivity: (activity: ActivityType) => void;
 };
 
@@ -165,6 +166,7 @@ export function FuelProvider({ children }: { children: React.ReactNode }) {
     importPostMeal,
     toggleSavedPost: (postId) => setSavedPostIds((current) => current.includes(postId) ? current.filter((id) => id !== postId) : [...current, postId]),
     addLocalPost: (post) => setLocalPosts((current) => [post, ...current]),
+    removeLocalPost: (postId) => { setLocalPosts((current) => current.filter((post) => post.id !== postId)); setSavedPostIds((current) => current.filter((id) => id !== postId)); },
     toggleFavoriteActivity: (activity) => setFavoriteActivities((current) => current.includes(activity) ? current.filter((item) => item !== activity) : [...current, activity].slice(-8)),
   }), [hydrated, workout, target, ingredients, meals, savedPostIds, localPosts, recentActivities, favoriteActivities, createWorkout, addIngredient, updateIngredient, removeIngredient, buildMeal, importPostMeal]);
 

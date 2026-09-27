@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { COMMUNITY_SEED } from "../../data/communitySeed";
 import { useFuel } from "../../contexts/FuelContext";
 import { useAuth } from "../../contexts/AuthContext";
-import { fetchFuelPosts, removeSavedCommunityMeal, saveCommunityMeal } from "../../services/fuelService";
+import { deleteFuelPost, fetchFuelPosts, removeSavedCommunityMeal, saveCommunityMeal } from "../../services/fuelService";
 import type { ActivityType, CommunityFilters, FuelPost } from "../../types/fuel";
 import { ScreenShell } from "../../components/fuel/ScreenShell";
 import { FuelPostCard } from "../../components/fuel/FuelPostCard";
@@ -31,7 +31,7 @@ function matches(post: FuelPost, filters: CommunityFilters) {
 
 export default function DiscoverScreen({ navigation, route }: any) {
   const { user } = useAuth();
-  const { workout, target, localPosts, savedPostIds, toggleSavedPost, importPostMeal } = useFuel();
+  const { workout, target, localPosts, savedPostIds, toggleSavedPost, importPostMeal, removeLocalPost } = useFuel();
   const [activity, setActivity] = useState<ActivityType | "all">(route.params?.filters?.activityType || "all");
   const [remotePosts, setRemotePosts] = useState<FuelPost[]>([]);
   const filters: CommunityFilters = { ...(route.params?.filters || {}), activityType: activity === "all" ? undefined : activity };
@@ -54,6 +54,11 @@ export default function DiscoverScreen({ navigation, route }: any) {
     toggleSavedPost(post.id);
     if (user?.uid) (wasSaved ? removeSavedCommunityMeal(user.uid, post.id) : saveCommunityMeal(user.uid, post)).catch(() => undefined);
   };
+  const isMine = (post: FuelPost) => Boolean(user?.uid && !post.isDemo && post.userId === user.uid);
+  const remove = (post: FuelPost) => confirmDeletePost(post, () => {
+    removeLocalPost(post.id);
+    setRemotePosts((current) => current.filter((item) => item.id !== post.id));
+  });
   const copy = (post: FuelPost) => {
     if (!target) return Alert.alert("Set today’s fuel target first", "Strictly needs your workout to scale this meal to you.", [{ text: "Go to Home", onPress: () => navigation.navigate("Home") }]);
     importPostMeal(post);
@@ -61,29 +66,41 @@ export default function DiscoverScreen({ navigation, route }: any) {
   };
 
   return <ScreenShell>
-    <View style={styles.header}><View><Text style={styles.eyebrow}>DISCOVER</Text><Text style={styles.title}>Fuel worth copying.</Text></View><TouchableOpacity style={styles.filter} onPress={() => navigation.getParent()?.navigate("CommunityFilters", { filters })}><Ionicons name="options-outline" size={19} color={strictlyColors.text} /></TouchableOpacity></View>
+    <View style={styles.header}><View style={styles.headerCopy}><Text style={styles.title}>Ideas</Text><Text style={styles.tagline}>Fuel worth copying.</Text></View><TouchableOpacity style={styles.filter} onPress={() => navigation.getParent()?.navigate("CommunityFilters", { filters })}><Ionicons name="options-outline" size={19} color={strictlyColors.text} /></TouchableOpacity></View>
     <Text style={styles.subtitle}>{workout ? `Prioritized for your ${workout.durationMinutes}-minute ${workout.activityType} session.` : "See what athletes eat before specific workouts."}</Text>
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>{ACTIVITIES.map((item) => <TouchableOpacity key={item} onPress={() => setActivity(item)} style={[styles.chip, activity === item && styles.chipActive]}><Text style={[styles.chipText, activity === item && styles.chipTextActive]}>{item === "all" ? "For you" : item}</Text></TouchableOpacity>)}</ScrollView>
     <View style={styles.utility}><Ionicons name="sparkles-outline" size={17} color={strictlyColors.text} /><Text style={styles.utilityText}><Text style={styles.utilityStrong}>Ranked for usefulness.</Text> Similar workout, timing, carb target, saves, and copies matter more than likes.</Text></View>
     <Text style={styles.resultCount}>{posts.length} MATCHING MEALS</Text>
-    {posts.map((post) => <FuelPostCard key={post.id} post={post} saved={savedPostIds.includes(post.id)} onPress={() => navigation.getParent()?.navigate("FuelPostDetail", { post })} onSave={() => save(post)} onCopy={() => copy(post)} />)}
+    {posts.map((post) => <FuelPostCard key={post.id} post={post} saved={savedPostIds.includes(post.id)} onPress={() => navigation.getParent()?.navigate("FuelPostDetail", { post })} onSave={() => save(post)} onCopy={() => copy(post)} onDelete={isMine(post) ? () => remove(post) : undefined} />)}
     {!posts.length ? <View style={styles.empty}><Text style={styles.emptyTitle}>No exact matches yet</Text><Text style={styles.emptyText}>Clear a filter or be the first to share fuel for this workout.</Text></View> : null}
   </ScreenShell>;
 }
 
+// Shared by the Ideas list and the post page so deleting reads the same everywhere.
+export function confirmDeletePost(post: FuelPost, onDeleted: () => void) {
+  Alert.alert("Delete this post?", "It will be removed from Ideas for everyone, along with its photo. Your meal stays in My Fuel.", [
+    { text: "Cancel", style: "cancel" },
+    { text: "Delete", style: "destructive", onPress: async () => {
+      try { await deleteFuelPost(post.id); onDeleted(); }
+      catch (reason) { Alert.alert("Couldn’t delete post", reason instanceof Error ? reason.message : "Please check your connection and try again."); }
+    } },
+  ]);
+}
+
 const styles = StyleSheet.create({
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 8 },
-  eyebrow: { fontFamily: strictlyType.semibold, color: strictlyColors.textSoft, fontSize: 11, letterSpacing: 1.1 },
-  title: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 32, letterSpacing: -1.1, marginTop: 5 },
+  headerCopy: { flex: 1 },
+  title: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 34, letterSpacing: -1.1 },
+  tagline: { fontFamily: strictlyType.semibold, color: strictlyColors.text, fontSize: 17, letterSpacing: -0.3, marginTop: 2 },
   filter: { width: 42, height: 42, borderRadius: 21, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, alignItems: "center", justifyContent: "center" },
-  subtitle: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 13, lineHeight: 19, marginTop: 8 },
+  subtitle: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 14, lineHeight: 20, marginTop: 6 },
   chips: { gap: 7, paddingVertical: 17, paddingRight: 20 },
   chip: { height: 38, justifyContent: "center", paddingHorizontal: 14, borderRadius: strictlyRadius.pill, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
   chipActive: { backgroundColor: strictlyColors.lime, borderColor: strictlyColors.lime },
-  chipText: { fontFamily: strictlyType.semibold,  color: strictlyColors.text, fontSize: 11, textTransform: "capitalize" },
+  chipText: { fontFamily: strictlyType.semibold,  color: strictlyColors.text, fontSize: 13, textTransform: "capitalize" },
   chipTextActive: { color: strictlyColors.onLime },
   utility: { flexDirection: "row", gap: 9, backgroundColor: strictlyColors.cream, borderRadius: strictlyRadius.medium, padding: 13, marginBottom: 18 },
-  utilityText: { flex: 1, fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 15 },
+  utilityText: { flex: 1, fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 12, lineHeight: 17 },
   utilityStrong: { fontFamily: strictlyType.bold,  color: strictlyColors.text },
   resultCount: { fontFamily: strictlyType.semibold, color: strictlyColors.textSoft, fontSize: 11, letterSpacing: 1.1, marginBottom: 10 },
   empty: { alignItems: "center", padding: 30 },

@@ -5,13 +5,14 @@ import { COMMUNITY_SEED } from "../../data/communitySeed";
 import { useFuel } from "../../contexts/FuelContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { blockCommunityUser, removeSavedCommunityMeal, reportCommunityPost, saveCommunityMeal } from "../../services/fuelService";
+import { confirmDeletePost } from "./DiscoverScreen";
 import { ScreenShell } from "../../components/fuel/ScreenShell";
 import { CarbSpeedBar } from "../../components/fuel/CarbSpeedBar";
-import { strictlyColors, strictlyRadius, strictlyType } from "../../theme/strictlyTheme";
+import { scoreColor, strictlyColors, strictlyRadius, strictlyType } from "../../theme/strictlyTheme";
 
 export default function FuelPostDetailScreen({ navigation, route }: any) {
   const { user } = useAuth();
-  const { target, localPosts, savedPostIds, toggleSavedPost, importPostMeal } = useFuel();
+  const { target, localPosts, savedPostIds, toggleSavedPost, importPostMeal, removeLocalPost } = useFuel();
   const post = route.params?.post || [...localPosts, ...COMMUNITY_SEED].find((item) => item.id === route.params?.postId);
   if (!post) return <ScreenShell title="Fuel post" back onBack={() => navigation.goBack()}><Text>Post unavailable.</Text></ScreenShell>;
   const saved = savedPostIds.includes(post.id);
@@ -25,6 +26,8 @@ export default function FuelPostDetailScreen({ navigation, route }: any) {
     navigation.navigate("BuildMeal");
   };
   const canModerate = Boolean(user?.uid && !post.isDemo && post.userId !== user.uid);
+  const isMine = Boolean(user?.uid && !post.isDemo && post.userId === user.uid);
+  const remove = () => confirmDeletePost(post, () => { removeLocalPost(post.id); navigation.goBack(); });
   const report = () => Alert.alert("Report this post", "Choose the reason that best fits.", [
     { text: "Cancel", style: "cancel" },
     ...["Spam", "Unsafe advice", "Misleading", "Harassment"].map((reason) => ({
@@ -52,15 +55,16 @@ export default function FuelPostDetailScreen({ navigation, route }: any) {
   ]);
   return <ScreenShell title="Pre-workout fuel" back onBack={() => navigation.goBack()}>
     {post.meal.imageUri ? <Image source={{ uri: post.meal.imageUri }} style={styles.photo} /> : <View style={styles.placeholder}><Text style={styles.emoji}>{post.meal.ingredients.slice(0, 5).map((item: any) => item.food.emoji).join("  ")}</Text></View>}
-    <View style={styles.author}><View style={styles.avatar}><Text style={styles.avatarText}>{post.username[0].toUpperCase()}</Text></View><View style={styles.authorCopy}><View style={styles.authorNameRow}><Text style={styles.username}>@{post.username}</Text>{post.isDemo ? <Text style={styles.example}>STRICTLY EXAMPLE</Text> : null}</View><Text style={styles.context}>{post.workout.activityType} · {post.workout.durationMinutes} min · {post.workout.startsInMinutes} min before</Text></View></View>
+    <View style={styles.author}><View style={styles.avatar}><Text style={styles.avatarText}>{post.username[0].toUpperCase()}</Text></View><View style={styles.authorCopy}><View style={styles.authorNameRow}><Text style={styles.username}>@{post.username}</Text>{post.isDemo ? <Text style={styles.example}>STRICTLY EXAMPLE</Text> : null}</View><Text style={styles.context}>{post.workout.activityType.charAt(0).toUpperCase() + post.workout.activityType.slice(1)} · {post.workout.durationMinutes} min · ate {post.workout.startsInMinutes} min before</Text></View></View>
     <Text style={styles.name}>{post.meal.name}</Text>
     {post.caption ? <Text style={styles.caption}>{post.caption}</Text> : null}
-    {post.visibility.macros ? <View style={styles.fuel}><View style={styles.fuelTop}><View><Text style={styles.fuelLabel}>CARBOHYDRATES</Text><Text style={styles.carbs}>{Math.round(post.meal.macros.carbs)}g</Text></View><View style={styles.score}><Text style={styles.scoreValue}>{post.meal.score.total}</Text><Text style={styles.scoreLabel}>STRICTLY SCORE</Text></View></View><CarbSpeedBar fast={post.meal.macros.fastCarbs} medium={post.meal.macros.mediumCarbs} slow={post.meal.macros.slowCarbs} unknown={post.meal.macros.unclassifiedCarbs} /><View style={styles.macros}><Text style={styles.macro}>{Math.round(post.meal.macros.protein)}g protein</Text><Text style={styles.macro}>{Math.round(post.meal.macros.fat)}g fat</Text><Text style={styles.macro}>{Math.round(post.meal.macros.fiber)}g fiber</Text></View></View> : null}
+    {post.visibility.macros ? <View style={styles.fuel}><View style={styles.fuelTop}><View><Text style={styles.fuelLabel}>CARBOHYDRATES</Text><Text style={styles.carbs}>{Math.round(post.meal.macros.carbs)}g</Text></View><View accessible accessibilityLabel={`Strictly score ${post.meal.score.total} out of 100`} style={[styles.score, { backgroundColor: scoreColor(post.meal.score.total) }]}><Text style={styles.scoreValue}>{post.meal.score.total}</Text></View></View><CarbSpeedBar fast={post.meal.macros.fastCarbs} medium={post.meal.macros.mediumCarbs} slow={post.meal.macros.slowCarbs} unknown={post.meal.macros.unclassifiedCarbs} /><View style={styles.macros}><Text style={styles.macro}>{Math.round(post.meal.macros.protein)}g protein</Text><Text style={styles.macro}>{Math.round(post.meal.macros.fat)}g fat</Text><Text style={styles.macro}>{Math.round(post.meal.macros.fiber)}g fiber</Text></View></View> : null}
     {post.visibility.ingredients ? <><Text style={styles.sectionTitle}>What’s in it</Text><View style={styles.ingredients}>{post.meal.ingredients.map((item: any) => <View key={item.id} style={styles.ingredient}><Text style={styles.ingredientName}>{item.food.emoji}  {item.food.name}</Text><Text style={styles.ingredientAmount}>{Math.round(item.grams)} g</Text></View>)}</View></> : null}
     {!post.isDemo ? <View style={styles.useful}><Text style={styles.usefulValue}>{post.saves + (saved ? 1 : 0)}</Text><Text style={styles.usefulLabel}>athletes saved this</Text><View style={styles.utilityDivider} /><Text style={styles.usefulValue}>{post.copies}</Text><Text style={styles.usefulLabel}>copied it</Text></View> : <View style={styles.exampleNote}><Ionicons name="information-circle-outline" size={17} color={strictlyColors.accentText} /><Text style={styles.exampleNoteText}>This is an example meal from Strictly, not a live athlete post.</Text></View>}
     <TouchableOpacity style={styles.copy} onPress={copy}><Ionicons name="copy-outline" size={18} color={strictlyColors.onLime} /><Text style={styles.copyText}>Adapt to my {target?.carbTarget || "fuel"} g target</Text></TouchableOpacity>
     <TouchableOpacity style={styles.save} onPress={save}><Ionicons name={saved ? "bookmark" : "bookmark-outline"} size={18} color={strictlyColors.text} /><Text style={styles.saveText}>{saved ? "Saved to My Fuel" : "Save meal"}</Text></TouchableOpacity>
     {canModerate ? <View style={styles.safety}><TouchableOpacity style={styles.safetyAction} onPress={report}><Ionicons name="flag-outline" size={16} color={strictlyColors.textSoft} /><Text style={styles.safetyText}>Report post</Text></TouchableOpacity><TouchableOpacity style={styles.safetyAction} onPress={block}><Ionicons name="person-remove-outline" size={16} color={strictlyColors.danger} /><Text style={[styles.safetyText, styles.safetyTextDanger]}>Block athlete</Text></TouchableOpacity></View> : null}
+    {isMine ? <View style={styles.safety}><TouchableOpacity accessibilityRole="button" style={styles.safetyAction} onPress={remove}><Ionicons name="trash-outline" size={16} color={strictlyColors.danger} /><Text style={[styles.safetyText, styles.safetyTextDanger]}>Delete post</Text></TouchableOpacity></View> : null}
   </ScreenShell>;
 }
 
@@ -73,7 +77,7 @@ const styles = StyleSheet.create({
   avatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: strictlyColors.ink, alignItems: "center", justifyContent: "center" },
   avatarText: { fontFamily: strictlyType.bold,  color: strictlyColors.lime },
   username: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 12 },
-  context: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, marginTop: 3, textTransform: "capitalize" },
+  context: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 12, marginTop: 3 },
   example: { paddingHorizontal: 7, paddingVertical: 4, overflow: "hidden", borderRadius: strictlyRadius.pill, backgroundColor: strictlyColors.cream, fontFamily: strictlyType.semibold, color: strictlyColors.accentText, fontSize: 11, letterSpacing: 1.1 },
   name: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 29, letterSpacing: -0.8, marginTop: 19 },
   caption: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 13, lineHeight: 20, marginTop: 7 },
@@ -81,9 +85,8 @@ const styles = StyleSheet.create({
   fuelTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 13 },
   fuelLabel: { fontFamily: strictlyType.semibold, color: strictlyColors.sage, fontSize: 11, letterSpacing: 1.1 },
   carbs: { fontFamily: strictlyType.bold,  color: strictlyColors.white, fontSize: 35, marginTop: 2 },
-  score: { width: 66, height: 66, borderRadius: 33, backgroundColor: strictlyColors.lime, alignItems: "center", justifyContent: "center" },
-  scoreValue: { fontFamily: strictlyType.bold,  color: strictlyColors.onLime, fontSize: 23, lineHeight: 25 },
-  scoreLabel: { fontFamily: strictlyType.semibold, color: strictlyColors.onLime, fontSize: 11 },
+  score: { width: 58, height: 58, borderRadius: 29, backgroundColor: strictlyColors.lime, alignItems: "center", justifyContent: "center" },
+  scoreValue: { fontFamily: strictlyType.bold,  color: strictlyColors.onLime, fontSize: 22, letterSpacing: -0.4 },
   macros: { flexDirection: "row", gap: 8, marginTop: 13 },
   macro: { fontFamily: strictlyType.regular, color: strictlyColors.inverseTextSoft, fontSize: 11 },
   sectionTitle: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 18, marginTop: 23, marginBottom: 9 },
