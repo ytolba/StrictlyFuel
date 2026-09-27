@@ -11,7 +11,6 @@ import { loadNutritionProfile } from "../../services/nutritionProfileService";
 import { EMPTY_NUTRITION_PROFILE, type NutritionProfile } from "../../types/nutritionProfile";
 import { ScreenShell } from "../../components/fuel/ScreenShell";
 import { CarbSpeedBar } from "../../components/fuel/CarbSpeedBar";
-import { Overline } from "../../components/fuel/Section";
 import { Citations } from "../../components/fuel/Citations";
 import { FUEL_TARGET_SOURCES } from "../../data/researchSources";
 import { scoreColor, scoreLabel, strictlyColors, strictlyRadius, strictlyType } from "../../theme/strictlyTheme";
@@ -20,6 +19,14 @@ import { scoreColor, scoreLabel, strictlyColors, strictlyRadius, strictlyType } 
 type Recommendation = MealRecommendation;
 
 const PAGE_SIZE = 3;
+
+// Same destinations the Scan tab uses, so each option behaves identically wherever it is opened.
+const WAYS: { title: string; copy: string; icon: keyof typeof Ionicons.glyphMap; open: (navigation: any) => void }[] = [
+  { title: "Scan a meal", copy: "Photo of your plate", icon: "camera-outline", open: (navigation) => navigation.navigate("Main", { screen: "Scan" }) },
+  { title: "Barcode", copy: "Packaged food", icon: "barcode-outline", open: (navigation) => navigation.navigate("FoodCapture", { mode: "barcode", returnTo: "BuildMeal" }) },
+  { title: "Nutrition label", copy: "Read printed macros", icon: "document-text-outline", open: (navigation) => navigation.navigate("FoodCapture", { mode: "label", returnTo: "BuildMeal" }) },
+  { title: "Build it myself", copy: "Search and add foods", icon: "construct-outline", open: (navigation) => navigation.navigate("BuildMeal") },
+];
 
 export default function MealIdeasScreen({ navigation }: any) {
   const { workout, target, setIngredients } = useFuel();
@@ -150,9 +157,23 @@ export default function MealIdeasScreen({ navigation }: any) {
 
   return (
     <ScreenShell title="What to eat" eyebrow={`${target.carbTarget} G TARGET`} back onBack={() => navigation.goBack()}>
-      <Overline accent>Suggested pre-workout meals</Overline>
-      <Text style={styles.heading}>Pick what sounds good.</Text>
-      <Text style={styles.intro}>Real meals, scaled to this workout. Every recommendation shown scores 90+ and allergies stay hard exclusions.</Text>
+      <Text style={styles.heading}>Find food for this session.</Text>
+      <Text style={styles.intro}>Add what you already have, or pick a meal scaled to this workout.</Text>
+
+      {/* Every way to add food, in one place: the member's own food, then the suggestions below. */}
+      <Text style={styles.waysTitle}>Use your own food</Text>
+      <View style={styles.ways}>
+        {WAYS.map((way) => (
+          <TouchableOpacity key={way.title} style={styles.way} onPress={() => way.open(navigation)} accessibilityRole="button" accessibilityLabel={`${way.title}. ${way.copy}`}>
+            <View style={styles.wayIcon}><Ionicons name={way.icon} size={20} color={strictlyColors.lime} /></View>
+            <Text style={styles.wayTitleText}>{way.title}</Text>
+            <Text style={styles.wayCopy}>{way.copy}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <Text style={styles.suggestTitle}>Suggested meals</Text>
+      <Text style={styles.suggestIntro}>Real meals, scaled to this workout. Every one shown scores 90+, and allergies are always excluded.</Text>
 
       {hasMore ? (
         <TouchableOpacity style={styles.reshuffle} onPress={reshuffle} activeOpacity={0.8}>
@@ -199,6 +220,15 @@ const styles = StyleSheet.create({
   empty: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft },
   heading: { fontFamily: strictlyType.bold, color: strictlyColors.text, fontSize: 26, lineHeight: 30, letterSpacing: -0.9, marginTop: 6 },
   intro: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 14, lineHeight: 21, marginTop: 6, marginBottom: 16 },
+
+  waysTitle: { fontFamily: strictlyType.bold, color: strictlyColors.text, fontSize: 17, marginBottom: 10 },
+  ways: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 24 },
+  way: { flexBasis: "48%", flexGrow: 1, minHeight: 96, padding: 13, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
+  wayIcon: { width: 36, height: 36, borderRadius: 12, backgroundColor: strictlyColors.surfaceMuted, alignItems: "center", justifyContent: "center" },
+  wayTitleText: { fontFamily: strictlyType.bold, color: strictlyColors.text, fontSize: 14, marginTop: 9 },
+  wayCopy: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 12, marginTop: 2 },
+  suggestTitle: { fontFamily: strictlyType.bold, color: strictlyColors.text, fontSize: 17 },
+  suggestIntro: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 13, lineHeight: 19, marginTop: 4, marginBottom: 12 },
 
   reshuffle: { flexDirection: "row", alignItems: "center", gap: 11, minHeight: 58, paddingHorizontal: 15, marginBottom: 12, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.lime },
   reshuffleCopy: { flex: 1 },
