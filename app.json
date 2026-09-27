@@ -31,8 +31,8 @@
       "supportsTablet": false,
       "usesAppleSignIn": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "StrictlyFuel uses the camera to photograph your meal or a product label so it can estimate the nutrition.",
-        "NSPhotoLibraryUsageDescription": "StrictlyFuel needs access to your photos so you can pick an existing meal photo to analyse.",
+        "NSCameraUsageDescription": "StrictlyFuel uses the camera to photograph your meal or a product label so it can estimate the nutrition, or to add a photo to a meal you share.",
+        "NSPhotoLibraryUsageDescription": "StrictlyFuel needs access to your photos so you can pick a meal photo to analyse or add to a meal you share.",
         "NSPhotoLibraryAddUsageDescription": "StrictlyFuel saves the fuel cards you create to your photo library when you ask it to.",
         "NSHealthShareUsageDescription": "StrictlyFuel reads workouts you choose to share so it can help you repeat and fuel similar sessions.",
         "NSHealthUpdateUsageDescription": "StrictlyFuel only reads workouts you choose to share and does not write data to Apple Health.",
@@ -63,20 +63,20 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "StrictlyFuel uses the camera to photograph your meal or a product label so it can estimate the nutrition."
+          "cameraPermission": "StrictlyFuel uses the camera to photograph your meal or a product label so it can estimate the nutrition, or to add a photo to a meal you share."
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "StrictlyFuel needs access to your photos so you can pick an existing meal photo to analyse.",
-          "cameraPermission": "StrictlyFuel uses the camera to photograph your meal or a product label so it can estimate the nutrition."
+          "photosPermission": "StrictlyFuel needs access to your photos so you can pick a meal photo to analyse or add to a meal you share.",
+          "cameraPermission": "StrictlyFuel uses the camera to photograph your meal or a product label so it can estimate the nutrition, or to add a photo to a meal you share."
         }
       ],
       [
         "expo-media-library",
         {
-          "photosPermission": "StrictlyFuel needs access to your photos so you can choose a meal image.",
+          "photosPermission": "StrictlyFuel needs access to your photos so you can choose a meal image to analyse or share.",
           "savePhotosPermission": "StrictlyFuel saves the fuel cards you create to your photo library when you ask it to.",
           "isAccessMediaLocationEnabled": false
         }

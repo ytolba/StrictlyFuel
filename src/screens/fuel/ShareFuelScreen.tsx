@@ -2,6 +2,7 @@ import React, { useRef, useState } from "react";
 import { Alert, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as MediaLibrary from "expo-media-library";
+import * as ImagePicker from "expo-image-picker";
 import NativeShare, { Social } from "react-native-share";
 import { captureRef } from "react-native-view-shot";
 import { useFuel } from "../../contexts/FuelContext";
@@ -29,7 +30,7 @@ const didCancel = (error: unknown) => {
 
 export default function ShareFuelScreen({ navigation, route }: any) {
   const { user } = useAuth();
-  const { meals, workout, target, addLocalPost } = useFuel();
+  const { meals, workout, target, addLocalPost, setMealPhoto } = useFuel();
   const meal = meals.find((item) => item.id === route.params?.mealId) || meals[0];
   const cardRef = useRef<View | null>(null);
   const [caption, setCaption] = useState("");
@@ -41,6 +42,28 @@ export default function ShareFuelScreen({ navigation, route }: any) {
   if (!meal || !workout || !target) {
     return <ScreenShell title="Share fuel" back onBack={() => navigation.goBack()}><Text style={styles.missing}>Meal unavailable.</Text></ScreenShell>;
   }
+
+  // Built, barcode and label meals have no photo. Members can add one here; it rides the same
+  // publish path as a scanned photo, so it is safety-checked before anyone else sees it.
+  // A scanned meal keeps the photo its estimate came from.
+  const canChoosePhoto = meal.source !== "camera";
+  const choosePhoto = async (from: "camera" | "library") => {
+    const permission = from === "camera" ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      return Alert.alert(from === "camera" ? "Camera access needed" : "Photos access needed", `Allow StrictlyFuel to use your ${from === "camera" ? "camera" : "photos"} in Settings to add a meal photo.`);
+    }
+    const options: ImagePicker.ImagePickerOptions = { mediaTypes: ["images"], quality: 0.9, allowsEditing: true, aspect: [4, 5] };
+    const result = from === "camera" ? await ImagePicker.launchCameraAsync(options) : await ImagePicker.launchImageLibraryAsync(options);
+    const uri = result.canceled ? undefined : result.assets[0]?.uri;
+    if (!uri) return;
+    setPhotoReady(false);
+    setMealPhoto(meal.id, uri);
+  };
+  const photoOptions = () => Alert.alert(meal.imageUri ? "Change meal photo" : "Add a meal photo", undefined, [
+    { text: "Take photo", onPress: () => { void choosePhoto("camera"); } },
+    { text: "Choose from library", onPress: () => { void choosePhoto("library"); } },
+    { text: "Cancel", style: "cancel" },
+  ]);
 
   const captureCard = async () => {
     if (meal.imageUri && !photoReady) throw new Error("Your meal photo is still loading. Try again in a second.");
@@ -133,6 +156,16 @@ export default function ShareFuelScreen({ navigation, route }: any) {
   return (
     <ScreenShell title="Share your fuel" eyebrow="MAKE IT YOURS" back onBack={() => navigation.goBack()}>
       <Text style={styles.intro}>A clean, story-sized card made from your photo and workout numbers.</Text>
+      {canChoosePhoto ? (
+        <TouchableOpacity accessibilityRole="button" activeOpacity={0.78} style={styles.addPhoto} onPress={photoOptions}>
+          <View style={styles.addPhotoIcon}><Ionicons name={meal.imageUri ? "image-outline" : "camera-outline"} size={20} color={strictlyColors.onLime} /></View>
+          <View style={styles.addPhotoCopy}>
+            <Text style={styles.addPhotoTitle}>{meal.imageUri ? "Change meal photo" : "Add a meal photo"}</Text>
+            <Text style={styles.addPhotoText}>{meal.imageUri ? "Used on your card and community post." : "Optional. Shown on your card and community post."}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={strictlyColors.textSoft} />
+        </TouchableOpacity>
+      ) : null}
       <View style={styles.cardStage}>
         <View ref={cardRef} collapsable={false} style={styles.cardCapture}>
           <StrictlyFuelShareCard meal={meal} workout={workout} onPhotoLoadEnd={() => setPhotoReady(true)} />
@@ -202,6 +235,11 @@ export default function ShareFuelScreen({ navigation, route }: any) {
 const styles = StyleSheet.create({
   missing: { color: strictlyColors.text },
   intro: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 13, lineHeight: 19, marginTop: -4, marginBottom: 15 },
+  addPhoto: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 64, padding: 12, marginBottom: 12, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
+  addPhotoIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: strictlyColors.lime, alignItems: "center", justifyContent: "center" },
+  addPhotoCopy: { flex: 1 },
+  addPhotoTitle: { fontFamily: strictlyType.bold, color: strictlyColors.text, fontSize: 14 },
+  addPhotoText: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 12, marginTop: 2 },
   cardStage: { alignItems: "center", paddingVertical: 10, borderRadius: strictlyRadius.xlarge, backgroundColor: strictlyColors.surfaceMuted, borderWidth: 1, borderColor: strictlyColors.border, overflow: "hidden" },
   cardCapture: { width: 320, height: 568, borderRadius: 20, overflow: "hidden", shadowColor: "#000", shadowOpacity: 0.24, shadowRadius: 18, shadowOffset: { width: 0, height: 8 } },
   sectionTitle: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 16, marginTop: 23, marginBottom: 10 },
