@@ -70,13 +70,17 @@ export default function FuelProfileScreen({ navigation }: any) {
 
   return (
     <ScreenShell title="Profile" back onBack={() => navigation.goBack()}>
-      <View style={styles.profile}>
+      <TouchableOpacity style={styles.profile} onPress={() => navigation.navigate("EditProfile")} accessibilityLabel="Edit your profile">
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>{name[0].toUpperCase()}</Text>
         </View>
         <Text style={styles.name}>{name}</Text>
         <Text style={styles.username}>@{username}</Text>
-      </View>
+        <View style={styles.editHint}>
+          <Ionicons name="create-outline" size={14} color={strictlyColors.onLime} />
+          <Text style={styles.editHintText}>Edit profile</Text>
+        </View>
+      </TouchableOpacity>
 
       <View style={styles.stats}>
         {([[localPosts.length, "Fuel posts"], [savedPostIds.length, "Saved"], [meals.length, "Meals logged"]] as const).map(([value, label]) => (
@@ -104,6 +108,7 @@ export default function FuelProfileScreen({ navigation }: any) {
       </TouchableOpacity>
 
       <Text style={styles.sectionTitle}>Settings</Text>
+      {row({ icon: "id-card-outline", label: "Name, username and bio", onPress: () => navigation.navigate("EditProfile") })}
       {row({ icon: "person-outline", label: "Body and units", onPress: () => navigation.navigate("Settings") })}
       {row({ icon: "nutrition-outline", label: "Diet, allergies and sensitivities", onPress: () => navigation.navigate("Settings") })}
 
@@ -170,6 +175,8 @@ export default function FuelProfileScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   profile: { alignItems: "center", paddingTop: 16 },
+  editHint: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 12, paddingHorizontal: 13, height: 34, borderRadius: strictlyRadius.pill, backgroundColor: strictlyColors.lime },
+  editHintText: { fontFamily: strictlyType.bold, color: strictlyColors.onLime, fontSize: 12 },
   avatar: { width: 78, height: 78, borderRadius: 39, backgroundColor: strictlyColors.ink, alignItems: "center", justifyContent: "center" },
   avatarText: { fontFamily: strictlyType.bold,  color: strictlyColors.lime, fontSize: 29 },
   name: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 25, marginTop: 13 },

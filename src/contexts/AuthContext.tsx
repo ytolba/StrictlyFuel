@@ -38,6 +38,8 @@ interface AuthContextType {
   continueWithoutAccount: () => Promise<void>;
   signInWithApple: () => Promise<User | null>;
   signUpWithApple: () => Promise<void>;
+  /** Writes the name onto the auth user and refreshes the local copy the app renders. */
+  refreshUser: (input?: { firstName?: string; lastName?: string }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -370,10 +372,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     Alert.alert("Account deleted", "Your account and its data have been removed.");
   };
 
+  const refreshUser = async (input?: { firstName?: string; lastName?: string }) => {
+    if (input && (input.firstName !== undefined || input.lastName !== undefined)) {
+      const firstName = (input.firstName ?? user?.firstName ?? "").trim();
+      const lastName = (input.lastName ?? user?.lastName ?? "").trim();
+      const { error } = await supabase.auth.updateUser({
+        data: { first_name: firstName, last_name: lastName, display_name: [firstName, lastName].filter(Boolean).join(" ") },
+      });
+      if (error) throw new Error(error.message);
+    }
+    const { data } = await supabase.auth.getUser();
+    if (data.user) setUser(mapUser(data.user));
+  };
+
   const value = useMemo<AuthContextType>(() => ({
     user, loading, errorMessage, isPasswordRecovery, passwordRecoveryReady, signInWithEmail, signOut, signUpWithEmail, verifySignUpCode, resendSignUpCode, resetPassword, updatePassword,
     cancelPasswordRecovery, clearError, deleteAccount, continueWithoutAccount, signInWithApple,
     signUpWithApple: async () => { await signInWithApple(); },
+    refreshUser,
   }), [user, loading, errorMessage, isPasswordRecovery, passwordRecoveryReady]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

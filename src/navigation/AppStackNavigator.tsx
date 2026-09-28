@@ -12,6 +12,7 @@ import FuelPostDetailScreen from "../screens/fuel/FuelPostDetailScreen";
 import SavedMealsScreen from "../screens/fuel/SavedMealsScreen";
 import FoodCaptureScreen from "../screens/fuel/FoodCaptureScreen";
 import FuelProfileScreen from "../screens/fuel/FuelProfileScreen";
+import EditProfileScreen from "../screens/fuel/EditProfileScreen";
 import MealIdeasScreen from "../screens/fuel/MealIdeasScreen";
 import FuelSettingsScreen from "../screens/fuel/FuelSettingsScreen";
 import PaywallScreen from "../screens/fuel/PaywallScreen";
@@ -23,6 +24,7 @@ import { strictlyColors } from "../theme/strictlyTheme";
 
 export type AppStackParamList = {
   Main: { screen?: string; params?: unknown } | undefined;
+  EditProfile: undefined;
   FuelTarget: undefined;
   Recover: undefined;
   BuildMeal: { suggestedName?: string } | undefined;
@@ -64,6 +66,7 @@ export default function AppStackNavigator() {
     <Stack.Screen name="SavedMeals" component={SavedMealsScreen} />
     <Stack.Screen name="FoodCapture" component={FoodCaptureScreen} options={{ presentation: "modal", ...TransitionPresets.ModalSlideFromBottomIOS }} />
     <Stack.Screen name="Profile" component={FuelProfileScreen} />
+    <Stack.Screen name="EditProfile" component={EditProfileScreen} />
     <Stack.Screen name="MealIdeas" component={MealIdeasScreen} />
     <Stack.Screen name="Settings" component={FuelSettingsScreen} />
     <Stack.Screen name="Paywall" component={PaywallScreen} options={{ presentation: "modal", ...TransitionPresets.ModalSlideFromBottomIOS }} />
