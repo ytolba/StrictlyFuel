@@ -29,6 +29,15 @@ verify_jwt = true
 [functions.analyze-food-label]
 verify_jwt = true
 
+[functions.publish-fuel-post]
+verify_jwt = true
+
+[functions.review-fuel-post]
+verify_jwt = true
+
+[functions.delete-fuel-post]
+verify_jwt = true
+
 [functions.delete-account]
 verify_jwt = true
 

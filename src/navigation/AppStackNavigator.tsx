@@ -2,6 +2,7 @@ import React from "react";
 import { createStackNavigator, TransitionPresets } from "@react-navigation/stack";
 import AppTabNavigator from "./AppTabNavigator";
 import FuelTargetScreen from "../screens/fuel/FuelTargetScreen";
+import PostWorkoutMealsScreen from "../screens/fuel/PostWorkoutMealsScreen";
 import MealBuilderScreen from "../screens/fuel/MealBuilderScreen";
 import MealAnalysisScreen from "../screens/fuel/MealAnalysisScreen";
 import FixMealScreen from "../screens/fuel/FixMealScreen";
@@ -11,17 +12,21 @@ import FuelPostDetailScreen from "../screens/fuel/FuelPostDetailScreen";
 import SavedMealsScreen from "../screens/fuel/SavedMealsScreen";
 import FoodCaptureScreen from "../screens/fuel/FoodCaptureScreen";
 import FuelProfileScreen from "../screens/fuel/FuelProfileScreen";
+import EditProfileScreen from "../screens/fuel/EditProfileScreen";
 import MealIdeasScreen from "../screens/fuel/MealIdeasScreen";
 import FuelSettingsScreen from "../screens/fuel/FuelSettingsScreen";
 import PaywallScreen from "../screens/fuel/PaywallScreen";
 import HealthWorkoutsScreen from "../screens/fuel/HealthWorkoutsScreen";
 import RaceModeScreen from "../screens/fuel/RaceModeScreen";
+import RacePlanScreen, { type RacePlanParams } from "../screens/fuel/RacePlanScreen";
 import type { CommunityFilters, FuelPost } from "../types/fuel";
 import { strictlyColors } from "../theme/strictlyTheme";
 
 export type AppStackParamList = {
   Main: { screen?: string; params?: unknown } | undefined;
+  EditProfile: undefined;
   FuelTarget: undefined;
+  Recover: undefined;
   BuildMeal: { suggestedName?: string } | undefined;
   MealAnalysis: { mealId: string };
   FixMeal: { mealId: string };
@@ -36,6 +41,7 @@ export type AppStackParamList = {
   Paywall: undefined;
   HealthWorkouts: undefined;
   RaceMode: undefined;
+  RacePlan: RacePlanParams;
 };
 
 const Stack = createStackNavigator<AppStackParamList>();
@@ -50,6 +56,7 @@ export default function AppStackNavigator() {
   }}>
     <Stack.Screen name="Main" component={AppTabNavigator} />
     <Stack.Screen name="FuelTarget" component={FuelTargetScreen} />
+    <Stack.Screen name="Recover" component={PostWorkoutMealsScreen} />
     <Stack.Screen name="BuildMeal" component={MealBuilderScreen} />
     <Stack.Screen name="MealAnalysis" component={MealAnalysisScreen} />
     <Stack.Screen name="FixMeal" component={FixMealScreen} />
@@ -59,10 +66,12 @@ export default function AppStackNavigator() {
     <Stack.Screen name="SavedMeals" component={SavedMealsScreen} />
     <Stack.Screen name="FoodCapture" component={FoodCaptureScreen} options={{ presentation: "modal", ...TransitionPresets.ModalSlideFromBottomIOS }} />
     <Stack.Screen name="Profile" component={FuelProfileScreen} />
+    <Stack.Screen name="EditProfile" component={EditProfileScreen} />
     <Stack.Screen name="MealIdeas" component={MealIdeasScreen} />
     <Stack.Screen name="Settings" component={FuelSettingsScreen} />
     <Stack.Screen name="Paywall" component={PaywallScreen} options={{ presentation: "modal", ...TransitionPresets.ModalSlideFromBottomIOS }} />
     <Stack.Screen name="HealthWorkouts" component={HealthWorkoutsScreen} />
     <Stack.Screen name="RaceMode" component={RaceModeScreen} />
+    <Stack.Screen name="RacePlan" component={RacePlanScreen} />
   </Stack.Navigator>;
 }

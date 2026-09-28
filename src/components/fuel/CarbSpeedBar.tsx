@@ -1,6 +1,7 @@
-import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useRef } from "react";
+import { Animated, Easing, StyleSheet, Text, View } from "react-native";
 import { carbSpeedMeta, strictlyColors, strictlyRadius, strictlyType } from "../../theme/strictlyTheme";
+import { useReducedMotion } from "../../hooks/useReducedMotion";
 
 const ORDER = ["fast", "medium", "slow", "unknown"] as const;
 type Speed = (typeof ORDER)[number];
@@ -18,14 +19,26 @@ export type CarbSpeedBarProps = {
   target?: { fast: number; medium: number; slow: number };
   /** Rendering on a dark high-emphasis card rather than a normal surface. */
   onDark?: boolean;
+  /** Reveal the split when a new fuel result appears. */
+  animate?: boolean;
 };
 
 const valueFor = (speed: Speed, fast: number, medium: number, slow: number, unknown: number) =>
   speed === "fast" ? fast : speed === "medium" ? medium : speed === "slow" ? slow : unknown;
 
-export function CarbSpeedBar({ fast, medium, slow, unknown = 0, compact = false, showHints = false, target, onDark = false }: CarbSpeedBarProps) {
+export function CarbSpeedBar({ fast, medium, slow, unknown = 0, compact = false, showHints = false, target, onDark = false, animate = false }: CarbSpeedBarProps) {
   const total = fast + medium + slow + unknown;
   const safeTotal = Math.max(1, total);
+  const reducedMotion = useReducedMotion();
+  const fill = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    fill.stopAnimation();
+    if (!animate || reducedMotion || total <= 0) { fill.setValue(1); return; }
+    fill.setValue(0);
+    const animation = Animated.timing(fill, { toValue: 1, duration: 420, easing: Easing.out(Easing.cubic), useNativeDriver: false });
+    animation.start();
+    return () => animation.stop();
+  }, [animate, fast, medium, slow, unknown, reducedMotion, total, fill]);
 
   return (
     <View>
@@ -33,11 +46,13 @@ export function CarbSpeedBar({ fast, medium, slow, unknown = 0, compact = false,
         {total <= 0 ? (
           <View style={styles.barEmpty} />
         ) : (
-          ORDER.map((speed) => {
-            const value = valueFor(speed, fast, medium, slow, unknown);
-            if (value <= 0) return null;
-            return <View key={speed} style={{ flex: value / safeTotal, backgroundColor: carbSpeedMeta[speed].color }} />;
-          })
+          <Animated.View style={[styles.barFill, { width: fill.interpolate({ inputRange: [0, 1], outputRange: ["0%", "100%"] }) }]}>
+            {ORDER.map((speed) => {
+              const value = valueFor(speed, fast, medium, slow, unknown);
+              if (value <= 0) return null;
+              return <View key={speed} style={{ flex: value / safeTotal, backgroundColor: carbSpeedMeta[speed].color }} />;
+            })}
+          </Animated.View>
         )}
       </View>
 
@@ -98,13 +113,14 @@ export function CarbSpeedBar({ fast, medium, slow, unknown = 0, compact = false,
 const styles = StyleSheet.create({
   bar: { height: 12, borderRadius: strictlyRadius.pill, overflow: "hidden", flexDirection: "row", backgroundColor: strictlyColors.surfaceMuted },
   barCompact: { height: 7 },
+  barFill: { height: "100%", flexDirection: "row", overflow: "hidden" },
   barEmpty: { flex: 1, backgroundColor: strictlyColors.surfaceMuted },
 
   inlineLegend: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginTop: 10 },
   inlineItem: { flexDirection: "row", alignItems: "center", gap: 5 },
   dot: { width: 8, height: 8, borderRadius: 4 },
-  inlineText: { fontFamily: strictlyType.sans, fontSize: 11, color: strictlyColors.textSoft },
-  inlineValue: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text },
+  inlineText: { fontFamily: strictlyType.regular, fontSize: 11, color: strictlyColors.textSoft },
+  inlineValue: { fontFamily: strictlyType.bold,  color: strictlyColors.text },
 
   rows: { marginTop: 12, gap: 7 },
   row: { flexDirection: "row", gap: 11, padding: 12, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.surfaceMuted },
@@ -112,13 +128,13 @@ const styles = StyleSheet.create({
   stripe: { width: 4, borderRadius: 2 },
   rowCopy: { flex: 1 },
   rowTop: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between" },
-  rowLabel: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 13 },
-  rowValue: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 14 },
-  rowShare: { fontFamily: strictlyType.mono, fontWeight: "400", color: strictlyColors.textSoft, fontSize: 10 },
-  rowTarget: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 10, marginTop: 4 },
-  onTrack: { color: strictlyColors.good, fontFamily: strictlyType.sansMedium, fontWeight: "700" },
-  offTrack: { color: strictlyColors.clay, fontFamily: strictlyType.sansMedium, fontWeight: "700" },
-  rowHint: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 10, lineHeight: 15, marginTop: 4 },
+  rowLabel: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 13 },
+  rowValue: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 14 },
+  rowShare: { fontFamily: strictlyType.semibold,  color: strictlyColors.textSoft, fontSize: 11 },
+  rowTarget: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, marginTop: 4 },
+  onTrack: { color: strictlyColors.good, fontFamily: strictlyType.bold},
+  offTrack: { color: strictlyColors.clay, fontFamily: strictlyType.bold},
+  rowHint: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 15, marginTop: 4 },
 
   onDarkStrong: { color: strictlyColors.white },
   onDarkSoft: { color: strictlyColors.sage },

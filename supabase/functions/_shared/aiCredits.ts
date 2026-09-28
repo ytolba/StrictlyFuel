@@ -50,6 +50,28 @@ export async function consumeAiCredit(
   return row as CreditResult;
 }
 
+/**
+ * Gives back the credit this request just spent, for a scan that returned nothing usable
+ * (provider outage, timeout, cut-off or unreadable reply). Removes only the newest matching
+ * row from the last few minutes, so it can never refund more than was charged.
+ */
+export async function refundAiCredit(userId: string | null, feature: "scan" | "reshuffle") {
+  try {
+    const url = Deno.env.get("SUPABASE_URL");
+    const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!url || !key || !userId) return;
+    const admin = createClient(url, key, { auth: { persistSession: false } });
+    const since = new Date(Date.now() - 5 * 60_000).toISOString();
+    const { data } = await admin.from("ai_usage_events").select("id")
+      .eq("user_id", userId).eq("feature", feature).gte("created_at", since)
+      .order("created_at", { ascending: false }).limit(1);
+    const id = data?.[0]?.id;
+    if (id != null) await admin.from("ai_usage_events").delete().eq("id", id);
+  } catch (error) {
+    console.error("ai credit refund failed", error instanceof Error ? error.message : error);
+  }
+}
+
 /** 429 body shaped so the app can show an accurate paywall prompt. */
 export function limitReachedResponse(result: CreditResult) {
   return Response.json(

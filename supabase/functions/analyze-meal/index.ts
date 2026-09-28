@@ -1,5 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { consumeAiCredit, limitReachedResponse } from "../_shared/aiCredits.ts";
+import { consumeAiCredit, limitReachedResponse, refundAiCredit } from "../_shared/aiCredits.ts";
 import { callVision, callerId, corsHeaders } from "../_shared/ai.ts";
 
 /**
@@ -74,6 +74,7 @@ const schema = {
 const INSTRUCTIONS = [
   "You are the visual evidence layer for a workout-fueling app. Identify every visible food and topping separately, then estimate edible grams. Photos may show the same plate from two angles; reconcile them as one meal and never duplicate an item across views.",
   "First count discrete items. Use count-based portions for foods with reliable standard units such as rice cakes, bread slices, whole fruit, gels, or packaged pieces. Use geometry only for amorphous foods.",
+  "detectedCount with detectedUnit piece means whole, uncut items only (2 whole bananas, 2 rice cakes). Sliced or chopped fruit is never a piece count: for banana coins, apple slices or berries on a topping, set detectedUnit to slice, count the visible slices, and estimate estimatedGrams from their total size. A medium banana is about 118 g and yields 12 to 18 coin slices.",
   "Return a realistic lower and upper gram bound for every item. Bounds must reflect occlusion, camera angle, thickness, and lack of scale. Never output a narrow range merely because a point estimate was requested.",
   "Use generic visible food names such as chocolate sandwich cookies, white rice, grilled chicken, or banana. Do not guess or add a brand name. Name a branded product only when its distinctive packaging or appearance makes the identity genuinely obvious, such as a clearly visible Oreo cookie.",
   "mealName must be a short plain description of the visible foods, not a guessed recipe title or restaurant product.",
@@ -147,14 +148,19 @@ function defaultQuantityOptions(name: string) {
   return [];
 }
 
-function normalize(raw: any, imageCount: number, refinement: boolean) {
+// Above this, one item on one plate is almost always a unit or counting mistake (nine banana
+// slices read as nine bananas), so it is shown as a question instead of silently trusted.
+const IMPLAUSIBLE_ITEM_GRAMS = 750;
+
+export function normalize(raw: any, imageCount: number, refinement: boolean) {
   const reliableScale = raw.hasReliableScaleReference === true;
   const items = Array.isArray(raw.items) ? raw.items.slice(0, 16).map((item: any, index: number) => {
     const fallback = item.fallbackNutritionPer100g || {};
     const estimatedGrams = Math.max(1, round(number(item.estimatedGrams, 5000)));
     const portionBasis = ["count", "package", "geometry", "user", "unknown"].includes(item.portionBasis) ? item.portionBasis : "unknown";
     const highImpact = HIGH_IMPACT_VISUAL_PORTION.test(String(item.name || ""));
-    const needsQuantity = Boolean(item.requiresQuantityConfirmation) || (!refinement && highImpact && !["package", "user"].includes(portionBasis));
+    const implausible = estimatedGrams > IMPLAUSIBLE_ITEM_GRAMS && portionBasis !== "user";
+    const needsQuantity = Boolean(item.requiresQuantityConfirmation) || implausible || (!refinement && highImpact && !["package", "user"].includes(portionBasis));
     const denseVisual = highImpact && !["package", "user"].includes(portionBasis);
     const lowerFloor = denseVisual ? estimatedGrams * 0.5 : !reliableScale && portionBasis === "geometry" ? estimatedGrams * 0.72 : estimatedGrams * 0.9;
     const upperFloor = denseVisual ? estimatedGrams * 1.8 : !reliableScale && portionBasis === "geometry" ? estimatedGrams * 1.35 : estimatedGrams * 1.1;
@@ -179,7 +185,7 @@ function normalize(raw: any, imageCount: number, refinement: boolean) {
         : [],
       foodState: ["raw", "dry", "cooked", "prepared", "unknown"].includes(item.foodState) ? item.foodState : "unknown",
       foodConfidence: round(number(item.foodConfidence, 100)),
-      portionConfidence: Math.min(round(number(item.portionConfidence, 100)), portionCap, needsQuantity ? 55 : 100),
+      portionConfidence: Math.min(round(number(item.portionConfidence, 100)), portionCap, needsQuantity ? 55 : 100, implausible ? 30 : 100),
       fallbackNutritionPer100g: {
         calories: round(number(fallback.calories, 1000)), carbs: round(number(fallback.carbs, 100), 1),
         protein: round(number(fallback.protein, 100), 1), fat: round(number(fallback.fat, 100), 1),
@@ -233,8 +239,9 @@ function normalize(raw: any, imageCount: number, refinement: boolean) {
   };
 }
 
-Deno.serve(async (request) => {
+export async function handleRequest(request: Request): Promise<Response> {
   if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  let chargedUser: string | null = null;
   try {
     const apiKey = Deno.env.get("OPENAI_API_KEY");
     if (!apiKey) return Response.json({ error: "Meal analysis has not been configured yet." }, { status: 503, headers: corsHeaders });
@@ -254,6 +261,7 @@ Deno.serve(async (request) => {
       const credit = await consumeAiCredit(request, "scan");
       if (!credit) return Response.json({ error: "We could not verify your scan allowance. Please sign in and try again." }, { status: 401, headers: corsHeaders });
       if (!credit.allowed) return limitReachedResponse(credit);
+      chargedUser = userId;
     }
 
     const result = await callVision({
@@ -268,16 +276,29 @@ Deno.serve(async (request) => {
       schema,
       // Sized for the trimmed schema: ~8 short fields per food, up to 16 foods.
       maxOutputTokens: 2600,
-      reasoningEffort: "medium",
+      reasoningEffort: "low",
     });
 
-    if (!result.ok) {
-      return Response.json({ error: "The meal estimate could not finish. Please try the photo again." }, { status: 502, headers: corsHeaders });
+    let parsed: any = null;
+    if (result.ok) { try { parsed = JSON.parse(result.text); } catch { parsed = null; } }
+    const estimate = parsed ? normalize(parsed, images.length, isRefinement) : null;
+    // A scan that produced nothing usable gives the credit back, so an outage never costs the member a scan.
+    if (!estimate || !estimate.items.length) {
+      if (!isRefinement) await refundAiCredit(userId, "scan");
+      chargedUser = null;
+      const message = !estimate
+        ? "The meal estimate could not finish. Your scan was not used. Please try the photo again."
+        : "No food was found in this photo. Your scan was not used. Try again with the whole plate in frame.";
+      return Response.json({ error: message }, { status: estimate ? 422 : 502, headers: corsHeaders });
     }
     const nextToken = signingSecret ? await createRefinementToken(userId, imageEvidence, signingSecret) : "";
-    return Response.json({ ...normalize(JSON.parse(result.text), images.length, isRefinement), refinementToken: nextToken }, { headers: corsHeaders });
+    return Response.json({ ...estimate, refinementToken: nextToken }, { headers: corsHeaders });
   } catch (error) {
     console.error(error);
-    return Response.json({ error: error instanceof Error ? error.message : "Meal analysis failed." }, { status: 500, headers: corsHeaders });
+    if (chargedUser) await refundAiCredit(chargedUser, "scan");
+    // Internal error text (parser or provider details) is not useful to a member.
+    return Response.json({ error: "Meal analysis failed. Please try again." }, { status: 500, headers: corsHeaders });
   }
-});
+}
+
+if (Deno.env.get("MEAL_ANALYSIS_TEST") !== "1") Deno.serve(handleRequest);

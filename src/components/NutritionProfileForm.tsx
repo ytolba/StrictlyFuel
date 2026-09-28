@@ -90,12 +90,12 @@ export const NutritionProfileForm = ({ profile, onChange, sections = ["sensitivi
 
 const styles = StyleSheet.create({
   section: { marginBottom: 28 },
-  eyebrow: { color: strictlyColors.good, fontFamily: strictlyType.mono, fontSize: 10, letterSpacing: 1.1, marginBottom: 8 },
-  title: { color: strictlyColors.text, fontFamily: strictlyType.sansBold, fontWeight: "700", fontSize: 22, letterSpacing: -0.5 },
-  description: { color: strictlyColors.textSoft, fontFamily: strictlyType.sans, fontSize: 14, lineHeight: 20, marginTop: 7, marginBottom: 16 },
+  eyebrow: { color: strictlyColors.good, fontFamily: strictlyType.semibold, fontSize: 11, letterSpacing: 1.1, marginBottom: 8 },
+  title: { color: strictlyColors.text, fontFamily: strictlyType.bold,  fontSize: 22, letterSpacing: -0.5 },
+  description: { color: strictlyColors.textSoft, fontFamily: strictlyType.regular, fontSize: 14, lineHeight: 20, marginTop: 7, marginBottom: 16 },
   chipGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
   chip: { minHeight: 39, flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 13, borderWidth: 1, borderColor: strictlyColors.borderStrong, borderRadius: strictlyRadius.pill, backgroundColor: strictlyColors.surface },
-  chipSelected: { backgroundColor: strictlyColors.ink, borderColor: strictlyColors.ink },
-  chipText: { color: strictlyColors.text, fontFamily: strictlyType.sansMedium, fontWeight: "500", fontSize: 13 },
-  chipTextSelected: { color: strictlyColors.paper },
+  chipSelected: { backgroundColor: strictlyColors.lime, borderColor: strictlyColors.lime },
+  chipText: { color: strictlyColors.text, fontFamily: strictlyType.medium,  fontSize: 13 },
+  chipTextSelected: { color: strictlyColors.onLime },
 });

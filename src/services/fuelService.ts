@@ -1,6 +1,8 @@
 import { supabase } from "../lib/supabase";
 import type { FuelMeal, FuelPost, FuelTarget, WorkoutDraft } from "../types/fuel";
 import { nutritionForIngredient } from "../logic/nutritionEngine";
+import * as ImageManipulator from "expo-image-manipulator";
+import { throwFunctionError } from "./functionErrors";
 
 const scorePercent = (score: number, max: number) => Math.max(0, Math.min(100, Math.round((score / Math.max(1, max)) * 100)));
 
@@ -64,60 +66,42 @@ export async function saveMeal(userId: string, meal: FuelMeal) {
   if (analysisError) throw analysisError;
 }
 
-/**
- * Turn a Postgres/PostgREST failure into something an athlete can act on.
- *
- * The raw messages leak schema detail ("insert or update on table
- * \"fuel_posts\" violates foreign key constraint ...") and tell the person
- * nothing about what to do next.
- */
-function describePublishError(error: { code?: string; message?: string }): string {
-  switch (error.code) {
-    case "22P02": // invalid input syntax — almost always a malformed uuid
-      return "This post could not be created. Please rebuild the meal and try sharing again.";
-    case "23503": // foreign key violation — the meal or workout is not saved yet
-      return "This meal hasn’t finished saving to your account yet. Wait a moment and try again.";
-    case "23505": // unique violation — user_id + meal_id already published
-      return "You’ve already shared this meal with the community.";
-    case "42501": // RLS denied
-      return "You can only share meals saved to your own account. Try signing out and back in.";
-    case "PGRST301":
-      return "Your session has expired. Sign in again and try sharing.";
-    default:
-      return error.message || "Your meal could not be published. Please try again.";
-  }
-}
-
-/**
- * Publish a meal to the community feed.
- *
- * `fuel_posts` has a foreign key to both `meals` and `workouts`, and its insert
- * policy re-checks that the meal belongs to the caller. Elsewhere in the app
- * meals are saved fire-and-forget, so by the time someone shares one the row
- * may never have reached the server — publishing therefore persists the workout
- * and the meal first, and only then creates the post.
- */
+/** Save the meal, then submit the exact photo and caption for server-side review. */
 export async function publishFuelPost(
   userId: string,
   post: FuelPost,
   target: FuelTarget
-): Promise<void> {
+): Promise<"approved" | "needs_review" | "rejected" | "pending"> {
   await saveWorkout(userId, post.workout, target);
   await saveMeal(userId, post.meal);
+  let imageBase64: string | null = null;
+  if (post.meal.imageUri) {
+    const prepared = await ImageManipulator.manipulateAsync(
+      post.meal.imageUri,
+      [{ resize: { width: 1280 } }],
+      { compress: 0.65, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+    );
+    imageBase64 = prepared.base64 || null;
+    if (!imageBase64) throw new Error("The photo could not be prepared for review. Try another photo.");
+  }
+  const { data, error } = await supabase.functions.invoke("publish-fuel-post", { body: {
+    postId: post.id, mealId: post.meal.id, workoutId: post.workout.id,
+    caption: post.caption, showWorkout: post.visibility.workout,
+    showMacros: post.visibility.macros, showIngredients: post.visibility.ingredients,
+    imageBase64,
+  } });
+  if (error) await throwFunctionError(error, data, "This post could not be reviewed. Please try again.");
+  if (!["approved", "needs_review", "rejected", "pending"].includes(data?.status)) {
+    throw new Error("The post review returned an unexpected result. Please check again later.");
+  }
+  return data.status;
+}
 
-  const { error } = await supabase.from("fuel_posts").upsert(
-    {
-      id: post.id, user_id: userId, meal_id: post.meal.id, workout_id: post.workout.id,
-      author_username: post.username, caption: post.caption, show_workout: post.visibility.workout,
-      show_macros: post.visibility.macros, show_ingredients: post.visibility.ingredients, is_public: true,
-      deleted_at: null,
-    },
-    // Re-sharing the same meal updates the existing post rather than tripping
-    // the unique (user_id, meal_id) constraint.
-    { onConflict: "user_id,meal_id" }
-  );
-
-  if (error) throw new Error(describePublishError(error));
+/** Delete the signed-in author's own post, including its photo, from the community. */
+export async function deleteFuelPost(postId: string) {
+  const { data, error } = await supabase.functions.invoke("delete-fuel-post", { body: { postId } });
+  if (error) await throwFunctionError(error, data, "This post could not be deleted. Please try again.");
+  if (data?.deleted !== true) throw new Error("This post could not be deleted. Please try again.");
 }
 
 // Rich post hydration is intentionally kept separate from the core meal flow.

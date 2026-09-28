@@ -4,6 +4,13 @@ Prepared for StrictlyFuel iOS version **1.0.1**, build **15**, bundle ID **`com.
 
 This is the complete app-specific answer sheet for the first release. Values marked **OWNER INPUT** are private legal/contact details that must come from the account holder and should not be invented.
 
+## Resubmission notes (build 1.0.1 (21) rejection, September 22, 2026)
+
+Apple rejected this build for two issues. Both are addressed as of this revision:
+
+- **Guideline 5.1.1(iv)** — the camera pre-permission screen in `src/components/fuel/PhotoCamera.tsx` used an "Allow camera" button (renamed to **Continue**) and offered a "Cancel" button that let the user dismiss the message without ever reaching the system permission dialog. The Cancel button was removed from the message itself; an exit is still available via a small close (×) icon that reads as generic screen chrome, not a choice on the permission message. `src/screens/fuel/FoodCaptureScreen.tsx`'s barcode-scanner "Allow camera access" button was renamed to **Continue** for the same reason (that screen already has proper back navigation via `ScreenShell`).
+- **Guideline 2.3.6** — "Health or Wellness Topics" must be **Yes** in the Age Rating capabilities. See the corrected entry under Section 3 below; this must still be applied manually in App Store Connect (Age Rating is account-level metadata, not something a code change can set).
+
 ## 1. New App Record
 
 - Platforms: **iOS**
@@ -43,6 +50,9 @@ Use these answers for the current build:
 - Social media disabled for users under 13: **No**
 - Messaging and chat: **No**
 - Advertising: **No**
+- Health or Wellness Topics: **Yes**
+
+The app was rejected once (Guideline 2.3.6, review of build 1.0.1 (21), September 22, 2026) for having this set inconsistently with the app's actual content. StrictlyFuel's whole purpose is workout fueling and nutrition guidance, so this must be **Yes**. Set it explicitly in App Store Connect — do not rely on the "Medical or Wellness" descriptor below, which is a separate, older-style question and does not substitute for this capability toggle.
 
 ### Medical or Wellness
 

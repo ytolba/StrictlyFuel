@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Animated, Easing, StyleSheet, Text, View } from "react-native";
 import { strictlyColors, strictlyRadius, strictlyType } from "../../theme/strictlyTheme";
+import { useReducedMotion } from "../../hooks/useReducedMotion";
 
 type Props = {
   title?: string;
@@ -12,21 +13,24 @@ type Props = {
 export function LoadingState({ title = "Getting things ready", messages = [], compact = false, inverted = false }: Props) {
   const pulse = useRef(new Animated.Value(0)).current;
   const [messageIndex, setMessageIndex] = useState(0);
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
+    pulse.stopAnimation();
+    if (reducedMotion) { pulse.setValue(1); return; }
     const animation = Animated.loop(Animated.sequence([
       Animated.timing(pulse, { toValue: 1, duration: 700, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
       Animated.timing(pulse, { toValue: 0, duration: 700, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
     ]));
     animation.start();
     return () => animation.stop();
-  }, [pulse]);
+  }, [pulse, reducedMotion]);
 
   useEffect(() => {
-    if (messages.length < 2) return;
+    if (reducedMotion || messages.length < 2) return;
     const timer = setInterval(() => setMessageIndex((current) => (current + 1) % messages.length), 1800);
     return () => clearInterval(timer);
-  }, [messages]);
+  }, [messages, reducedMotion]);
 
   // Loading states live on green/cream semantic surfaces. Using `text` here
   // keeps them cream in dark mode and deep green in light mode.
@@ -51,7 +55,7 @@ const styles = StyleSheet.create({
   markCompact: { width: 22, height: 22, borderRadius: 11 },
   pulse: { position: "absolute", width: "100%", height: "100%", borderRadius: strictlyRadius.pill, backgroundColor: strictlyColors.lime },
   core: { width: 8, height: 8, borderRadius: 4, backgroundColor: strictlyColors.ink },
-  title: { marginTop: 13, fontFamily: strictlyType.sansMedium, fontWeight: "800", fontSize: 17, letterSpacing: -0.25 },
+  title: { marginTop: 13, fontFamily: strictlyType.bold,  fontSize: 17, letterSpacing: -0.25 },
   titleCompact: { marginTop: 0, fontSize: 13 },
-  message: { marginTop: 5, minHeight: 17, fontFamily: strictlyType.sans, fontSize: 11, textAlign: "center" },
+  message: { marginTop: 5, minHeight: 17, fontFamily: strictlyType.regular, fontSize: 11, textAlign: "center" },
 });

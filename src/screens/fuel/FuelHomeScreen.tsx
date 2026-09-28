@@ -10,6 +10,7 @@ import { DEFAULT_ACTIVITIES, getActivity, supportsHeartRateZones } from "../../d
 import { formatDuration } from "../../logic/mealTiming";
 import type { ActivityType, HeartRateZone, WorkoutIntensity } from "../../types/fuel";
 import { ScreenShell } from "../../components/fuel/ScreenShell";
+import { StrictlyBrand } from "../../components/StrictlyBrand";
 import { FuelTargetCard } from "../../components/fuel/FuelTargetCard";
 import { ValueEditorSheet, DURATION_UNITS, WEIGHT_UNITS } from "../../components/fuel/ValueEditorSheet";
 import { ActivityPickerSheet } from "../../components/fuel/ActivityPickerSheet";
@@ -35,6 +36,7 @@ export default function FuelHomeScreen({ navigation, route }: any) {
   const [recentHealthWorkouts, setRecentHealthWorkouts] = useState<HealthWorkout[]>([]);
   const [healthLoading, setHealthLoading] = useState(false);
   const [healthConnected, setHealthConnected] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   // The session form is the top of the screen and the result appears beneath
   // it, so "Calculate" reveals the target in place rather than pushing a new
@@ -116,6 +118,11 @@ export default function FuelHomeScreen({ navigation, route }: any) {
       ? `${Math.round(profile.bodyWeightKg * 2.20462)} lb`
       : `${Math.round(profile.bodyWeightKg * 10) / 10} kg`
     : "Add your weight";
+  const hasCurrentTarget = Boolean(workout && target && profile.bodyWeightKg &&
+    workout.activityType === activityType && workout.durationMinutes === duration &&
+    workout.startsInMinutes === startsIn && workout.intensity === intensity &&
+    workout.bodyWeightKg === profile.bodyWeightKg &&
+    JSON.stringify(workout.heartRateZones || []) === JSON.stringify(supportsHeartRateZones(activityType) ? heartRateZones : []));
 
   const persistProfile = async (next: NutritionProfile) => {
     setProfile(next);
@@ -155,7 +162,7 @@ export default function FuelHomeScreen({ navigation, route }: any) {
     if (editingField === "weight") {
       return {
         label: "Body weight",
-        value: profile.bodyWeightKg || (isImperial ? 75 : 75),
+        value: profile.bodyWeightKg ?? undefined,
         units: WEIGHT_UNITS,
         unitId: isImperial ? "lb" : "kg",
         onUnitChange: saveUnitPreference,
@@ -181,20 +188,15 @@ export default function FuelHomeScreen({ navigation, route }: any) {
   return (
     <ScreenShell scrollRef={scrollRef}>
       <View style={styles.brandRow}>
-        <View>
-          <Text style={styles.brand}>STRICTLY</Text>
-          <Text style={styles.brandSub}>FUEL THE WORK.</Text>
-        </View>
+        <StrictlyBrand size={26} />
         <TouchableOpacity onPress={() => navigation.navigate("Profile")} style={styles.avatar} accessibilityLabel="Your profile">
           <Text style={styles.avatarText}>{(user?.firstName || "A").slice(0, 1).toUpperCase()}</Text>
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.hero}>What are you training today?</Text>
-      <Text style={styles.subhero}>Tell us the session. We’ll turn it into food you can actually use.</Text>
-
+      <Text style={styles.hero}>What are you training?</Text>
+      <Text style={styles.subhero}>Add your session. We’ll show you how much to eat and help you choose food.</Text>
       <View style={styles.card} onLayout={(event) => { sessionOffset.current = event.nativeEvent.layout.y; }}>
-        <Text style={styles.cardTitle}>Your session</Text>
 
         {/* 1 — activity */}
         <Text style={styles.stepLabel}>ACTIVITY</Text>
@@ -244,12 +246,21 @@ export default function FuelHomeScreen({ navigation, route }: any) {
           ))}
         </View>
 
-        {supportsHeartRateZones(activityType) ? (
+        <TouchableOpacity style={styles.weightLine} onPress={() => setEditingField("weight")} accessibilityRole="button" accessibilityLabel={`Body weight, ${weightLabel}`}>
+          <Ionicons name="person-outline" size={15} color={strictlyColors.textSoft} />
+          <Text style={styles.weightText}>Body weight · {weightLabel}</Text>
+          <Text style={styles.weightEdit}>{profile.bodyWeightKg ? "Edit" : "Add"}</Text>
+        </TouchableOpacity>
+
+        {supportsHeartRateZones(activityType) ? <TouchableOpacity style={styles.advancedToggle} onPress={() => setShowAdvanced((value) => !value)} accessibilityRole="button" accessibilityState={{ expanded: showAdvanced }}>
+          <Text style={styles.advancedToggleText}>Heart-rate zones <Text style={styles.advancedOptional}>· optional</Text></Text>
+          <Ionicons name={showAdvanced ? "chevron-up" : "chevron-down"} size={17} color={strictlyColors.textSoft} />
+        </TouchableOpacity> : null}
+        {supportsHeartRateZones(activityType) && showAdvanced ? (
           <View style={styles.zoneBlock}>
             <View style={styles.zoneHeading}>
               <View style={styles.zoneHeadingCopy}>
-                <Text style={styles.stepLabel}>HEART-RATE ZONES · OPTIONAL</Text>
-                <Text style={styles.zoneHelp}>Choose every zone this session will include.</Text>
+                <Text style={styles.zoneHelp}>Select zones only if you know which ones you’ll train in.</Text>
               </View>
               {heartRateZones.length ? (
                 <TouchableOpacity onPress={() => setHeartRateZones([])} hitSlop={8}>
@@ -282,21 +293,33 @@ export default function FuelHomeScreen({ navigation, route }: any) {
           </View>
         ) : null}
 
-        <TouchableOpacity style={styles.weightLine} onPress={() => setEditingField("weight")}>
-          <Ionicons name="person-outline" size={15} color={strictlyColors.textSoft} />
-          <Text style={styles.weightText}>{weightLabel}</Text>
-          <Text style={styles.weightEdit}>{profile.bodyWeightKg ? "Edit" : "Add"}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.primary} onPress={calculate}>
-          <Text style={styles.primaryText}>Calculate my fuel</Text>
+        <TouchableOpacity style={styles.primary} onPress={calculate} accessibilityRole="button">
+          <Text style={styles.primaryText}>{workout && !hasCurrentTarget ? "Update my fuel plan" : "Show my fuel plan"}</Text>
           <Ionicons name="arrow-forward" size={18} color={strictlyColors.onLime} />
         </TouchableOpacity>
       </View>
 
+      {hasCurrentTarget && workout && target ? (
+        <View
+          style={styles.activeWrap}
+          onLayout={(event: LayoutChangeEvent) => { targetOffset.current = event.nativeEvent.layout.y; }}
+        >
+          <Text style={styles.resultHeading}>Your fuel target</Text>
+          <FuelTargetCard workout={workout} target={target} />
+          <TouchableOpacity style={styles.activeFooter} onPress={() => navigation.navigate("MealIdeas")} accessibilityRole="button">
+            <Text style={styles.activeFooterText}>Find food for this target</Text>
+            <Ionicons name="arrow-forward" size={16} color={strictlyColors.onLime} />
+          </TouchableOpacity>
+          <View style={styles.resultLinks}>
+            <TouchableOpacity style={styles.resultLink} onPress={() => navigation.navigate("FuelTarget")} accessibilityRole="button"><Text style={styles.resultLinkText}>See full plan</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.resultLink} onPress={() => navigation.navigate("Recover")} accessibilityRole="button"><Text style={styles.resultLinkText}>After training · Recovery</Text></TouchableOpacity>
+          </View>
+        </View>
+      ) : null}
+
       {appleHealthSupported() ? <View style={styles.healthContext}>
         <View style={styles.healthContextHead}>
-          <View style={styles.healthContextIcon}><Ionicons name="heart" size={15} color={strictlyColors.white} /></View>
+          <View style={styles.healthContextIcon}><Ionicons name="heart-outline" size={15} color={strictlyColors.accentText} /></View>
           <View style={styles.healthContextCopy}>
             <Text style={styles.healthContextEyebrow}>APPLE HEALTH</Text>
             <Text style={styles.healthContextTitle}>{healthConnected ? "Copy a previous workout" : "Connect previous workouts"}</Text>
@@ -323,36 +346,6 @@ export default function FuelHomeScreen({ navigation, route }: any) {
 
       <TouchableOpacity style={styles.raceMode} onPress={() => navigation.navigate("RaceMode")}><View style={styles.raceModeIcon}><Ionicons name="flag" size={21} color={strictlyColors.onLime} /></View><View style={styles.raceModeCopy}><Text style={styles.raceModeTitle}>Race Mode</Text><Text style={styles.raceModeText}>Know the carbs, timing, and exact fuel to pack.</Text></View><Ionicons name="arrow-forward" size={17} color={strictlyColors.textSoft} /></TouchableOpacity>
 
-      {/* The result of the form above. Scrolled into view by `calculate`. */}
-      {workout && target ? (
-        <View
-          style={styles.activeWrap}
-          onLayout={(event: LayoutChangeEvent) => { targetOffset.current = event.nativeEvent.layout.y; }}
-        >
-          <Text style={styles.resultLabel}>YOUR FUEL TARGET</Text>
-          <FuelTargetCard workout={workout} target={target} />
-          <TouchableOpacity
-            style={styles.activeFooter}
-            activeOpacity={0.9}
-            onPress={() => navigation.navigate("FuelTarget")}
-          >
-            <Text style={styles.activeFooterText}>Open the full plan</Text>
-            <Ionicons name="arrow-forward" size={16} color={strictlyColors.onLime} />
-          </TouchableOpacity>
-        </View>
-      ) : null}
-
-      <TouchableOpacity style={styles.discover} onPress={() => navigation.navigate("Discover")}>
-        <View style={styles.discoverIcon}>
-          <Ionicons name="compass-outline" size={20} color={strictlyColors.accentText} />
-        </View>
-        <View style={styles.discoverCopy}>
-          <Text style={styles.discoverTitle}>What others eat</Text>
-          <Text style={styles.discoverText}>Meals that worked for similar sessions.</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={18} color={strictlyColors.textSoft} />
-      </TouchableOpacity>
-
       <ActivityPickerSheet
         visible={pickerOpen}
         selected={activityType}
@@ -372,86 +365,84 @@ export default function FuelHomeScreen({ navigation, route }: any) {
 
 const styles = StyleSheet.create({
   brandRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 8, marginBottom: 20 },
-  brand: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 20, letterSpacing: -0.5 },
-  brandSub: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 8, letterSpacing: 1.4, marginTop: 2 },
-  avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: strictlyColors.surfaceMuted, alignItems: "center", justifyContent: "center" },
-  avatarText: { color: strictlyColors.accentText, fontFamily: strictlyType.sansMedium, fontWeight: "800" },
+  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: strictlyColors.surfaceMuted, borderWidth: 1, borderColor: strictlyColors.border, alignItems: "center", justifyContent: "center" },
+  avatarText: { color: strictlyColors.accentText, fontFamily: strictlyType.bold},
 
-  hero: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 32, lineHeight: 36, letterSpacing: -1.2, maxWidth: 340 },
-  subhero: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 14, lineHeight: 21, marginTop: 8, marginBottom: 4, maxWidth: 330 },
+  hero: { fontFamily: strictlyType.bold, color: strictlyColors.text, fontSize: 31, lineHeight: 36, letterSpacing: -0.9, marginTop: 8 },
+  subhero: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 15, lineHeight: 22, marginTop: 8, marginBottom: 22 },
   raceMode: { minHeight: 76, flexDirection: "row", alignItems: "center", gap: 11, padding: 13, marginTop: 14, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
   raceModeIcon: { width: 44, height: 44, borderRadius: 15, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.lime }, raceModeCopy: { flex: 1 },
-  raceModeTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 15 },
-  raceModeText: { marginTop: 3, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 10, lineHeight: 15 },
+  raceModeTitle: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 15 },
+  raceModeText: { marginTop: 3, fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 15 },
   healthContext: { marginTop: 14, padding: 13, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
   healthContextHead: { flexDirection: "row", alignItems: "center", gap: 11 },
-  healthContextIcon: { width: 40, height: 40, flexShrink: 0, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: "#E64A55" },
+  healthContextIcon: { width: 40, height: 40, flexShrink: 0, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.surfaceMuted, borderWidth: 1, borderColor: strictlyColors.border },
   healthContextCopy: { flex: 1, minWidth: 0 },
-  healthContextEyebrow: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 7, letterSpacing: 0.8 },
-  healthContextTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 13, marginTop: 2 },
-  healthContextDetail: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 10, lineHeight: 14, marginTop: 3 },
+  healthContextEyebrow: { fontFamily: strictlyType.semibold, color: strictlyColors.textSoft, fontSize: 11, letterSpacing: 1.1 },
+  healthContextTitle: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 13, marginTop: 2 },
+  healthContextDetail: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 14, marginTop: 3 },
   healthWorkoutList: { marginTop: 13, gap: 7 },
   healthWorkout: { minHeight: 54, paddingHorizontal: 12, flexDirection: "row", alignItems: "center", gap: 10, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.surfaceMuted },
   healthWorkoutCopy: { flex: 1 },
-  healthWorkoutTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 12 },
-  healthWorkoutMeta: { marginTop: 3, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 9 },
+  healthWorkoutTitle: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 12 },
+  healthWorkoutMeta: { marginTop: 3, fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11 },
   healthWorkoutAction: { minHeight: 31, paddingHorizontal: 10, flexDirection: "row", alignItems: "center", gap: 5, borderRadius: strictlyRadius.pill, backgroundColor: strictlyColors.lime },
-  healthWorkoutActionText: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.onLime, fontSize: 9 },
+  healthWorkoutActionText: { fontFamily: strictlyType.bold,  color: strictlyColors.onLime, fontSize: 11 },
   healthContextFooter: { minHeight: 42, marginTop: 8, paddingHorizontal: 4, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  healthContextFooterText: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 10 },
+  healthContextFooterText: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 11 },
 
-  activeWrap: { marginTop: 20, marginBottom: 4 },
-  resultLabel: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 8, letterSpacing: 1.3, marginBottom: 9 },
-  activeFooter: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, height: 44, marginTop: 8, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.lime },
-  activeFooterText: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.onLime, fontSize: 13 },
+  activeWrap: { marginTop: 24, marginBottom: 4 },
+  resultHeading: { fontFamily: strictlyType.bold, color: strictlyColors.text, fontSize: 21, marginBottom: 11 },
+  activeFooter: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 52, marginTop: 10, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.lime },
+  activeFooterText: { fontFamily: strictlyType.bold,  color: strictlyColors.onLime, fontSize: 13 },
+  resultLinks: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 7 },
+  resultLink: { minHeight: 44, flexGrow: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 10 },
+  resultLinkText: { fontFamily: strictlyType.medium, color: strictlyColors.text, fontSize: 12 },
 
-  card: { padding: 16, marginTop: 18, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, borderRadius: strictlyRadius.large },
-  cardTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 17, marginBottom: 16 },
-  stepLabel: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 8, letterSpacing: 1.3, marginBottom: 9 },
+  card: { padding: 16, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, borderRadius: strictlyRadius.large },
+  stepLabel: { fontFamily: strictlyType.semibold, color: strictlyColors.textSoft, fontSize: 11, letterSpacing: 1.1, marginBottom: 9 },
 
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 7 },
-  chip: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 40, paddingHorizontal: 12, borderRadius: strictlyRadius.pill, backgroundColor: strictlyColors.surfaceMuted },
+  chip: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 44, paddingHorizontal: 12, borderRadius: strictlyRadius.pill, backgroundColor: strictlyColors.surfaceMuted },
   chipActive: { backgroundColor: strictlyColors.lime },
-  chipText: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.textSoft, fontSize: 12 },
-  chipTextActive: { color: strictlyColors.onLime, fontWeight: "900" },
-  chipMore: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 40, paddingHorizontal: 12, borderRadius: strictlyRadius.pill, borderWidth: 1, borderColor: strictlyColors.borderStrong },
-  chipMoreText: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 12 },
-  chosen: { fontFamily: strictlyType.sans, color: strictlyColors.accentText, fontSize: 11, marginTop: 9 },
+  chipText: { fontFamily: strictlyType.bold,  color: strictlyColors.textSoft, fontSize: 12 },
+  chipTextActive: { color: strictlyColors.onLime, fontFamily: strictlyType.bold },
+  chipMore: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 44, paddingHorizontal: 12, borderRadius: strictlyRadius.pill, borderWidth: 1, borderColor: strictlyColors.borderStrong },
+  chipMoreText: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 12 },
+  chosen: { fontFamily: strictlyType.regular, color: strictlyColors.accentText, fontSize: 11, marginTop: 9 },
 
   pairRow: { flexDirection: "row", gap: 9, marginTop: 18 },
   pair: { flex: 1, minHeight: 76, justifyContent: "center", paddingHorizontal: 14, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.surfaceMuted },
-  pairLabel: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 7, letterSpacing: 1.1 },
-  pairValue: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.text, fontSize: 18, marginTop: 5 },
+  pairLabel: { fontFamily: strictlyType.semibold, color: strictlyColors.textSoft, fontSize: 11, letterSpacing: 1.1 },
+  pairValue: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 18, marginTop: 5 },
   pairIcon: { position: "absolute", top: 12, right: 12 },
 
   segment: { flexDirection: "row", gap: 6, marginBottom: 4 },
   segmentItem: { flex: 1, height: 44, alignItems: "center", justifyContent: "center", borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.surfaceMuted },
   segmentActive: { backgroundColor: strictlyColors.lime },
-  segmentText: { fontFamily: strictlyType.sansMedium, color: strictlyColors.textSoft, fontSize: 12, textTransform: "capitalize" },
-  segmentTextActive: { color: strictlyColors.onLime, fontWeight: "900" },
+  segmentText: { fontFamily: strictlyType.medium, color: strictlyColors.textSoft, fontSize: 12, textTransform: "capitalize" },
+  segmentTextActive: { color: strictlyColors.onLime, fontFamily: strictlyType.bold },
 
-  zoneBlock: { marginTop: 17 },
+  advancedToggle: { minHeight: 48, marginTop: 3, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderTopWidth: 1, borderTopColor: strictlyColors.border },
+  advancedToggleText: { fontFamily: strictlyType.medium, color: strictlyColors.text, fontSize: 12 },
+  advancedOptional: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft },
+  zoneBlock: { marginTop: 3, marginBottom: 12 },
   zoneHeading: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
   zoneHeadingCopy: { flex: 1 },
-  zoneHelp: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 10, marginTop: -4, marginBottom: 9 },
-  zoneClear: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.accentText, fontSize: 10 },
+  zoneHelp: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, marginBottom: 9 },
+  zoneClear: { fontFamily: strictlyType.bold,  color: strictlyColors.accentText, fontSize: 11 },
   zoneRow: { flexDirection: "row", gap: 7 },
   zone: { flex: 1, height: 43, borderRadius: strictlyRadius.medium, borderWidth: 1, borderColor: strictlyColors.border, backgroundColor: strictlyColors.surfaceMuted, alignItems: "center", justifyContent: "center" },
   zoneActive: { backgroundColor: strictlyColors.lime, borderColor: strictlyColors.lime },
-  zoneNumber: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 10, fontWeight: "700" },
-  zoneNumberActive: { color: strictlyColors.onLime, fontWeight: "900" },
-  zoneSummary: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 9, lineHeight: 14, marginTop: 7 },
+  zoneNumber: { fontFamily: strictlyType.bold, color: strictlyColors.textSoft, fontSize: 11},
+  zoneNumberActive: { color: strictlyColors.onLime, fontFamily: strictlyType.bold },
+  zoneSummary: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 14, marginTop: 7 },
 
-  weightLine: { height: 48, flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 },
-  weightText: { flex: 1, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 12 },
-  weightEdit: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.accentText, fontSize: 11 },
+  weightLine: { minHeight: 48, flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 },
+  weightText: { flex: 1, fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 12 },
+  weightEdit: { fontFamily: strictlyType.bold,  color: strictlyColors.accentText, fontSize: 11 },
 
   primary: { height: 56, backgroundColor: strictlyColors.lime, borderRadius: strictlyRadius.medium, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 9, marginTop: 4 },
-  primaryText: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.onLime, fontSize: 14 },
+  primaryText: { fontFamily: strictlyType.bold,  color: strictlyColors.onLime, fontSize: 14 },
 
-  discover: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 68, paddingHorizontal: 15, marginTop: 12, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
-  discoverIcon: { width: 40, height: 40, borderRadius: 14, backgroundColor: strictlyColors.surfaceMuted, alignItems: "center", justifyContent: "center" },
-  discoverCopy: { flex: 1 },
-  discoverTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 14 },
-  discoverText: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11, marginTop: 3 },
 });

@@ -2,6 +2,7 @@ import React, { useRef, useState } from "react";
 import { Alert, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as MediaLibrary from "expo-media-library";
+import * as ImagePicker from "expo-image-picker";
 import NativeShare, { Social } from "react-native-share";
 import { captureRef } from "react-native-view-shot";
 import { useFuel } from "../../contexts/FuelContext";
@@ -29,7 +30,7 @@ const didCancel = (error: unknown) => {
 
 export default function ShareFuelScreen({ navigation, route }: any) {
   const { user } = useAuth();
-  const { meals, workout, target, addLocalPost } = useFuel();
+  const { meals, workout, target, addLocalPost, setMealPhoto } = useFuel();
   const meal = meals.find((item) => item.id === route.params?.mealId) || meals[0];
   const cardRef = useRef<View | null>(null);
   const [caption, setCaption] = useState("");
@@ -41,6 +42,28 @@ export default function ShareFuelScreen({ navigation, route }: any) {
   if (!meal || !workout || !target) {
     return <ScreenShell title="Share fuel" back onBack={() => navigation.goBack()}><Text style={styles.missing}>Meal unavailable.</Text></ScreenShell>;
   }
+
+  // Built, barcode and label meals have no photo. Members can add one here; it rides the same
+  // publish path as a scanned photo, so it is safety-checked before anyone else sees it.
+  // A scanned meal keeps the photo its estimate came from.
+  const canChoosePhoto = meal.source !== "camera";
+  const choosePhoto = async (from: "camera" | "library") => {
+    const permission = from === "camera" ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      return Alert.alert(from === "camera" ? "Camera access needed" : "Photos access needed", `Allow StrictlyFuel to use your ${from === "camera" ? "camera" : "photos"} in Settings to add a meal photo.`);
+    }
+    const options: ImagePicker.ImagePickerOptions = { mediaTypes: ["images"], quality: 0.9, allowsEditing: true, aspect: [4, 5] };
+    const result = from === "camera" ? await ImagePicker.launchCameraAsync(options) : await ImagePicker.launchImageLibraryAsync(options);
+    const uri = result.canceled ? undefined : result.assets[0]?.uri;
+    if (!uri) return;
+    setPhotoReady(false);
+    setMealPhoto(meal.id, uri);
+  };
+  const photoOptions = () => Alert.alert(meal.imageUri ? "Change meal photo" : "Add a meal photo", undefined, [
+    { text: "Take photo", onPress: () => { void choosePhoto("camera"); } },
+    { text: "Choose from library", onPress: () => { void choosePhoto("library"); } },
+    { text: "Cancel", style: "cancel" },
+  ]);
 
   const captureCard = async () => {
     if (meal.imageUri && !photoReady) throw new Error("Your meal photo is still loading. Try again in a second.");
@@ -112,11 +135,17 @@ export default function ShareFuelScreen({ navigation, route }: any) {
     };
     setPublishing(true);
     try {
-      await publishFuelPost(user.uid, post, target);
-      addLocalPost(post);
-      Alert.alert("Fuel shared", "Your meal is now available to athletes looking for similar workout fuel.", [
-        { text: "View post", onPress: () => navigation.navigate("Main", { screen: "Discover" }) },
-      ]);
+      const status = await publishFuelPost(user.uid, post, target);
+      if (status === "approved") {
+        addLocalPost(post);
+        Alert.alert("Fuel approved", "Your meal passed review and is saved to your community preview.", [
+          { text: "View post", onPress: () => navigation.navigate("Main", { screen: "Discover" }) },
+        ]);
+      } else if (status === "rejected") {
+        Alert.alert("Could not share this post", "The photo or caption did not pass our community safety check. You can edit it and try again.");
+      } else {
+        Alert.alert("Sent for review", "This post is not visible to others yet. We will review it before it appears in the community.");
+      }
     } catch (error: any) {
       Alert.alert("Could not publish", error?.message || "Try again in a moment.");
     } finally {
@@ -127,6 +156,16 @@ export default function ShareFuelScreen({ navigation, route }: any) {
   return (
     <ScreenShell title="Share your fuel" eyebrow="MAKE IT YOURS" back onBack={() => navigation.goBack()}>
       <Text style={styles.intro}>A clean, story-sized card made from your photo and workout numbers.</Text>
+      {canChoosePhoto ? (
+        <TouchableOpacity accessibilityRole="button" activeOpacity={0.78} style={styles.addPhoto} onPress={photoOptions}>
+          <View style={styles.addPhotoIcon}><Ionicons name={meal.imageUri ? "image-outline" : "camera-outline"} size={20} color={strictlyColors.onLime} /></View>
+          <View style={styles.addPhotoCopy}>
+            <Text style={styles.addPhotoTitle}>{meal.imageUri ? "Change meal photo" : "Add a meal photo"}</Text>
+            <Text style={styles.addPhotoText}>{meal.imageUri ? "Used on your card and community post." : "Optional. Shown on your card and community post."}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={strictlyColors.textSoft} />
+        </TouchableOpacity>
+      ) : null}
       <View style={styles.cardStage}>
         <View ref={cardRef} collapsable={false} style={styles.cardCapture}>
           <StrictlyFuelShareCard meal={meal} workout={workout} onPhotoLoadEnd={() => setPhotoReady(true)} />
@@ -157,7 +196,7 @@ export default function ShareFuelScreen({ navigation, route }: any) {
         <View style={styles.communityIcon}><Ionicons name="people-outline" size={17} color={strictlyColors.accentText} /></View>
         <View style={styles.communityCopy}>
           <Text style={styles.sectionTitleInline}>Share inside StrictlyFuel</Text>
-          <Text style={styles.communityDetail}>Optional. Your meal stays private until you publish it.</Text>
+          <Text style={styles.communityDetail}>Optional. Your photo and caption are checked before anyone else can see them.</Text>
         </View>
       </View>
       <TextInput
@@ -184,10 +223,10 @@ export default function ShareFuelScreen({ navigation, route }: any) {
       </View>
       <View style={styles.privacy}>
         <Ionicons name="lock-closed-outline" size={18} color={strictlyColors.text} />
-        <Text style={styles.privacyText}>Publishing creates a separate post you can delete later. Precise location is never attached.</Text>
+        <Text style={styles.privacyText}>Submitting creates a separate post. Posts needing review stay private. Precise location is never attached.</Text>
       </View>
       <TouchableOpacity activeOpacity={0.78} disabled={publishing} style={[styles.publish, publishing && styles.disabled]} onPress={publish}>
-        {publishing ? <LoadingState compact title="Publishing your fuel" /> : <><Ionicons name="paper-plane-outline" size={18} color={strictlyColors.onLime} /><Text style={styles.publishText}>Publish to community</Text></>}
+        {publishing ? <LoadingState compact title="Checking your post" /> : <><Ionicons name="paper-plane-outline" size={18} color={strictlyColors.onLime} /><Text style={styles.publishText}>Submit to community</Text></>}
       </TouchableOpacity>
     </ScreenShell>
   );
@@ -195,32 +234,37 @@ export default function ShareFuelScreen({ navigation, route }: any) {
 
 const styles = StyleSheet.create({
   missing: { color: strictlyColors.text },
-  intro: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 13, lineHeight: 19, marginTop: -4, marginBottom: 15 },
+  intro: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 13, lineHeight: 19, marginTop: -4, marginBottom: 15 },
+  addPhoto: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 64, padding: 12, marginBottom: 12, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
+  addPhotoIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: strictlyColors.lime, alignItems: "center", justifyContent: "center" },
+  addPhotoCopy: { flex: 1 },
+  addPhotoTitle: { fontFamily: strictlyType.bold, color: strictlyColors.text, fontSize: 14 },
+  addPhotoText: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 12, marginTop: 2 },
   cardStage: { alignItems: "center", paddingVertical: 10, borderRadius: strictlyRadius.xlarge, backgroundColor: strictlyColors.surfaceMuted, borderWidth: 1, borderColor: strictlyColors.border, overflow: "hidden" },
   cardCapture: { width: 320, height: 568, borderRadius: 20, overflow: "hidden", shadowColor: "#000", shadowOpacity: 0.24, shadowRadius: 18, shadowOffset: { width: 0, height: 8 } },
-  sectionTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 16, marginTop: 23, marginBottom: 10 },
+  sectionTitle: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 16, marginTop: 23, marginBottom: 10 },
   shareGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
   shareAction: { flex: 1, minWidth: 92, height: 72, paddingHorizontal: 8, borderRadius: strictlyRadius.medium, alignItems: "center", justifyContent: "center", gap: 7, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
   saveAction: { backgroundColor: strictlyColors.lime, borderColor: strictlyColors.lime },
-  shareActionLabel: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 10 },
+  shareActionLabel: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 11 },
   saveActionLabel: { color: strictlyColors.onLime },
   actionDim: { opacity: 0.5 },
-  shareHint: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 9, lineHeight: 14, marginTop: 9 },
+  shareHint: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 14, marginTop: 9 },
   communityHeading: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 28, marginBottom: 11 },
   communityIcon: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.surfaceMuted },
   communityCopy: { flex: 1 },
-  sectionTitleInline: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 16 },
-  communityDetail: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 9, marginTop: 2 },
-  caption: { minHeight: 94, textAlignVertical: "top", padding: 14, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, borderRadius: strictlyRadius.medium, fontFamily: strictlyType.sans, color: strictlyColors.text, fontSize: 13, lineHeight: 19 },
-  controlEyebrow: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 7.5, letterSpacing: 1.1, marginTop: 18, marginBottom: 8 },
+  sectionTitleInline: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 16 },
+  communityDetail: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, marginTop: 2 },
+  caption: { minHeight: 94, textAlignVertical: "top", padding: 14, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, borderRadius: strictlyRadius.medium, fontFamily: strictlyType.regular, color: strictlyColors.text, fontSize: 13, lineHeight: 19 },
+  controlEyebrow: { fontFamily: strictlyType.semibold, color: strictlyColors.textSoft, fontSize: 11, letterSpacing: 1.1, marginTop: 18, marginBottom: 8 },
   controls: { backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, borderRadius: strictlyRadius.large, overflow: "hidden" },
   control: { flexDirection: "row", alignItems: "center", gap: 10, padding: 14, borderBottomWidth: 1, borderBottomColor: strictlyColors.border },
   controlCopy: { flex: 1 },
-  controlTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 12 },
-  controlText: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 9, marginTop: 3 },
+  controlTitle: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 12 },
+  controlText: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, marginTop: 3 },
   privacy: { flexDirection: "row", gap: 9, padding: 14, backgroundColor: strictlyColors.cream, borderRadius: strictlyRadius.medium, marginTop: 13 },
-  privacyText: { flex: 1, fontFamily: strictlyType.sans, color: strictlyColors.text, fontSize: 10, lineHeight: 15 },
+  privacyText: { flex: 1, fontFamily: strictlyType.regular, color: strictlyColors.text, fontSize: 11, lineHeight: 15 },
   publish: { height: 56, backgroundColor: strictlyColors.lime, borderRadius: strictlyRadius.medium, flexDirection: "row", gap: 8, alignItems: "center", justifyContent: "center", marginTop: 14 },
-  publishText: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.onLime },
+  publishText: { fontFamily: strictlyType.bold,  color: strictlyColors.onLime },
   disabled: { opacity: 0.45 },
 });

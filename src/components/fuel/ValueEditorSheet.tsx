@@ -43,7 +43,7 @@ type Props = {
   visible: boolean;
   label: string;
   /** Always in the base unit. */
-  value: number;
+  value?: number;
   /** Simple single-unit mode (e.g. grams). Ignored when `units` is supplied. */
   unit?: string;
   presets?: number[];
@@ -64,7 +64,7 @@ export function ValueEditorSheet({ visible, label, value, unit = "g", presets = 
   const current = useMemo(() => units?.find((option) => option.id === activeUnit) || units?.[0], [units, activeUnit]);
   const decimals = current?.decimals ?? 0;
 
-  const display = (base: number) => (current ? trim(current.fromBase(base), decimals) : String(Math.round(base)));
+  const display = (base?: number) => base == null ? "" : (current ? trim(current.fromBase(base), decimals) : String(Math.round(base)));
   const [draft, setDraft] = useState(() => display(value));
 
   // Re-seed whenever the sheet opens, or the unit changes underneath it.
@@ -83,7 +83,7 @@ export function ValueEditorSheet({ visible, label, value, unit = "g", presets = 
     const typed = Number(draft);
     const base = Number.isFinite(typed) && typed > 0 && current ? current.toBase(typed) : value;
     setActiveUnit(option.id);
-    setDraft(trim(option.fromBase(base), option.decimals ?? 0));
+    setDraft(base == null ? "" : trim(option.fromBase(base), option.decimals ?? 0));
     onUnitChange?.(option.id);
   };
 
@@ -96,6 +96,7 @@ export function ValueEditorSheet({ visible, label, value, unit = "g", presets = 
 
   const activePresets = current?.presets ?? presets;
   const suffix = current?.label ?? unit;
+  const canSave = Number.isFinite(Number(draft)) && Number(draft) > 0;
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -142,6 +143,7 @@ export function ValueEditorSheet({ visible, label, value, unit = "g", presets = 
               keyboardType="decimal-pad"
               returnKeyType="done"
               style={styles.input}
+              placeholder="Enter a value"
               placeholderTextColor={strictlyColors.textSoft}
             />
             <Text style={styles.unit}>{suffix}</Text>
@@ -159,7 +161,7 @@ export function ValueEditorSheet({ visible, label, value, unit = "g", presets = 
             </View>
           ) : null}
 
-          <TouchableOpacity style={styles.save} onPress={save}>
+          <TouchableOpacity style={[styles.save, !canSave && styles.saveDisabled]} onPress={save} disabled={!canSave} accessibilityRole="button" accessibilityState={{ disabled: !canSave }}>
             <Text style={styles.saveText}>Save</Text>
           </TouchableOpacity>
         </View>
@@ -175,25 +177,26 @@ const styles = StyleSheet.create({
   handle: { width: 42, height: 4, borderRadius: 2, backgroundColor: strictlyColors.borderStrong, alignSelf: "center", marginBottom: 18 },
   head: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
   headCopy: { flex: 1 },
-  eyebrow: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 8, letterSpacing: 1.2 },
-  title: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 21, marginTop: 4 },
+  eyebrow: { fontFamily: strictlyType.semibold, color: strictlyColors.textSoft, fontSize: 11, letterSpacing: 1.1 },
+  title: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 21, marginTop: 4 },
   close: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.surfaceMuted },
 
   unitSwitch: { flexDirection: "row", gap: 6, padding: 4, marginTop: 16, borderRadius: strictlyRadius.pill, backgroundColor: strictlyColors.surfaceMuted },
   unitOption: { flex: 1, height: 40, alignItems: "center", justifyContent: "center", borderRadius: strictlyRadius.pill },
   unitOptionActive: { backgroundColor: strictlyColors.lime },
-  unitText: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.textSoft, fontSize: 12 },
-  unitTextActive: { color: strictlyColors.onLime, fontWeight: "900" },
+  unitText: { fontFamily: strictlyType.bold,  color: strictlyColors.textSoft, fontSize: 12 },
+  unitTextActive: { color: strictlyColors.onLime, fontFamily: strictlyType.bold },
 
   inputWrap: { height: 80, flexDirection: "row", alignItems: "center", gap: 8, marginTop: 14, paddingHorizontal: 18, backgroundColor: strictlyColors.background, borderRadius: strictlyRadius.large, borderWidth: 2, borderColor: strictlyColors.accentText },
-  input: { flex: 1, fontFamily: strictlyType.sansMedium, fontWeight: "900", fontSize: 34, color: strictlyColors.text },
-  unit: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 13 },
-  help: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 16, marginTop: 10 },
+  input: { flex: 1, fontFamily: strictlyType.bold,  fontSize: 34, color: strictlyColors.text },
+  unit: { fontFamily: strictlyType.semibold, color: strictlyColors.textSoft, fontSize: 13 },
+  help: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 16, marginTop: 10 },
 
   presets: { flexDirection: "row", gap: 8, marginTop: 12 },
   preset: { flex: 1, height: 44, borderRadius: strictlyRadius.pill, backgroundColor: strictlyColors.surfaceMuted, alignItems: "center", justifyContent: "center" },
-  presetText: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 11 },
+  presetText: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 11 },
 
   save: { height: 56, marginTop: 18, backgroundColor: strictlyColors.lime, borderRadius: strictlyRadius.medium, alignItems: "center", justifyContent: "center" },
-  saveText: { fontFamily: strictlyType.sansMedium, fontWeight: "900", color: strictlyColors.onLime, fontSize: 14 },
+  saveDisabled: { opacity: 0.45 },
+  saveText: { fontFamily: strictlyType.bold,  color: strictlyColors.onLime, fontSize: 14 },
 });

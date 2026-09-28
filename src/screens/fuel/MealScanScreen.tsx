@@ -113,7 +113,7 @@ export default function MealScanScreen({ navigation }: any) {
     setBestEstimateAccepted(false);
     setLoading(true);
     try {
-      const prepared = await Promise.all(selectedUris.map((uri) => ImageManipulator.manipulateAsync(uri, [{ resize: { width: 2048 } }], { compress: 0.86, format: ImageManipulator.SaveFormat.JPEG, base64: true })));
+      const prepared = await Promise.all(selectedUris.map((uri) => ImageManipulator.manipulateAsync(uri, [{ resize: { width: 1280 } }], { compress: 0.72, format: ImageManipulator.SaveFormat.JPEG, base64: true })));
       const encoded = prepared.map((image) => image.base64 || "").filter(Boolean);
       if (encoded.length !== selectedUris.length) throw new Error("The photos could not be prepared.");
       setBase64Images(encoded);
@@ -276,13 +276,13 @@ export default function MealScanScreen({ navigation }: any) {
     </> : <>
       <Image source={{ uri: photoUri }} style={styles.photo} />
       {loading ? <View style={styles.loadingCard}><LoadingState title={analysis ? "Refining your meal" : "Reading your plate"} messages={["Finding visible foods", "Estimating portions", "Checking the nutrition estimate"]} /></View> : analysis ? <>
-        <View style={styles.estimateHead}><View><Text style={styles.estimateLabel}>CAMERA ESTIMATE · {analysis.confidence}% CONFIDENCE · {analysis.imageCount || photoUris.length || 1} VIEW{(analysis.imageCount || photoUris.length) === 1 ? "" : "S"}</Text><Text style={styles.estimateName}>{analysis.mealName}</Text></View><Text style={styles.estimateCarbs}>~{Math.round(estimatedCarbs)}g<Text style={styles.estimateUnit}> carbs</Text></Text></View>
+        <View style={styles.estimateHead}><View style={styles.estimateCopy}><Text style={styles.estimateLabel}>CAMERA ESTIMATE · {analysis.confidence}% CONFIDENCE · {analysis.imageCount || photoUris.length || 1} VIEW{(analysis.imageCount || photoUris.length) === 1 ? "" : "S"}</Text><Text style={styles.estimateName} numberOfLines={2}>{analysis.mealName}</Text></View><Text style={styles.estimateCarbs}>~{Math.round(estimatedCarbs)}g<Text style={styles.estimateUnit}> carbs</Text></Text></View>
         <Text style={styles.range}>Plausible range: {Math.round(estimatedCarbRange[0])}–{Math.round(estimatedCarbRange[1])} g carbs. This range tightens as you confirm highlighted amounts.</Text>
         {analysis.captureIssues?.length ? <View style={styles.captureWarning}><Ionicons name="camera-outline" size={18} color={strictlyColors.clay} /><Text style={styles.warningText}>{analysis.captureIssues.join(" ")}</Text></View> : null}
-        <View style={styles.items}>{items.map((item) => <View key={item.id} style={[styles.item, item.requiresQuantityConfirmation && styles.itemNeedsReview]}><View style={styles.itemCopy}><Text style={styles.itemName}>{item.food.name}</Text><Text style={styles.itemMeta}>{item.gramsRange ? `${Math.round(item.gramsRange[0])}–${Math.round(item.gramsRange[1])} g visual range` : item.food.servingLabel} · food {item.foodConfidence}% · portion {item.portionConfidence}%</Text><Text style={styles.sourceMeta}>{item.requiresQuantityConfirmation ? "OPTIONAL AMOUNT CHECK" : item.food.source === "ai_estimate" ? "AI NUTRITION FALLBACK" : `${item.food.source.toUpperCase()} NUTRITION MATCH · ${item.nutritionMatchConfidence}%`}</Text></View><TouchableOpacity style={[styles.gramsButton, item.requiresQuantityConfirmation && styles.gramsButtonReview]} onPress={() => setEditingId(item.id)}><Text style={styles.grams}>{item.requiresQuantityConfirmation ? "Adjust " : ""}{Math.round(item.grams)}g</Text><Ionicons name="create-outline" size={12} color={strictlyColors.textSoft} /></TouchableOpacity><TouchableOpacity onPress={() => setItems((current) => current.filter((row) => row.id !== item.id))}><Ionicons name="close-circle" size={21} color={strictlyColors.textSoft} /></TouchableOpacity></View>)}</View>
+        <View style={styles.items}>{items.map((item, index) => <View key={item.id} style={[styles.item, index === items.length - 1 && styles.itemLast, item.requiresQuantityConfirmation && styles.itemNeedsReview]}><View style={styles.itemCopy}><Text style={styles.itemName} numberOfLines={2}>{item.food.name}</Text><Text style={styles.itemMeta}>{item.gramsRange ? `${Math.round(item.gramsRange[0])}–${Math.round(item.gramsRange[1])} g visual range` : item.food.servingLabel} · food {item.foodConfidence}% · portion {item.portionConfidence}%</Text><Text style={[styles.sourceMeta, item.requiresQuantityConfirmation && styles.sourceMetaReview]}>{item.requiresQuantityConfirmation ? "OPTIONAL AMOUNT CHECK" : item.food.source === "ai_estimate" ? "AI NUTRITION FALLBACK" : `${item.food.source.toUpperCase()} NUTRITION MATCH · ${item.nutritionMatchConfidence}%`}</Text></View><TouchableOpacity style={[styles.gramsButton, item.requiresQuantityConfirmation && styles.gramsButtonReview]} onPress={() => setEditingId(item.id)}><Text style={[styles.grams, item.requiresQuantityConfirmation && styles.gramsReview]} numberOfLines={1}>{item.requiresQuantityConfirmation ? "Adjust " : ""}{Math.round(item.grams)}g</Text><Ionicons name="create-outline" size={12} color={item.requiresQuantityConfirmation ? strictlyColors.onLime : strictlyColors.textSoft} /></TouchableOpacity><TouchableOpacity style={styles.removeItem} hitSlop={8} accessibilityRole="button" accessibilityLabel={`Remove ${item.food.name}`} onPress={() => setItems((current) => current.filter((row) => row.id !== item.id))}><Ionicons name="close-circle" size={21} color={strictlyColors.textSoft} /></TouchableOpacity></View>)}</View>
         <TouchableOpacity style={styles.editFoods} onPress={() => { setIngredients(items); navigation.getParent()?.navigate("BuildMeal", { suggestedName: analysis.mealName }); }}><Ionicons name="add-circle-outline" size={17} color={strictlyColors.text} /><Text style={styles.editFoodsText}>Add or replace a food</Text></TouchableOpacity>
         {nutritionWarnings.length ? <View style={styles.warning}><Ionicons name="alert-circle-outline" size={18} color={strictlyColors.clay} /><Text style={styles.warningText}>Strictly corrected an inconsistent calorie value from the matched nutrition record. Review the affected food before logging.</Text></View> : null}
-        {analysis.needsUserInput && analysis.followUpQuestion ? <View style={styles.followup}><View style={styles.followupHead}><Ionicons name="help-circle-outline" size={19} color={strictlyColors.clay} /><View style={styles.followupCopy}><Text style={styles.followupLabel}>OPTIONAL ACCURACY CHECK</Text><Text style={styles.followupQuestion}>{analysis.followUpQuestion}</Text></View></View>{analysis.followUpOptions?.length ? <View style={styles.followupOptions}>{analysis.followUpOptions.map((option) => <TouchableOpacity key={option} onPress={() => setContext(option)} style={[styles.followupOption, context === option && styles.followupOptionActive]}><Text style={[styles.followupOptionText, context === option && styles.followupOptionTextActive]}>{option}</Text></TouchableOpacity>)}</View> : null}<TextInput value={context} onChangeText={setContext} placeholder="Or type a more exact answer" placeholderTextColor={strictlyColors.textSoft} style={styles.contextInput} /><TouchableOpacity disabled={!context.trim()} onPress={refine} style={[styles.refine, !context.trim() && styles.disabled]}><Text style={styles.refineText}>Update my estimate</Text></TouchableOpacity><TouchableOpacity onPress={acceptBestEstimate} style={styles.useEstimate}><Text style={styles.useEstimateText}>Use Strictly's best estimate</Text></TouchableOpacity><Text style={styles.refineNote}>Optional. Answering narrows the range; skipping keeps the wider visual estimate.</Text></View> : null}
+        {analysis.needsUserInput && analysis.followUpQuestion ? <View style={styles.followup}><View style={styles.followupHead}><Ionicons name="help-circle-outline" size={19} color={strictlyColors.clay} /><View style={styles.followupCopy}><Text style={styles.followupLabel}>OPTIONAL ACCURACY CHECK</Text><Text style={styles.followupQuestion}>{analysis.followUpQuestion}</Text></View></View>{analysis.followUpOptions?.length ? <View style={styles.followupOptions}>{analysis.followUpOptions.map((option) => <TouchableOpacity key={option} onPress={() => setContext(option)} style={[styles.followupOption, context === option && styles.followupOptionActive]}><Text style={[styles.followupOptionText, context === option && styles.followupOptionTextActive]}>{option}</Text></TouchableOpacity>)}</View> : null}<TextInput value={context} onChangeText={setContext} placeholder="Or type a more exact answer" placeholderTextColor={strictlyColors.muted} style={styles.contextInput} /><TouchableOpacity disabled={!context.trim()} onPress={refine} style={[styles.refine, !context.trim() && styles.refineWaiting]}><Text style={[styles.refineText, !context.trim() && styles.refineTextWaiting]}>Update my estimate</Text></TouchableOpacity><TouchableOpacity onPress={acceptBestEstimate} style={styles.useEstimate}><Text style={styles.useEstimateText}>Use Strictly's best estimate</Text></TouchableOpacity><Text style={styles.refineNote}>Optional. Answering narrows the range; skipping keeps the wider visual estimate.</Text></View> : null}
         {clarificationAnswered && !analysis.needsUserInput ? <View style={styles.confidenceImproved}><Ionicons name="checkmark-circle" size={18} color={strictlyColors.lime} /><Text style={styles.confidenceImprovedText}>Estimate updated with your answer.</Text></View> : null}
         {bestEstimateAccepted ? <View style={styles.estimateAccepted}><Ionicons name="information-circle-outline" size={18} color={strictlyColors.text} /><Text style={styles.estimateAcceptedText}>Using the visual estimate. Its original confidence and plausible ranges are preserved.</Text></View> : null}
         <TouchableOpacity style={styles.primary} onPress={confirm}><Text style={styles.primaryText}>{itemsNeedingConfirmation.length ? "Continue with best estimate" : "Confirm foods and score"}</Text><Ionicons name="arrow-forward" size={18} color={strictlyColors.onLime} /></TouchableOpacity>
@@ -296,73 +296,80 @@ export default function MealScanScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   usage: { flexDirection: "row", alignItems: "center", gap: 8, minHeight: 44, paddingHorizontal: 14, marginTop: 14, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
-  usageText: { flex: 1, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11 },
-  usageLink: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.accentText, fontSize: 11 },
+  usageText: { flex: 1, fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11 },
+  usageLink: { fontFamily: strictlyType.bold,  color: strictlyColors.accentText, fontSize: 11 },
   hero: { alignItems: "center", paddingVertical: 34, paddingHorizontal: 15, backgroundColor: strictlyColors.cream, borderRadius: strictlyRadius.large },
   cameraCircle: { width: 72, height: 72, borderRadius: 36, backgroundColor: strictlyColors.lime, alignItems: "center", justifyContent: "center" },
-  heroTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "800", fontSize: 25, color: strictlyColors.text, marginTop: 18 },
-  heroText: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 13, lineHeight: 19, textAlign: "center", marginTop: 7, maxWidth: 300 },
+  heroTitle: { fontFamily: strictlyType.bold,  fontSize: 25, color: strictlyColors.text, marginTop: 18 },
+  heroText: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 13, lineHeight: 19, textAlign: "center", marginTop: 7, maxWidth: 300 },
   angleCard: { flexDirection: "row", gap: 12, padding: 15, marginTop: 12, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.cream, borderWidth: 1, borderColor: strictlyColors.border },
   angleIcon: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.lime },
   angleCopy: { flex: 1 },
-  angleTitle: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 13 },
-  angleText: { marginTop: 4, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 10, lineHeight: 15 },
+  angleTitle: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 13 },
+  angleText: { marginTop: 4, fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 15 },
   textAction: { minHeight: 42, alignItems: "center", justifyContent: "center", marginTop: 4 },
-  textActionLabel: { fontFamily: strictlyType.sansMedium, color: strictlyColors.textSoft, fontSize: 11, fontWeight: "700" },
+  textActionLabel: { fontFamily: strictlyType.bold, color: strictlyColors.textSoft, fontSize: 11},
   primary: { minHeight: 54, backgroundColor: strictlyColors.lime, borderRadius: strictlyRadius.medium, flexDirection: "row", gap: 8, alignItems: "center", justifyContent: "center", marginTop: 14 },
-  primaryText: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.onLime },
+  primaryText: { fontFamily: strictlyType.bold,  color: strictlyColors.onLime },
   secondary: { minHeight: 52, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, borderRadius: strictlyRadius.medium, flexDirection: "row", gap: 8, alignItems: "center", justifyContent: "center", marginTop: 8 },
-  secondaryText: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text },
+  secondaryText: { fontFamily: strictlyType.bold,  color: strictlyColors.text },
   captureOptions: { flexDirection: "row", gap: 8, marginTop: 9 },
   captureOption: { flex: 1, minHeight: 88, padding: 13, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border },
-  captureOptionTitle: { marginTop: 7, fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 12 },
-  captureOptionText: { marginTop: 3, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 9 },
+  captureOptionTitle: { marginTop: 7, fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 12 },
+  captureOptionText: { marginTop: 3, fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11 },
   truth: { flexDirection: "row", gap: 10, padding: 14, marginTop: 18 },
-  truthText: { flex: 1, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 17 },
-  truthStrong: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text },
+  truthText: { flex: 1, fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 17 },
+  truthStrong: { fontFamily: strictlyType.bold,  color: strictlyColors.text },
   photo: { width: "100%", height: 260, borderRadius: strictlyRadius.large, backgroundColor: strictlyColors.surfaceMuted },
   loadingCard: { marginTop: 12, backgroundColor: strictlyColors.cream, borderRadius: strictlyRadius.large },
   estimateHead: { flexDirection: "row", justifyContent: "space-between", gap: 10, alignItems: "flex-end", marginTop: 18 },
-  estimateLabel: { fontFamily: strictlyType.mono, color: strictlyColors.textSoft, fontSize: 8, letterSpacing: 0.8 },
-  estimateName: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 21, marginTop: 6, maxWidth: 210 },
-  estimateCarbs: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 25 },
-  estimateUnit: { fontFamily: strictlyType.sans, fontWeight: "400", color: strictlyColors.textSoft, fontSize: 9 },
-  range: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 17, marginTop: 9 },
+  estimateLabel: { fontFamily: strictlyType.semibold, color: strictlyColors.textSoft, fontSize: 11, letterSpacing: 1.1 },
+  estimateCopy: { flex: 1, minWidth: 0 },
+  estimateName: { fontFamily: strictlyType.bold, color: strictlyColors.text, fontSize: 21, lineHeight: 26, marginTop: 6 },
+  estimateCarbs: { flexShrink: 0, fontFamily: strictlyType.bold, color: strictlyColors.text, fontSize: 25 },
+  estimateUnit: { fontFamily: strictlyType.regular,  color: strictlyColors.textSoft, fontSize: 11 },
+  range: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 17, marginTop: 9 },
   items: { backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.border, borderRadius: strictlyRadius.large, overflow: "hidden", marginTop: 14 },
   item: { flexDirection: "row", alignItems: "center", gap: 7, padding: 13, borderBottomWidth: 1, borderBottomColor: strictlyColors.border },
+  itemLast: { borderBottomWidth: 0 },
   itemNeedsReview: { backgroundColor: strictlyColors.cream },
+  removeItem: { flexShrink: 0, width: 30, alignItems: "flex-end" },
   itemCopy: { flex: 1 },
-  itemName: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 13 },
-  itemMeta: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 9, marginTop: 3 },
-  sourceMeta: { fontFamily: strictlyType.mono, color: strictlyColors.muted, fontSize: 7, marginTop: 4, textTransform: "uppercase" },
-  gramsButton: { minWidth: 64, height: 34, flexDirection: "row", gap: 4, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.surfaceMuted, paddingHorizontal: 8, borderRadius: 9 },
+  itemName: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 13 },
+  itemMeta: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 12, lineHeight: 17, marginTop: 3 },
+  sourceMeta: { fontFamily: strictlyType.semibold, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 15, marginTop: 4, letterSpacing: 0.6, textTransform: "uppercase" },
+  sourceMetaReview: { color: strictlyColors.accentText },
+  gramsButton: { flexShrink: 0, minWidth: 64, height: 34, flexDirection: "row", gap: 4, alignItems: "center", justifyContent: "center", backgroundColor: strictlyColors.surfaceMuted, paddingHorizontal: 8, borderRadius: 9 },
   gramsButtonReview: { minWidth: 92, backgroundColor: strictlyColors.lime },
-  grams: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 12 },
+  grams: { fontFamily: strictlyType.bold, color: strictlyColors.text, fontSize: 12 },
+  gramsReview: { color: strictlyColors.onLime },
   editFoods: { minHeight: 46, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, marginTop: 8, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.surfaceMuted },
-  editFoodsText: { fontFamily: strictlyType.sansMedium, fontWeight: "800", color: strictlyColors.text, fontSize: 11 },
+  editFoodsText: { fontFamily: strictlyType.bold,  color: strictlyColors.text, fontSize: 11 },
   warning: { flexDirection: "row", gap: 9, padding: 13, marginTop: 9, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.dangerSurface },
   captureWarning: { flexDirection: "row", gap: 9, padding: 13, marginTop: 9, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.cream },
-  warningText: { flex: 1, fontFamily: strictlyType.sans, color: strictlyColors.text, fontSize: 10, lineHeight: 15 },
+  warningText: { flex: 1, fontFamily: strictlyType.regular, color: strictlyColors.text, fontSize: 11, lineHeight: 15 },
   followup: { padding: 14, backgroundColor: strictlyColors.cream, borderRadius: strictlyRadius.large, marginTop: 12 },
   followupHead: { flexDirection: "row", alignItems: "flex-start", gap: 9 },
   followupCopy: { flex: 1 },
-  followupLabel: { fontFamily: strictlyType.mono, color: strictlyColors.clay, fontSize: 8, letterSpacing: 0.9, marginBottom: 4 },
-  followupQuestion: { fontFamily: strictlyType.sansMedium, color: strictlyColors.text, fontSize: 12, lineHeight: 18 },
+  followupLabel: { fontFamily: strictlyType.semibold, color: strictlyColors.clay, fontSize: 11, letterSpacing: 1.1, marginBottom: 4 },
+  followupQuestion: { fontFamily: strictlyType.medium, color: strictlyColors.text, fontSize: 12, lineHeight: 18 },
   followupOptions: { flexDirection: "row", flexWrap: "wrap", gap: 7, marginTop: 11 },
   followupOption: { minHeight: 38, justifyContent: "center", paddingHorizontal: 12, borderRadius: strictlyRadius.pill, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.borderStrong },
   followupOptionActive: { backgroundColor: strictlyColors.lime, borderColor: strictlyColors.lime },
-  followupOptionText: { fontFamily: strictlyType.sansMedium, color: strictlyColors.text, fontSize: 10, fontWeight: "700" },
+  followupOptionText: { fontFamily: strictlyType.bold, color: strictlyColors.text, fontSize: 11},
   followupOptionTextActive: { color: strictlyColors.onLime },
-  contextInput: { minHeight: 46, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.borderStrong, borderRadius: strictlyRadius.medium, paddingHorizontal: 12, marginTop: 9, fontFamily: strictlyType.sans, color: strictlyColors.text },
-  refine: { alignItems: "center", padding: 12, backgroundColor: strictlyColors.ink, borderRadius: strictlyRadius.medium, marginTop: 8 },
-  refineText: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.white, fontSize: 12 },
-  useEstimate: { alignItems: "center", padding: 11, marginTop: 6 },
-  useEstimateText: { fontFamily: strictlyType.sansMedium, fontWeight: "700", color: strictlyColors.text, fontSize: 11 },
-  refineNote: { marginTop: 7, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 9, textAlign: "center" },
+  contextInput: { minHeight: 48, fontSize: 14, backgroundColor: strictlyColors.surface, borderWidth: 1, borderColor: strictlyColors.borderStrong, borderRadius: strictlyRadius.medium, paddingHorizontal: 12, marginTop: 9, fontFamily: strictlyType.regular, color: strictlyColors.text },
+  refine: { minHeight: 48, alignItems: "center", justifyContent: "center", padding: 12, backgroundColor: strictlyColors.ink, borderWidth: 1, borderColor: strictlyColors.borderStrong, borderRadius: strictlyRadius.medium, marginTop: 8 },
+  refineWaiting: { backgroundColor: strictlyColors.surfaceMuted },
+  refineText: { fontFamily: strictlyType.bold, color: strictlyColors.white, fontSize: 13 },
+  refineTextWaiting: { color: strictlyColors.textSoft },
+  useEstimate: { minHeight: 44, alignItems: "center", justifyContent: "center", padding: 11, marginTop: 6 },
+  useEstimateText: { fontFamily: strictlyType.bold, color: strictlyColors.accentText, fontSize: 13 },
+  refineNote: { marginTop: 7, fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, textAlign: "center" },
   confidenceImproved: { flexDirection: "row", alignItems: "center", gap: 7, padding: 12, marginTop: 10, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.surfaceMuted },
-  confidenceImprovedText: { fontFamily: strictlyType.sansMedium, color: strictlyColors.text, fontSize: 10, fontWeight: "700" },
+  confidenceImprovedText: { fontFamily: strictlyType.bold, color: strictlyColors.text, fontSize: 11},
   estimateAccepted: { flexDirection: "row", alignItems: "center", gap: 7, padding: 12, marginTop: 10, borderRadius: strictlyRadius.medium, backgroundColor: strictlyColors.surfaceMuted },
-  estimateAcceptedText: { flex: 1, fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 10, lineHeight: 15 },
+  estimateAcceptedText: { flex: 1, fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 15 },
   disabled: { opacity: 0.4 },
-  disclaimer: { fontFamily: strictlyType.sans, color: strictlyColors.textSoft, fontSize: 9, lineHeight: 14, marginTop: 11 },
+  disclaimer: { fontFamily: strictlyType.regular, color: strictlyColors.textSoft, fontSize: 11, lineHeight: 14, marginTop: 11 },
 });
